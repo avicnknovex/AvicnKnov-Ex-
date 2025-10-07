@@ -230,10 +230,12 @@
             color: white;
         }
         
+        /* NEW P&P BUTTON STYLE START */
         .pnp-btn {
             background: #673AB7; /* A distinct purple color */
             color: white;
         }
+        /* NEW P&P BUTTON STYLE END */
 
         .action-btn:hover {
             transform: scale(1.05);
@@ -503,6 +505,7 @@
             font-weight: bold;
         }
         
+        /* NEW P&P and Feedback STYLES START */
         #pnp-tab .pnp-container {
             max-width: 800px;
             margin: auto;
@@ -729,7 +732,7 @@
             </div>
         </div>
     </div>
-    
+
     <div id="timerDisplay" class="timer-display" style="display: none;">
         <span id="timerText"></span>
     </div>
@@ -751,7 +754,7 @@
         let priceInterval = null;
         let timers = {};
         let activeChats = {};
-
+        
         // Token configurations
         const TOKENS = {
             'BTC': { name: 'Bitcoin', id: 'bitcoin' },
@@ -776,6 +779,7 @@
                 return;
             }
             currentUser = user;
+            // NEW: Initialize P&P profile on login
             await initializePnPProfile();
         }
 
@@ -786,12 +790,15 @@
 
         // Tab switching
         function switchTab(tabName) {
+            // Update tab buttons
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             event.target.classList.add('active');
             
+            // Update tab content
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             document.getElementById(tabName + '-tab').classList.add('active');
             
+            // Load data for the tab
             switch(tabName) {
                 case 'buy':
                     loadBuyOrders();
@@ -805,9 +812,11 @@
                 case 'history':
                     loadHistory();
                     break;
+                // NEW P&P TAB CASE START
                 case 'pnp':
                     loadPnPData();
                     break;
+                // NEW P&P TAB CASE END
             }
         }
 
@@ -842,6 +851,7 @@
         }
 
         function updatePriceDisplays() {
+            // Update live price in modal
             const priceDisplay = document.getElementById('livePrice');
             const tokenSelect = document.getElementById('tokenSelect');
             if (priceDisplay && tokenSelect) {
@@ -851,6 +861,7 @@
                 }
             }
             
+            // Update prices in order cards
             document.querySelectorAll('.order-card').forEach(card => {
                 const symbol = card.dataset.symbol;
                 if (symbol && livePrices[symbol]) {
@@ -875,6 +886,7 @@
                 } else if (window.parent && typeof window.parent.getHoldingsMap === 'function') {
                     return await window.parent.getHoldingsMap();
                 } else {
+                    // Fallback to localStorage
                     const holdings = localStorage.getItem('AVX_holdings_test');
                     return holdings ? JSON.parse(holdings) : {};
                 }
@@ -891,6 +903,7 @@
                 } else if (window.parent && typeof window.parent.updateHolding === 'function') {
                     await window.parent.updateHolding(symbol, qty, costInr);
                 } else {
+                    // Fallback to localStorage
                     const holdings = await getHoldings();
                     if (qty <= 0) {
                         delete holdings[symbol];
@@ -1043,17 +1056,22 @@
             }
         }
         
+        // MODIFIED loadOrderBox FUNCTION
         async function loadOrderBox() {
             try {
+                // Fetch active trades user is involved in
                 const { data: trades, error: tradesError } = await supabase
-    .from('user_p2p_order_box')
-    .select(`*, order:user_p2p_order(*)`)
-    .or(`buyer_id.eq.${currentUser.id},seller_id.eq.${currentUser.id}`)
-    .in('status', ['pending', 'accepted', 'payment_done']) // <-- बस यह लाइन यहाँ जोड़नी है
-    .order('created_at', { ascending: false });
+                    .from('user_p2p_order_box')
+                    .select(`
+                        *,
+                        order:user_p2p_order(*)
+                    `)
+                    .or(`buyer_id.eq.${currentUser.id},seller_id.eq.${currentUser.id}`)
+                    .order('created_at', { ascending: false });
 
                 if (tradesError) throw tradesError;
                 
+                // Fetch user's own created orders that are active but not yet in a trade box
                 const engagedOrderIds = trades.map(t => t.order_id);
                 const { data: myOrders, error: myOrdersError } = await supabase
                     .from('user_p2p_order')
@@ -1077,12 +1095,14 @@
                 
                 let combinedHtml = '';
                 
+                // Render trades
                 combinedHtml += await Promise.all(trades.map(async trade => {
                     const isOwner = trade.order.user_id === currentUser.id;
                     const isSeller = trade.seller_id === currentUser.id;
                     const otherUser = isSeller ? 'Buyer' : 'Seller';
                     const otherUserId = isSeller ? trade.buyer_id : trade.seller_id;
                     const isTradeFinished = (trade.status === 'completed' || trade.status === 'cancelled' || trade.status === 'rejected');
+                    
                     
                     return `
                         <div class="order-card">
@@ -1148,6 +1168,7 @@
                     `;
                 }));
                 
+                // Render user's own created orders
                  combinedHtml += myOrders.map(order => `
                     <div class="order-card">
                         <div class="order-header">
@@ -1190,15 +1211,17 @@
             }
         }
         
+        // MODIFIED loadHistory FUNCTION
         async function loadHistory() {
             try {
+                // NEW: Calculate 24 hours ago timestamp
                 const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
                 const { data, error } = await supabase
                     .from('user_p2p_history')
                     .select('*')
                     .eq('user_id', currentUser.id)
-                    .gte('created_at', twentyFourHoursAgo)
+                    .gte('created_at', twentyFourHoursAgo) // Only fetch records from last 24 hours
                     .order('created_at', { ascending: false })
                     .limit(50);
 
@@ -1346,6 +1369,7 @@
                 option.classList.remove('selected');
             }
             
+            // Show/hide payment details for sell orders
             const orderType = document.getElementById('orderType').value;
             if (orderType === 'sell') {
                 const hasPaymentMethods = document.querySelectorAll('.payment-option input:checked').length > 0;
@@ -1353,6 +1377,7 @@
             }
         }
 
+        // New function to generate a unique order ID
         async function generateOrderId() {
             const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
             let result = '';
@@ -1360,6 +1385,7 @@
                 result += characters.charAt(Math.floor(Math.random() * characters.length));
             }
             
+            // Check for uniqueness
             const { data, error } = await supabase
                 .from('p2p_order_id')
                 .select('id')
@@ -1367,12 +1393,14 @@
                 .single();
             
             if (data) {
+                // If ID exists, try again
                 return generateOrderId();
             }
             
             return result;
         }
 
+        // Form submission
         document.getElementById('createOrderForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -1381,6 +1409,7 @@
             const quantity = parseFloat(document.getElementById('quantity').value);
             const amount = parseFloat(document.getElementById('amount').value);
             
+            // Validation
             if (!quantity || quantity <= 0) {
                 showToast('Please enter a valid quantity', 'error');
                 return;
@@ -1391,6 +1420,7 @@
                 return;
             }
             
+            // Get selected payment methods
             const selectedPaymentMethods = Array.from(document.querySelectorAll('.payment-option input:checked'))
                 .map(input => input.value);
             
@@ -1399,6 +1429,7 @@
                 return;
             }
             
+            // Check holdings for sell orders
             if (orderType === 'sell') {
                 const holdings = await getHoldings();
                 const holding = holdings[tokenSymbol];
@@ -1409,6 +1440,7 @@
                     return;
                 }
                 
+                // Validate payment details
                 const phoneNumber = document.getElementById('phoneNumber').value;
                 const upiId = document.getElementById('upiId').value;
                 
@@ -1431,6 +1463,7 @@
             try {
                 const orderIdUnique = await generateOrderId();
 
+                // Create entry in new order ID table
                 const { error: idError } = await supabase
                     .from('p2p_order_id')
                     .insert([{
@@ -1444,6 +1477,7 @@
                 
                 if (idError) throw idError;
 
+                // Create order in database
                 const { data, error } = await supabase
                     .from('user_p2p_order')
                     .insert([{
@@ -1480,6 +1514,7 @@
         // Trade request functions
         async function requestSellToOrder(orderId) {
             try {
+                // Get order details
                 const { data: order, error: orderError } = await supabase
                     .from('user_p2p_order')
                     .select('*')
@@ -1494,6 +1529,7 @@
                     return;
                 }
 
+                // Check if user has enough tokens
                 const holdings = await getHoldings();
                 const holding = holdings[order.token_symbol];
                 const availableQty = holding ? holding.qty : 0;
@@ -1503,8 +1539,10 @@
                     return;
                 }
                 
+                // Set order to pending to prevent others from taking it
                 await supabase.from('user_p2p_order').update({ status: 'pending' }).eq('id', orderId);
 
+                // Create trade session
                 const { data, error } = await supabase
                     .from('user_p2p_order_box')
                     .insert([{
@@ -1521,6 +1559,7 @@
 
                 if (error) throw error;
 
+                // Send AI message to buyer
                 await sendAIMessage(data.id, 
                     `${data.seller_username} wants to sell ${order.token_symbol} tokens to you. Type "accept" to proceed or "reject" to decline.`, 'buyer'
                 );
@@ -1536,6 +1575,7 @@
 
         async function requestBuyFromOrder(orderId) {
             try {
+                // Get order details
                 const { data: order, error: orderError } = await supabase
                     .from('user_p2p_order')
                     .select('*')
@@ -1550,8 +1590,10 @@
                     return;
                 }
                 
+                // Set order to pending
                 await supabase.from('user_p2p_order').update({ status: 'pending' }).eq('id', orderId);
 
+                // Create trade session
                 const { data, error } = await supabase
                     .from('user_p2p_order_box')
                     .insert([{
@@ -1568,6 +1610,7 @@
 
                 if (error) throw error;
 
+                // Send AI message to seller
                 await sendAIMessage(data.id, 
                     `${data.buyer_username} wants to buy ${order.token_symbol} tokens from you. Type "accept" to proceed or "reject" to decline.`, 'seller'
                 );
@@ -1581,6 +1624,7 @@
             }
         }
         
+        // Go to help page
         function goToHelpPage() {
             window.location.href = 'help.html';
         }
@@ -1664,6 +1708,7 @@
 
                 chatInput.value = '';
                 
+                // Process AI responses for accept/reject
                 await processUserMessage(currentTradeOrder, message.toLowerCase());
 
             } catch (error) {
@@ -1679,6 +1724,7 @@
             if (!file || !currentTradeOrder) return;
 
             try {
+                // Upload image to Supabase storage
                 const fileName = `${Date.now()}_${file.name}`;
                 const { data: uploadData, error: uploadError } = await supabase.storage
                     .from('user-p2p-image')
@@ -1686,10 +1732,12 @@
 
                 if (uploadError) throw uploadError;
 
+                // Get public URL
                 const { data: { publicUrl } } = supabase.storage
                     .from('user-p2p-image')
                     .getPublicUrl(fileName);
 
+                // Save to chat
                 const { error } = await supabase
                     .from('trade_chat')
                     .insert([{
@@ -1734,8 +1782,10 @@
             }
         }
 
+        // AI message processing
         async function processUserMessage(tradeId, message) {
             try {
+                // Get trade details
                 const { data: trade, error: tradeError } = await supabase
                     .from('user_p2p_order_box')
                     .select(`
@@ -1750,20 +1800,23 @@
                 const isOrderCreator = trade.order.user_id === currentUser.id;
                 const isBuyer = trade.buyer_id === currentUser.id;
                 
+                // Handle accept/reject for pending trades
                 if (trade.status === 'pending') {
                     if (isOrderCreator && message.includes('accept')) {
-                         await supabase
+                         // Update trade status
+                        await supabase
                             .from('user_p2p_order_box')
                             .update({ status: 'accepted' })
                             .eq('id', tradeId);
                         
                         await supabase.from('user_p2p_order').update({ status: 'trading' }).eq('id', trade.order_id);
                         
+                        // If it's a sell order that was accepted
                         if(trade.order.order_type === 'sell') {
                            await sendAIMessage(tradeId, 
                                `Trade accepted! Buyer, please make the payment of ₹${trade.order.amount.toLocaleString('en-IN')} using one of the available methods. After paying, please share the screenshot with transaction ID and UTR number.`, 'buyer'
                             );
-                        } else {
+                        } else { // It's a buy order
                             const paymentMethods = trade.order.payment_methods.split(',');
                             let promptMessage = 'Trade accepted! Please send your payment details (e.g., PhonePe, Google Pay, Paytm, UPI) and a screenshot of the account where you want to receive payment.';
                             
@@ -1774,23 +1827,28 @@
                         }
                         
                     } else if (message.includes('reject')) {
+                        // Update trade status
                         await supabase
                             .from('user_p2p_order_box')
                             .update({ status: 'rejected' })
                             .eq('id', tradeId);
+                        // Make original order active again
                         await supabase.from('user_p2p_order').update({ status: 'active' }).eq('id', trade.order_id);
 
                         await sendAIMessage(tradeId, 'Trade rejected by the order creator. The order is now available again.', 'both');
                     }
                 }
                 
+                // For Buy Order: After seller sends details
                 if (trade.status === 'accepted' && !isBuyer && (message.includes('image') || message.includes('phone') || message.includes('upi'))) {
                     await sendAIMessage(tradeId, 
                         'Payment details received! Buyer, please make the payment of ₹' + trade.order.amount.toLocaleString('en-IN') + ' to the seller. Be sure to share a screenshot, transaction ID, and UTR number after you\'ve paid.', 'buyer'
                     );
                 }
 
+                // After buyer makes payment and sends details (for both buy and sell orders)
                 if (trade.status === 'accepted' && isBuyer && (message.includes('paid') || message.includes('transaction') || message.includes('utr') || message.includes('image'))) {
+                    // Update status to payment_done
                     await supabase
                         .from('user_p2p_order_box')
                         .update({ status: 'payment_done' })
@@ -1805,7 +1863,7 @@
                 console.error('Process user message error:', error);
             }
         }
-        
+        // Timer functions
         function startTimer(tradeId, seconds, timerType) {
             const timerId = `${tradeId}_${timerType}`;
             
@@ -1851,6 +1909,7 @@
         // Trade actions
         async function releaseTokens(tradeId) {
             try {
+                // Get trade details
                 const { data: trade, error: tradeError } = await supabase
                     .from('user_p2p_order_box')
                     .select(`
@@ -1862,13 +1921,16 @@
 
                 if (tradeError) throw tradeError;
                 
+                // Transfer tokens (This is a placeholder, actual token transfer would be more complex)
                 console.log(`Transferring ${trade.order.quantity} ${trade.order.token_symbol} from ${trade.seller_id} to ${trade.buyer_id}`);
                 
+                // Update trade status to completed
                 await supabase
                     .from('user_p2p_order_box')
                     .update({ status: 'completed' })
                     .eq('id', tradeId);
                 
+                // Update original order status to completed
                 await supabase
                     .from('user_p2p_order')
                     .update({ status: 'completed' })
@@ -1879,11 +1941,13 @@
                     .update({ status: 'completed' })
                     .eq('id', trade.order.order_id_unique);
 
+                // NEW: Update P&P stats for both users
                 await Promise.all([
                     updatePnPStats(trade.buyer_id, 'completed'),
                     updatePnPStats(trade.seller_id, 'completed')
                 ]);
 
+                // Save to history for both users
                 await Promise.all([
                     supabase.from('user_p2p_history').insert([{
                         user_id: trade.buyer_id,
@@ -1892,7 +1956,7 @@
                         quantity: trade.order.quantity,
                         amount: trade.order.amount,
                         status: 'completed',
-                        other_user_id: trade.seller_id,
+                        other_user_id: trade.seller_id, // New field
                         created_at: new Date().toISOString()
                     }]),
                     supabase.from('user_p2p_history').insert([{
@@ -1902,7 +1966,7 @@
                         quantity: trade.order.quantity,
                         amount: trade.order.amount,
                         status: 'completed',
-                        other_user_id: trade.buyer_id,
+                        other_user_id: trade.buyer_id, // New field
                         created_at: new Date().toISOString()
                     }])
                 ]);
@@ -1920,6 +1984,7 @@
             }
         }
         
+        // NEW cancelTrade function
         async function cancelTrade(tradeId) {
             try {
                 const { data: trade, error: tradeError } = await supabase
@@ -1930,21 +1995,25 @@
 
                 if (tradeError) throw tradeError;
 
+                // Update trade box status
                 await supabase
                     .from('user_p2p_order_box')
                     .update({ status: 'cancelled' })
                     .eq('id', tradeId);
 
+                // Re-activate the original order
                 await supabase
                     .from('user_p2p_order')
                     .update({ status: 'active' })
                     .eq('id', trade.order_id);
 
+                // Update P&P stats for both users as uncompleted
                 await Promise.all([
                     updatePnPStats(trade.buyer_id, 'uncompleted'),
                     updatePnPStats(trade.seller_id, 'uncompleted')
                 ]);
 
+                // Add to history for both users
                 await Promise.all([
                      supabase.from('user_p2p_history').insert([{
                         user_id: trade.buyer_id, action: 'buy', token_symbol: trade.order.token_symbol,
@@ -1977,6 +2046,7 @@
                 
                 if (error || !order) throw error || new Error('Order not found');
 
+                // Update order status to cancelled
                 await supabase
                     .from('user_p2p_order')
                     .update({ status: 'cancelled' })
@@ -1987,8 +2057,10 @@
                     .update({ status: 'cancelled' })
                     .eq('id', order.order_id_unique);
                     
+                // Update P&P stats for creator
                 await updatePnPStats(currentUser.id, 'uncompleted');
 
+                // Add to creator's history
                 await supabase.from('user_p2p_history').insert([{
                     user_id: currentUser.id,
                     action: order.order_type,
@@ -1996,7 +2068,7 @@
                     quantity: order.quantity,
                     amount: order.amount,
                     status: 'cancelled',
-                    other_user_id: null,
+                    other_user_id: null, // No other user involved
                     created_at: new Date().toISOString()
                 }]);
 
@@ -2009,7 +2081,9 @@
             }
         }
         
+        // Realtime subscriptions
         function setupRealtimeSubscriptions() {
+            // Orders subscription
             supabase
                 .channel('p2p_public_changes')
                 .on('postgres_changes', 
@@ -2020,9 +2094,10 @@
                     { event: '*', schema: 'public', table: 'user_p2p_order_box' }, 
                     () => { loadAllData(); }
                 )
-                .on('postgres_changes', 
+                .on('postgres_changes', // NEW: Listen for P&P changes
                     { event: 'UPDATE', schema: 'public', table: 'user-p&p', filter: `user_id=eq.${currentUser?.id}`},
                     (payload) => {
+                        // If the active tab is P&P, reload it
                         if(document.getElementById('pnp-tab').classList.contains('active')) {
                            loadPnPData();
                         }
@@ -2032,6 +2107,7 @@
         }
 
         function setupChatRealtimeSubscription(tradeId) {
+            // Chat subscription
             if (activeChats[tradeId]) {
                 supabase.removeChannel(activeChats[tradeId]);
             }
@@ -2058,12 +2134,14 @@
             }, 3000);
         }
 
+        // Chat input event listener
         document.getElementById('chatInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 sendMessage();
             }
         });
 
+        // Cleanup on page unload
         window.addEventListener('beforeunload', function() {
             if (priceInterval) {
                 clearInterval(priceInterval);
@@ -2074,6 +2152,8 @@
             });
             supabase.removeAllChannels();
         });
+        
+        // NEW P&P and Feedback Functions START
         
         async function getUID(userId) {
             try {
@@ -2096,7 +2176,7 @@
                 .eq('user_id', currentUser.id)
                 .single();
 
-            if (!data) {
+            if (!data) { // If profile doesn't exist, create it
                 await supabase.from('user-p&p').insert([{ user_id: currentUser.id }]);
             }
         }
@@ -2131,7 +2211,7 @@
                 const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
                 if (lastUpdated > twentyFourHoursAgo) {
                     showToast('You can only change your role once every 24 hours.', 'error');
-                    loadPnPData();
+                    loadPnPData(); // Revert selection
                     return;
                 }
             }
@@ -2210,6 +2290,8 @@
             });
             if(error) console.error('Error updating PnP stats:', error);
         }
+        
+        // NEW P&P and Feedback Functions END
     </script>
 </body>
 </html>
