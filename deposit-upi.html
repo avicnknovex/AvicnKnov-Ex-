@@ -1,0 +1,199 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deposit via UPI</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      background: #f3f4f6;
+      color: #111827;
+    }
+    header {
+      background: #1f2937;
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      align-items: center;
+    }
+    .back-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 18px;
+      margin-right: 10px;
+      cursor: pointer;
+    }
+    header h2 {
+      font-size: 1.25rem;
+      margin: 0;
+    }
+    main {
+      max-width: 500px;
+      margin: 20px auto;
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .upi-box {
+      background: #e0f2fe;
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #0369a1;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: 600;
+      display: block;
+      margin-top: 15px;
+      margin-bottom: 5px;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+    }
+    input[type="file"] {
+      padding: 8px;
+    }
+    button {
+      margin-top: 20px;
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .notification {
+      margin-top: 15px;
+      text-align: center;
+      font-weight: bold;
+    }
+    .error {
+      color: #b91c1c;
+    }
+    .success {
+      color: #065f46;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <button class="back-btn" onclick="goBack()">
+      <i class="fa fa-arrow-left"></i>
+    </button>
+    <h2>UPI Deposit</h2>
+  </header>
+
+  <main>
+    <div class="upi-box">
+      UPI ID: anshumegaming@oksbi
+    </div>
+    <form id="depositForm">
+      <label>Amount (Minimum ₹100)</label>
+      <input type="number" id="amount" min="100" placeholder="Enter amount" required />
+
+      <label>UTR Number</label>
+      <input type="text" id="utr" minlength="10" placeholder="Enter UTR Number" required />
+
+      <label>Upload Payment Screenshot</label>
+      <input type="file" id="screenshot" accept="image/*" required />
+
+      <button type="submit">Submit Deposit Request</button>
+      <div class="notification" id="notify"></div>
+    </form>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const { createClient } = supabase;
+    const supabaseClient = createClient(
+      'https://hwrvqyipozrsxyjdpqag.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM'
+    );
+
+    const form = document.getElementById('depositForm');
+    const notify = document.getElementById('notify');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const amount = parseFloat(document.getElementById('amount').value);
+      const utr = document.getElementById('utr').value.trim();
+      const file = document.getElementById('screenshot').files[0];
+
+      if (!amount || amount < 100 || utr.length < 10 || !file) {
+        notify.textContent = 'Deposit rejected. Please fill all fields correctly.';
+        notify.className = 'notification error';
+        return;
+      }
+
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+      if (userError || !user) {
+        notify.textContent = 'Please log in to continue.';
+        notify.className = 'notification error';
+        return;
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { data: uploaded, error: uploadError } = await supabaseClient.storage
+        .from('support-files')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        notify.textContent = 'Screenshot upload failed.';
+        notify.className = 'notification error';
+        return;
+      }
+
+      const { data: urlData } = supabaseClient.storage.from('support-files').getPublicUrl(filePath);
+      const orderId = Math.floor(10000000 + Math.random() * 90000000).toString();
+
+      const { error } = await supabaseClient.from('deposits').insert([
+        {
+          uid: user.id,
+          order_id: orderId,
+          type: 'deposit_upi',
+          amount: amount,
+          utr: utr,
+          status: 'pending',
+          screenshot: urlData.publicUrl
+        }
+      ]);
+
+      if (error) {
+        console.log("Insert Error:", error);
+        notify.textContent = 'Deposit rejected. Please try again.';
+        notify.className = 'notification error';
+        return;
+      }
+
+      notify.textContent = 'Your deposit has been marked as pending.';
+      notify.className = 'notification success';
+
+      setTimeout(() => {
+        location.href = 'transactions.html';
+      }, 2000);
+    });
+
+    function goBack() {
+      const from = document.referrer;
+      if (from.includes("deposit.html")) {
+        window.location.href = "deposit.html";
+      } else {
+        history.back();
+      }
+    }
+  </script>
+</body>
+</html>

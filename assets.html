@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>  
+  <meta charset="UTF-8" />  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>  
+  <title>Assets - AvicnKnov Ex</title>  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>  
+  <style>  
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: white;
+      color: black;
+    }
+    .top-tabs, .sub-tabs, .crypto-account-tabs {
+      display: flex;
+      justify-content: space-around;
+      border-bottom: 1px solid #ccc;
+      background: #f9f9f9;
+    }
+    .top-tabs div, .sub-tabs div, .crypto-account-tabs div {
+      padding: 12px 0;
+      width: 100%;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      font-weight: 500;
+      color: #555;
+      transition: all 0.3s ease;
+    }
+    .top-tabs div:hover, .sub-tabs div:hover, .crypto-account-tabs div:hover {
+      background: #eee;
+      color: black;
+    }
+    .top-tabs .active, .sub-tabs .active, .crypto-account-tabs .active {
+      color: dodgerblue;
+      font-weight: bold;
+    }
+    .top-tabs .active::after, .sub-tabs .active::after, .crypto-account-tabs .active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 30%;
+      width: 40%;
+      height: 3px;
+      background-color: dodgerblue;
+      border-radius: 2px;
+    }
+    .tab-content {
+      display: none;
+      padding: 20px;
+      margin-bottom: 80px;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .balance-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .balance-header select {
+      background: #e5e5e5;
+      color: black;
+      border: none;
+      padding: 5px;
+    }
+    .balance-amount {
+      font-size: 2em;
+      margin: 10px 0;
+    }
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+      margin: 20px 0;
+      padding: 0 10px;
+    }
+    .buttons button {
+      flex: 1;
+      margin: 0 5px;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    .buttons .deposit {
+      background: linear-gradient(to right, #3b82f6, #60a5fa);
+    }
+    .buttons .withdrawal {
+      background: linear-gradient(to right, #10b981, #34d399);
+    }
+    .buttons .transactions {
+      background: linear-gradient(to right, #f59e0b, #fbbf24);
+    }
+    .search-bar {
+      padding: 10px;
+    }
+    .search-bar input {
+      width: 100%;
+      padding: 10px;
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      color: black;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ✅ Top Tabs -->
+  <div class="top-tabs">
+    <div class="active">Assets</div>
+    <div onclick="location.href='wallet.html'">Wallet</div>
+  </div>
+
+  <!-- ✅ Sub Tabs -->
+  <div class="sub-tabs">
+    <div class="active" onclick="showSubTab('overview')">Overview</div>
+    <div onclick="showSubTab('spot')">Spot</div>
+    <div onclick="showSubTab('funding')">Funding</div>
+    <div onclick="showSubTab('futures')">Futures</div>
+    <div onclick="showSubTab('earn')">Earn</div>
+  </div>
+
+  <!-- ✅ Overview Tab Content -->
+  <div id="overview" class="tab-content active">
+    <div class="balance-header">
+      <div>Total Balance</div>
+      <select id="currency-select">
+        <option>INR</option>
+        <option>USD</option>
+        <option>BTC</option>
+        <option>ETH</option>
+        <option>BNB</option>
+        <option>USDT</option>
+      </select>
+    </div>
+
+    <div class="balance-amount" id="walletBalance">Loading...</div>
+
+    <div class="buttons">
+      <button class="deposit" onclick="location.href='deposit.html'">DEPOSIT</button>
+      <button class="withdrawal" onclick="location.href='withdrawal.html'">WITHDRAWAL</button>
+      <button class="transactions" onclick="location.href='transactions.html'">TRANSACTIONS</button>
+    </div>
+
+    <!-- ✅ Crypto/Account Tabs -->
+    <div class="crypto-account-tabs">
+      <div class="active" onclick="showAccountTab('crypto')">Crypto</div>
+      <div onclick="showAccountTab('account')">Account</div>
+    </div>
+
+    <div id="crypto" class="tab-content active">
+      <div class="search-bar">
+        <input type="text" placeholder="Search your tokens..." />
+      </div>
+      <div class="tab-content" id="search-results">
+        <!-- Token list will be shown here -->
+      </div>
+    </div>
+
+    <div id="account" class="tab-content">
+      <!-- Account section content will be added via JS -->
+    </div>
+  </div>
+
+  <!-- ✅ Other Sub-Tabs -->
+  <div id="spot" class="tab-content"></div>
+  <div id="funding" class="tab-content"></div>
+  <div id="futures" class="tab-content"></div>
+  <div id="earn" class="tab-content"></div>
+
+  <!-- ✅ Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- ✅ Wallet Balance Logic -->
+  <script src="wallet-balance.js"></script>
+
+  <!-- ✅ Required External JS Files -->
+  <script src="assets-crypto.js"></script>
+  <script src="assets-account.js"></script>
+  <script src="assets-spot.js"></script>
+  <script src="assets-funding.js"></script>
+  <script src="assets-futures.js"></script>
+  <script src="assets-earn.js"></script>
+
+  <!-- ✅ Tab Switching JS -->
+  <script>
+    function showSubTab(id) {
+      document.querySelectorAll('.sub-tabs div').forEach(el => el.classList.remove('active'));
+      event.target.classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function showAccountTab(id) {
+      document.querySelectorAll('.crypto-account-tabs div').forEach(el => el.classList.remove('active'));
+      event.target.classList.add('active');
+      document.querySelectorAll('#overview .tab-content').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+  </script>
+
+</body>
+</html>

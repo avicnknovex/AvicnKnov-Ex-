@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Feed - Latest Updates</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        /* Header with back button */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .nav-icon:hover {
+            transform: translateY(-3px) scale(1.1);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+        }
+
+        .nav-icon svg {
+            width: 28px;
+            height: 28px;
+            fill: white;
+        }
+
+        .header-title {
+            margin-left: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #fff, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Main container */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 100px 20px 40px;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, #fff, #ffd700, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(255,255,255,0.3);
+        }
+
+        .subtitle {
+            text-align: center;
+            opacity: 0.9;
+            margin-bottom: 40px;
+            font-size: 1.2rem;
+        }
+
+        /* News feed */
+        .news-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .news-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .news-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            border-color: #ffd700;
+        }
+
+        .news-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: all 0.5s ease;
+        }
+
+        .news-card:hover::before {
+            left: 100%;
+        }
+
+        .news-meta {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .news-date {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .news-type {
+            margin-left: 10px;
+            background: rgba(255,255,255,0.2);
+            padding: 3px 8px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+
+        /* Content types */
+        .news-content {
+            margin-bottom: 20px;
+        }
+
+        .news-text {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .news-image {
+            width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .news-image:hover {
+            transform: scale(1.02);
+        }
+
+        .news-video {
+            width: 100%;
+            max-height: 300px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+        }
+
+        /* Action buttons */
+        .news-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+        }
+
+        .news-card:hover .news-actions {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .action-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(5px);
+        }
+
+        .action-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .action-btn.liked {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            animation: likeAnimation 0.5s ease;
+        }
+
+        .like-btn {
+            position: relative;
+        }
+
+        .like-btn.animate {
+            animation: heartBeat 0.6s ease;
+        }
+
+        /* Comment section */
+        .comments-section {
+            margin-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            padding-top: 15px;
+            display: none;
+        }
+
+        .comments-section.show {
+            display: block;
+        }
+
+        .comment-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .comment-input input {
+            flex: 1;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 20px;
+            padding: 10px 15px;
+            color: white;
+            outline: none;
+        }
+
+        .comment-input input::placeholder {
+            color: rgba(255,255,255,0.6);
+        }
+
+        .comment-btn {
+            background: linear-gradient(45deg, #2ed573, #1e90ff);
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .comment-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .comments-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .comment-item {
+            background: rgba(255,255,255,0.05);
+            padding: 10px 15px;
+            border-radius: 15px;
+            border-left: 3px solid #ffd700;
+        }
+
+        .comment-user {
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+
+        .comment-text {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .comment-time {
+            font-size: 0.7rem;
+            opacity: 0.6;
+            margin-top: 5px;
+        }
+
+        /* No news state */
+        .no-news {
+            text-align: center;
+            padding: 60px 20px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .no-news-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .no-news-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+
+        .no-news-text {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            line-height: 1.6;
+        }
+
+        /* Loading animation */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #ffd700;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 3000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            max-width: 350px;
+            word-wrap: break-word;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.error {
+            background: linear-gradient(45deg, #ff4757, #ff3742);
+        }
+
+        .toast.success {
+            background: linear-gradient(45deg, #2ed573, #1e90ff);
+        }
+
+        /* Animations */
+        @keyframes likeAnimation {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes heartBeat {
+            0% { transform: scale(1); }
+            14% { transform: scale(1.3); }
+            28% { transform: scale(1); }
+            42% { transform: scale(1.3); }
+            70% { transform: scale(1); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.2rem;
+            }
+            
+            .container {
+                padding: 100px 15px 40px;
+            }
+            
+            .news-card {
+                padding: 20px;
+            }
+            
+            .action-btn {
+                padding: 8px 15px;
+                font-size: 0.8rem;
+            }
+            
+            .news-actions {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header with back button -->
+    <div class="header">
+        <div class="nav-icon" onclick="goToDashboard()">
+            <svg viewBox="0 0 24 24">
+                <path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" />
+            </svg>
+        </div>
+        <div class="header-title">📰 News Feed</div>
+    </div>
+
+    <!-- Main container -->
+    <div class="container">
+        <h1 class="title">📰 Latest News</h1>
+        <p class="subtitle">Stay updated with the latest happenings!</p>
+
+        <!-- News feed -->
+        <div class="news-feed" id="newsFeed">
+            <!-- Loading state -->
+            <div class="loading" id="loadingState">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase configuration
+        const SUPA_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+        const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+        
+        const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+        
+        let currentUser = null;
+        let newsList = [];
+        let userActions = {};
+
+        // Initialize the page
+        async function init() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    showToast('Please log in to access news', 'error');
+                    setTimeout(() => goToDashboard(), 2000);
+                    return;
+                }
+                
+                currentUser = user;
+                await loadNews();
+                await loadUserActions();
+                
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showToast('Failed to load news feed', 'error');
+            }
+        }
+
+        // Load news from database
+        async function loadNews() {
+            try {
+                const { data, error } = await supabase
+                    .from('news_control')
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    console.error('Error loading news:', error);
+                    showNoNews();
+                    return;
+                }
+                
+                newsList = data || [];
+                
+                if (newsList.length === 0) {
+                    showNoNews();
+                } else {
+                    renderNews();
+                }
+                
+            } catch (error) {
+                console.error('Error loading news:', error);
+                showNoNews();
+            } finally {
+                document.getElementById('loadingState').style.display = 'none';
+            }
+        }
+
+        // Load user actions (likes, comments, shares)
+        async function loadUserActions() {
+            try {
+                const { data, error } = await supabase
+                    .from('user_news_history')
+                    .select('*')
+                    .eq('user_id', currentUser.id);
+                
+                if (!error && data) {
+                    userActions = {};
+                    data.forEach(action => {
+                        if (!userActions[action.news_id]) {
+                            userActions[action.news_id] = [];
+                        }
+                        userActions[action.news_id].push(action);
+                    });
+                }
+                
+            } catch (error) {
+                console.error('Error loading user actions:', error);
+            }
+        }
+
+        // Render news feed
+        function renderNews() {
+            const feed = document.getElementById('newsFeed');
+            feed.innerHTML = '';
+            
+            newsList.forEach(news => {
+                const newsCard = createNewsCard(news);
+                feed.appendChild(newsCard);
+            });
+        }
+
+        // Create news card
+        function createNewsCard(news) {
+            const card = document.createElement('div');
+            card.className = 'news-card';
+            card.setAttribute('data-news-id', news.id);
+            
+            const isLiked = hasUserAction(news.id, 'LIKE');
+            const comments = getUserComments(news.id);
+            
+            const mediaContent = getMediaContent(news);
+            const formattedDate = new Date(news.created_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            card.innerHTML = `
+                <div class="news-meta">
+                    <div class="news-date">${formattedDate}</div>
+                    <div class="news-type">${news.post_type}</div>
+                </div>
+                
+                <div class="news-content">
+                    ${mediaContent}
+                    <div class="news-text">${news.content_text}</div>
+                </div>
+                
+                <div class="news-actions">
+                    <button class="action-btn like-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike(${news.id})">
+                        <span>❤️</span> Like
+                    </button>
+                    <button class="action-btn" onclick="shareNews(${news.id})">
+                        <span>📤</span> Share
+                    </button>
+                    <button class="action-btn" onclick="toggleComments(${news.id})">
+                        <span>💬</span> Comment
+                    </button>
+                </div>
+                
+                <div class="comments-section" id="comments-${news.id}">
+                    <div class="comment-input">
+                        <input type="text" placeholder="Write a comment..." id="comment-input-${news.id}" onkeypress="handleCommentEnter(event, ${news.id})">
+                        <button class="comment-btn" onclick="addComment(${news.id})">Post</button>
+                    </div>
+                    <div class="comments-list" id="comments-list-${news.id}">
+                        ${renderComments(comments)}
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // Get media content based on post type
+        function getMediaContent(news) {
+            switch (news.post_type) {
+                case 'IMAGE':
+                    if (news.image_url) {
+                        return `<img src="${news.image_url}" alt="News Image" class="news-image" onerror="this.style.display='none'">`;
+                    }
+                    return '';
+                
+                case 'VIDEO':
+                    if (news.video_url) {
+                        return `<video src="${news.video_url}" class="news-video" controls onerror="this.style.display='none'"></video>`;
+                    }
+                    return '';
+                
+                default:
+                    return '';
+            }
+        }
+
+        // Check if user has performed an action
+        function hasUserAction(newsId, actionType) {
+            const actions = userActions[newsId] || [];
+            return actions.some(action => action.action_type === actionType);
+        }
+
+        // Get user comments for a news item
+        function getUserComments(newsId) {
+            const actions = userActions[newsId] || [];
+            return actions.filter(action => action.action_type === 'COMMENT');
+        }
+
+        // Render comments
+        function renderComments(comments) {
+            if (comments.length === 0) {
+                return '<div style="text-align: center; opacity: 0.6; padding: 10px;">No comments yet</div>';
+            }
+            
+            return comments.map(comment => `
+                <div class="comment-item">
+                    <div class="comment-user">You</div>
+                    <div class="comment-text">${comment.comment_text}</div>
+                    <div class="comment-time">${new Date(comment.created_at).toLocaleDateString()}</div>
+                </div>
+            `).join('');
+        }
+
+        // Toggle like
+        async function toggleLike(newsId) {
+            try {
+                const likeBtn = event.target.closest('.like-btn');
+                const isLiked = likeBtn.classList.contains('liked');
+                
+                if (isLiked) {
+                    // Remove like
+                    const { error } = await supabase
+                        .from('user_news_history')
+                        .delete()
+                        .eq('user_id', currentUser.id)
+                        .eq('news_id', newsId)
+                        .eq('action_type', 'LIKE');
+                    
+                    if (!error) {
+                        likeBtn.classList.remove('liked');
+                        showToast('Like removed', 'success');
+                    }
+                } else {
+                    // Add like
+                    const { error } = await supabase
+                        .from('user_news_history')
+                        .insert({
+                            user_id: currentUser.id,
+                            news_id: newsId,
+                            action_type: 'LIKE',
+                            created_at: new Date().toISOString()
+                        });
+                    
+                    if (!error) {
+                        likeBtn.classList.add('liked', 'animate');
+                        setTimeout(() => likeBtn.classList.remove('animate'), 600);
+                        showToast('News liked!', 'success');
+                    }
+                }
+                
+                // Reload user actions
+                await loadUserActions();
+                
+            } catch (error) {
+                console.error('Error toggling like:', error);
+                showToast('Failed to update like', 'error');
+            }
+        }
+
+        // Share news
+        async function shareNews(newsId) {
+            try {
+                const news = newsList.find(n => n.id === newsId);
+                if (!news) return;
+                
+                // Record share action
+                const { error } = await supabase
+                    .from('user_news_history')
+                    .insert({
+                        user_id: currentUser.id,
+                        news_id: newsId,
+                        action_type: 'SHARE',
+                        created_at: new Date().toISOString()
+                    });
+                
+                if (error) {
+                    console.error('Error recording share:', error);
+                }
+                
+                // Native share API
+                if (navigator.share) {
+                    await navigator.share({
+                        title: 'Latest News',
+                        text: news.content_text.substring(0, 100) + '...',
+                        url: window.location.href
+                    });
+                } else {
+                    // Fallback - copy to clipboard
+                    await navigator.clipboard.writeText(news.content_text);
+                    showToast('News copied to clipboard!', 'success');
+                }
+                
+            } catch (error) {
+                console.error('Error sharing news:', error);
+                showToast('Failed to share news', 'error');
+            }
+        }
+
+        // Toggle comments section
+        function toggleComments(newsId) {
+            const commentsSection = document.getElementById(`comments-${newsId}`);
+            commentsSection.classList.toggle('show');
+            
+            if (commentsSection.classList.contains('show')) {
+                const input = document.getElementById(`comment-input-${newsId}`);
+                setTimeout(() => input.focus(), 300);
+            }
+        }
+
+        // Add comment
+        async function addComment(newsId) {
+            try {
+                const input = document.getElementById(`comment-input-${newsId}`);
+                const commentText = input.value.trim();
+                
+                if (!commentText) {
+                    showToast('Please write a comment', 'error');
+                    return;
+                }
+                
+                const { error } = await supabase
+                    .from('user_news_history')
+                    .insert({
+                        user_id: currentUser.id,
+                        news_id: newsId,
+                        action_type: 'COMMENT',
+                        comment_text: commentText,
+                        created_at: new Date().toISOString()
+                    });
+                
+                if (error) {
+                    console.error('Error adding comment:', error);
+                    showToast('Failed to add comment', 'error');
+                    return;
+                }
+                
+                // Clear input
+                input.value = '';
+                
+                // Reload user actions and update comments
+                await loadUserActions();
+                const comments = getUserComments(newsId);
+                document.getElementById(`comments-list-${newsId}`).innerHTML = renderComments(comments);
+                
+                showToast('Comment added!', 'success');
+                
+            } catch (error) {
+                console.error('Error adding comment:', error);
+                showToast('Failed to add comment', 'error');
+            }
+        }
+
+        // Handle comment enter key
+        function handleCommentEnter(event, newsId) {
+            if (event.key === 'Enter') {
+                addComment(newsId);
+            }
+        }
+
+        // Show no news state
+        function showNoNews() {
+            const feed = document.getElementById('newsFeed');
+            feed.innerHTML = `
+                <div class="no-news">
+                    <div class="no-news-icon">📰</div>
+                    <div class="no-news-title">No News Available</div>
+                    <div class="no-news-text">
+                        Stay tuned! We'll keep you updated with the latest news and updates.<br>
+                        Check back soon for exciting content!
+                    </div>
+                </div>
+            `;
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 3000);
+        }
+
+        // Navigation functions
+        function goToDashboard() {
+            window.location.href = 'dashboard.html';
+        }
+
+        // Auto-refresh news every 5 minutes
+        setInterval(async () => {
+            await loadNews();
+            await loadUserActions();
+        }, 300000); // 5 minutes
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

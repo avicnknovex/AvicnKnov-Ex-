@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Crypto Deposit</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .back-button {
+      margin-bottom: 15px;
+      font-size: 18px;
+      color: #4f46e5;
+      cursor: pointer;
+    }
+
+    .container {
+      background-color: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+      margin: auto;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    select, .info-box {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    .info-label {
+      font-weight: bold;
+      margin-top: 15px;
+    }
+
+    .action-buttons button {
+      margin-top: 10px;
+      margin-right: 10px;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      background-color: #4f46e5;
+      color: white;
+      cursor: pointer;
+    }
+
+    .note {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ✅ Smart Back Button -->
+  <div class="back-button" onclick="goBack()">⬅ Back</div>
+
+  <div class="container">
+    <input type="text" id="searchToken" class="search-input" placeholder="Search token...">
+    <select id="tokenSelect"></select>
+    <select id="blockchainSelect"></select>
+
+    <div class="info-label">Deposit Address:</div>
+    <div class="info-box" id="addressDisplay" style="white-space: normal; word-break: break-all; overflow-wrap: break-word;">Loading...</div>
+
+    <div class="info-label" id="memoLabel" style="display:none;">Memo/Tag:</div>
+    <div class="info-box" id="memoDisplay" style="display:none;"></div>
+
+    <div class="action-buttons">
+      <button onclick="copyAddress()">Copy Address</button>
+      <button onclick="downloadAddress()">Save Address</button>
+    </div>
+
+    <div class="note" id="minDepositNote"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script>
+    const supabase = window.supabase.createClient(
+      'https://hwrvqyipozrsxyjdpqag.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM'
+    );
+
+    let allTokens = [];
+
+    async function loadTokens() {
+      const { data, error } = await supabase.from('token_info').select('*');
+      if (error) return alert("❌ Failed to load tokens");
+      allTokens = data;
+      updateTokenSelect(data);
+    }
+
+    function updateTokenSelect(tokens) {
+      const tokenSelect = document.getElementById('tokenSelect');
+      tokenSelect.innerHTML = tokens.map(t => `<option value="${t.token_name}">${t.token_name}</option>`).join('');
+      updateBlockchains();
+    }
+
+    function updateBlockchains() {
+      const selectedToken = document.getElementById('tokenSelect').value;
+      const blockchainSelect = document.getElementById('blockchainSelect');
+      const blockchains = allTokens.filter(t => t.token_name === selectedToken);
+      blockchainSelect.innerHTML = blockchains.map(b => `<option value="${b.blockchain}">${b.blockchain}</option>`).join('');
+      updateDisplay();
+    }
+
+    function updateDisplay() {
+      const token = document.getElementById('tokenSelect').value;
+      const blockchain = document.getElementById('blockchainSelect').value;
+      const selected = allTokens.find(t => t.token_name === token && t.blockchain === blockchain);
+
+      document.getElementById('addressDisplay').textContent = selected.demo_address || 'No address';
+      document.getElementById('minDepositNote').textContent = `Minimum deposit: ${selected.min_deposit} USDT`;
+
+      if (selected.has_memo) {
+        document.getElementById('memoLabel').style.display = 'block';
+        document.getElementById('memoDisplay').style.display = 'block';
+        document.getElementById('memoDisplay').textContent = selected.memo_text || 'N/A';
+      } else {
+        document.getElementById('memoLabel').style.display = 'none';
+        document.getElementById('memoDisplay').style.display = 'none';
+      }
+    }
+
+    function copyAddress() {
+      const address = document.getElementById('addressDisplay').textContent;
+      navigator.clipboard.writeText(address).then(() => alert('✅ Address copied!'));
+    }
+
+    function downloadAddress() {
+      const address = document.getElementById('addressDisplay').textContent;
+      const blob = new Blob([address], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'deposit_address.txt';
+      a.click();
+    }
+
+    document.getElementById('tokenSelect').addEventListener('change', updateBlockchains);
+    document.getElementById('blockchainSelect').addEventListener('change', updateDisplay);
+    document.getElementById('searchToken').addEventListener('input', function() {
+      const val = this.value.toLowerCase();
+      const filtered = allTokens.filter(t => t.token_name.toLowerCase().includes(val));
+      updateTokenSelect(filtered);
+    });
+
+    loadTokens();
+
+    // ✅ Smart Back Button Script
+    function goBack() {
+      const from = document.referrer;
+      if (from.includes("deposit.html")) {
+        window.location.href = "deposit.html";
+      } else {
+        history.back();
+      }
+    }
+  </script>
+</body>
+</html>

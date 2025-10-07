@@ -1,0 +1,27 @@
+<!-- uid.html -->
+<script type="module">
+  const supabase = window.supabase.createClient(
+    'https://hwrvqyipozrsxyjdpqag.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM'
+  );
+
+  const { data: { user }, error } = await supabase.auth.getUser();
+
+  const input = document.getElementById('user-id');
+
+  if (error || !user) {
+    input.value = "Unavailable";
+  } else {
+    const { data, error: uidError } = await supabase
+      .from('uid')
+      .select('uid')
+      .eq('user_id', user.id)
+      .single();
+
+    if (uidError || !data) {
+      input.value = "Unavailable";
+    } else {
+      input.value = data.uid;
+    }
+  }
+</script>

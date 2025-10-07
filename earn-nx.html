@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Rewards - Earn NX</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        /* Header with bag icon */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+        }
+
+        .bag-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .bag-icon:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+
+        .bag-icon svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        /* Main container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 100px 20px 40px;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #fff, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(255,255,255,0.3);
+        }
+
+        .subtitle {
+            text-align: center;
+            opacity: 0.9;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+
+        /* Trading volume display */
+        .volume-display {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 40px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .volume-amount {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .volume-label {
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        /* Reward tiers */
+        .rewards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 50px;
+        }
+
+        .reward-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .reward-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        }
+
+        .reward-card.claimed {
+            opacity: 0.6;
+            background: rgba(100,100,100,0.1);
+        }
+
+        .reward-card.claimed::after {
+            content: '✓ CLAIMED';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-20deg);
+            background: rgba(34,197,94,0.9);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            z-index: 2;
+        }
+
+        .reward-tier {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+
+        .reward-amount {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #feca57);
+            transition: width 0.8s ease;
+            border-radius: 10px;
+        }
+
+        .claim-btn {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .claim-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+
+        .claim-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Special Achievement Box */
+        .achievement-section {
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        .achievement-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #ff6b6b, #feca57, #48CAE4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: textShimmer 2s infinite;
+        }
+
+        .achievement-box {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            background: linear-gradient(45deg, #ff6b6b, #feca57, #48CAE4, #9D4EDD);
+            background-size: 400% 400%;
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            animation: gradientShift 3s ease-in-out infinite;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        .achievement-box:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+        }
+
+        .achievement-box.locked {
+            background: rgba(100,100,100,0.3);
+            animation: none;
+        }
+
+        .lock-icon {
+            font-size: 4rem;
+            animation: pulse 2s infinite;
+            color: #fff;
+        }
+
+        .achievement-box.unlocked .lock-icon {
+            display: none;
+        }
+
+        .box-icon {
+            font-size: 5rem;
+            color: white;
+            display: none;
+        }
+
+        .achievement-box.unlocked .box-icon {
+            display: block;
+            animation: bounce 1s infinite;
+        }
+
+        /* Achievement Modal */
+        .achievement-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .achievement-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 50px;
+            border-radius: 25px;
+            text-align: center;
+            max-width: 500px;
+            position: relative;
+            animation: popIn 0.5s ease;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            transform: scale(1.2);
+            color: #ff6b6b;
+        }
+
+        .achievement-icon {
+            font-size: 6rem;
+            margin-bottom: 20px;
+            animation: rotate 2s linear infinite;
+        }
+
+        .achievement-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.7;
+            }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        @keyframes gradientShift {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        @keyframes textShimmer {
+            0%, 100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2rem;
+            }
+            
+            .volume-amount {
+                font-size: 2rem;
+            }
+            
+            .reward-amount {
+                font-size: 1.5rem;
+            }
+            
+            .achievement-box {
+                width: 150px;
+                height: 150px;
+            }
+            
+            .lock-icon {
+                font-size: 3rem;
+            }
+            
+            .box-icon {
+                font-size: 4rem;
+            }
+        }
+
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 3000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.error {
+            background: linear-gradient(45deg, #ff4757, #ff3742);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header with bag icon -->
+    <div class="header">
+        <div class="bag-icon" onclick="goToDashboard()">
+            <svg viewBox="0 0 24 24">
+                <path d="M19,7H16V6A4,4 0 0,0 12,2A4,4 0 0,0 8,6V7H5A1,1 0 0,0 4,8V19A3,3 0 0,0 7,22H17A3,3 0 0,0 20,19V8A1,1 0 0,0 19,7M10,6A2,2 0 0,1 12,4A2,2 0 0,1 14,6V7H10V6M18,19A1,1 0 0,1 17,20H7A1,1 0 0,1 6,19V9H8V10A1,1 0 0,0 10,10A1,1 0 0,0 10,8V9H14V10A1,1 0 0,0 16,10A1,1 0 0,0 16,8V9H18V19Z" />
+            </svg>
+        </div>
+    </div>
+
+    <!-- Main container -->
+    <div class="container">
+        <h1 class="title">🏆 Trading Rewards</h1>
+        <p class="subtitle">Earn amazing rewards based on your trading volume!</p>
+
+        <!-- Trading volume display -->
+        <div class="volume-display">
+            <div class="volume-amount" id="totalVolume">$0</div>
+            <div class="volume-label">Total Trading Volume</div>
+        </div>
+
+        <!-- Reward tiers -->
+        <div class="rewards-grid">
+            <!-- $1,000 Tier -->
+            <div class="reward-card" id="tier1">
+                <div class="reward-tier">Trading Milestone</div>
+                <div class="reward-amount">5 USDT</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress1"></div>
+                </div>
+                <div style="margin-bottom: 15px;">$1,000 USD</div>
+                <button class="claim-btn" onclick="claimReward(1, 5, 1000)">Claim Reward</button>
+            </div>
+
+            <!-- $10,000 Tier -->
+            <div class="reward-card" id="tier2">
+                <div class="reward-tier">Trading Hero</div>
+                <div class="reward-amount">20 USD</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress2"></div>
+                </div>
+                <div style="margin-bottom: 15px;">$10,000 USD</div>
+                <button class="claim-btn" onclick="claimReward(2, 20, 10000)">Claim Reward</button>
+            </div>
+
+            <!-- $50,000 Tier -->
+            <div class="reward-card" id="tier3">
+                <div class="reward-tier">Trading Master</div>
+                <div class="reward-amount">50 USD</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress3"></div>
+                </div>
+                <div style="margin-bottom: 15px;">$50,000 USD</div>
+                <button class="claim-btn" onclick="claimReward(3, 50, 50000)">Claim Reward</button>
+            </div>
+
+            <!-- $100,000 Tier -->
+            <div class="reward-card" id="tier4">
+                <div class="reward-tier">Trading Legend</div>
+                <div class="reward-amount">100 USD</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress4"></div>
+                </div>
+                <div style="margin-bottom: 15px;">$100,000 USD</div>
+                <button class="claim-btn" onclick="claimReward(4, 100, 100000)">Claim Reward</button>
+            </div>
+        </div>
+
+        <!-- Special Achievement Section -->
+        <div class="achievement-section">
+            <h2 class="achievement-title">🎁 Big Reward - Special Trading Achievement</h2>
+            <div class="achievement-box locked" id="achievementBox" onclick="openAchievementBox()">
+                <div class="lock-icon">🔒</div>
+                <div class="box-icon">🎁</div>
+            </div>
+            <p style="margin-top: 20px; opacity: 0.8;">Complete $1,000,000 in trading to unlock this special reward!</p>
+        </div>
+    </div>
+
+    <!-- Achievement Modal -->
+    <div class="achievement-modal" id="achievementModal">
+        <div class="achievement-content">
+            <button class="close-btn" onclick="closeAchievement()">&times;</button>
+            <div class="achievement-icon">🏆</div>
+            <div class="achievement-text">Congratulations!</div>
+            <p>You've unlocked the Ultimate Trading Achievement!</p>
+            <p style="margin-top: 20px; font-size: 1.2rem; color: #ffd700;">🎯 Million Dollar Trader 🎯</p>
+        </div>
+    </div>
+
+    <script>
+        // Supabase configuration (using existing config from attached files)
+        const SUPA_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+        const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+        
+        const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+        
+        let userTotalVolume = 0;
+        const REWARD_TIERS = [
+            { id: 1, threshold: 1000, reward: 5, currency: 'USDT' },
+            { id: 2, threshold: 10000, reward: 20, currency: 'USD' },
+            { id: 3, threshold: 50000, reward: 50, currency: 'USD' },
+            { id: 4, threshold: 100000, reward: 100, currency: 'USD' }
+        ];
+        const ACHIEVEMENT_THRESHOLD = 1000000; // $1M
+
+        // Initialize the page
+        async function init() {
+            try {
+                await loadTradingVolume();
+                updateUI();
+                checkClaimedRewards();
+                checkAchievementStatus();
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showToast('Failed to load trading data', 'error');
+            }
+        }
+
+        // Load user's total trading volume from Supabase
+        async function loadTradingVolume() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    showToast('Please log in to view your rewards', 'error');
+                    return;
+                }
+
+                const { data: trades, error } = await supabase
+                    .from('user_trades')
+                    .select('amount_inr')
+                    .eq('user_id', user.id);
+
+                if (error) {
+                    console.error('Error fetching trades:', error);
+                    return;
+                }
+
+                // Calculate total volume (convert INR to USD - approximate rate)
+                const INR_TO_USD = 0.012; // Approximate conversion rate
+                userTotalVolume = trades.reduce((total, trade) => {
+                    return total + (trade.amount_inr * INR_TO_USD);
+                }, 0);
+
+            } catch (error) {
+                console.error('Error loading trading volume:', error);
+            }
+        }
+
+        // Update UI with current data
+        function updateUI() {
+            // Update total volume display
+            document.getElementById('totalVolume').textContent = `$${userTotalVolume.toLocaleString(undefined, {maximumFractionDigits: 2})}`;
+
+            // Update progress bars and buttons
+            REWARD_TIERS.forEach(tier => {
+                const progress = Math.min((userTotalVolume / tier.threshold) * 100, 100);
+                document.getElementById(`progress${tier.id}`).style.width = `${progress}%`;
+                
+                const button = document.querySelector(`#tier${tier.id} .claim-btn`);
+                if (userTotalVolume >= tier.threshold) {
+                    button.disabled = false;
+                    button.textContent = 'Claim Reward';
+                } else {
+                    button.disabled = true;
+                    button.textContent = `$${(tier.threshold - userTotalVolume).toLocaleString()} more needed`;
+                }
+            });
+
+            // Update achievement box
+            const achievementBox = document.getElementById('achievementBox');
+            if (userTotalVolume >= ACHIEVEMENT_THRESHOLD) {
+                achievementBox.classList.remove('locked');
+                achievementBox.classList.add('unlocked');
+            }
+        }
+
+        // Check which rewards have been claimed
+        function checkClaimedRewards() {
+            REWARD_TIERS.forEach(tier => {
+                const claimed = localStorage.getItem(`reward_claimed_${tier.id}`);
+                if (claimed === 'true') {
+                    const card = document.getElementById(`tier${tier.id}`);
+                    card.classList.add('claimed');
+                    const button = card.querySelector('.claim-btn');
+                    button.disabled = true;
+                    button.textContent = 'Claimed';
+                }
+            });
+        }
+
+        // Check achievement status
+        function checkAchievementStatus() {
+            const achievementOpened = localStorage.getItem('achievement_opened');
+            if (achievementOpened === 'true') {
+                const achievementBox = document.getElementById('achievementBox');
+                achievementBox.style.opacity = '0.6';
+                achievementBox.style.cursor = 'default';
+                achievementBox.onclick = null;
+            }
+        }
+
+        // Claim reward function
+        async function claimReward(tierId, amount, threshold) {
+            if (userTotalVolume < threshold) {
+                showToast('Trading volume requirement not met', 'error');
+                return;
+            }
+
+            const alreadyClaimed = localStorage.getItem(`reward_claimed_${tierId}`);
+            if (alreadyClaimed === 'true') {
+                showToast('Reward already claimed', 'error');
+                return;
+            }
+
+            try {
+                // Here you would typically update the user's wallet balance
+                // For now, we'll just mark as claimed
+                localStorage.setItem(`reward_claimed_${tierId}`, 'true');
+                
+                const card = document.getElementById(`tier${tierId}`);
+                card.classList.add('claimed');
+                
+                const button = card.querySelector('.claim-btn');
+                button.disabled = true;
+                button.textContent = 'Claimed';
+                
+                showToast(`Successfully claimed ${amount} ${REWARD_TIERS.find(t => t.id === tierId).currency}!`, 'success');
+                
+                // Add reward to user's wallet (you'd implement this with your existing wallet system)
+                // await addToWallet(amount, currency);
+                
+            } catch (error) {
+                console.error('Error claiming reward:', error);
+                showToast('Failed to claim reward', 'error');
+            }
+        }
+
+        // Open achievement box
+        function openAchievementBox() {
+            if (userTotalVolume < ACHIEVEMENT_THRESHOLD) {
+                showToast('Complete $1,000,000 in trading to unlock this achievement!', 'error');
+                return;
+            }
+
+            const alreadyOpened = localStorage.getItem('achievement_opened');
+            if (alreadyOpened === 'true') {
+                showToast('Achievement already unlocked', 'error');
+                return;
+            }
+
+            // Mark as opened
+            localStorage.setItem('achievement_opened', 'true');
+            
+            // Show achievement modal
+            document.getElementById('achievementModal').style.display = 'flex';
+            
+            // Update achievement box appearance
+            const achievementBox = document.getElementById('achievementBox');
+            achievementBox.style.opacity = '0.6';
+            achievementBox.style.cursor = 'default';
+            achievementBox.onclick = null;
+            
+            showToast('🎉 Achievement Unlocked: Million Dollar Trader!', 'success');
+        }
+
+        // Close achievement modal
+        function closeAchievement() {
+            document.getElementById('achievementModal').style.display = 'none';
+        }
+
+        // Navigate to dashboard
+        function goToDashboard() {
+            // You can modify this to navigate to your actual dashboard
+            window.location.href = 'dashboard.html'; // or wherever your dashboard is
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 3000);
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', init);
+
+        // Auto-refresh data every 30 seconds
+        setInterval(async () => {
+            await loadTradingVolume();
+            updateUI();
+        }, 30000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>KYC Verification</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      padding: 20px;
+    }
+    .step {
+      display: none;
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .step.active {
+      display: block;
+    }
+    input, select, button {
+      display: block;
+      margin-top: 10px;
+      padding: 10px;
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .back-button {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: #eee;
+      padding: 10px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      color: #333;
+    }
+  </style>
+</head>
+<body><a href="profile.html" class="back-button">← Back to Profile</a>
+
+<div id="step1" class="step active">
+  <h2>Step 1: Enter ID Details</h2>
+  <select id="idType">
+    <option value="">Select ID Type</option>
+    <option value="Aadhar">Aadhar</option>
+    <option value="PAN">PAN</option>
+    <option value="Passport">Passport</option>
+  </select>
+  <input type="text" id="idNumber" placeholder="Enter ID Number" />
+  <button onclick="submitStep1()">Next</button>
+</div><div id="step2" class="step">
+  <h2>Step 2: Upload Document Images</h2>
+  <label>Front Side</label>
+  <input type="file" id="docFront" accept="image/*" />
+  <label>Back Side</label>
+  <input type="file" id="docBack" accept="image/*" />
+  <button onclick="submitStep2()">Upload & Continue</button>
+</div><div id="step3" class="step">
+  <h2>Step 3: Upload Selfie Video (7 seconds)</h2>
+  <input type="file" id="selfieVideo" accept="video/*" />
+  <button onclick="submitStep3()">Submit Video</button>
+</div><div id="step4" class="step">
+  <h2>KYC Verification Submitted</h2>
+  <p>
+    You have completed all the steps of your KYC. Now we will check your KYC step to see if you have done everything correctly and all your documents and other things are correct.
+    <br><br>
+    Then the KYC verification will be successful, otherwise you will have to do the KYC verification again.
+    <br><br>
+    If you are facing any problem, you can choose the help and support option. And can you tell us your issue? Our AvicnKnov team will contact you soon and solve your problem.
+  </p>
+</div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script><script>
+  const supabaseUrl = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+  const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+  const kycData = {
+    id_type: '',
+    id_number: '',
+    front_url: '',
+    back_url: '',
+    video_url: ''
+  };
+
+  function showStep(n) {
+    document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+    document.getElementById(`step${n}`).classList.add('active');
+  }
+
+  async function submitStep1() {
+    const idType = document.getElementById('idType').value;
+    const idNumber = document.getElementById('idNumber').value;
+    if (!idType || !idNumber) {
+      alert('Please enter both ID type and number.');
+      return;
+    }
+    kycData.id_type = idType;
+    kycData.id_number = idNumber;
+    showStep(2);
+  }
+
+  async function uploadFile(file, bucket) {
+    const fileName = `${Date.now()}-${file.name}`;
+    const { data, error } = await supabase.storage.from(bucket).upload(fileName, file);
+    if (error) {
+      console.error('Upload failed:', error.message);
+      return null;
+    }
+    return `${supabaseUrl}/storage/v1/object/public/${bucket}/${fileName}`;
+  }
+
+  async function submitStep2() {
+    const front = document.getElementById('docFront').files[0];
+    const back = document.getElementById('docBack').files[0];
+    if (!front || !back) {
+      alert('Please upload both front and back images.');
+      return;
+    }
+    const frontUrl = await uploadFile(front, 'kyc-documents');
+    const backUrl = await uploadFile(back, 'kyc-documents');
+    if (!frontUrl || !backUrl) {
+      alert('Failed to upload images.');
+      return;
+    }
+    kycData.front_url = frontUrl;
+    kycData.back_url = backUrl;
+    showStep(3);
+  }
+
+  async function submitStep3() {
+    const video = document.getElementById('selfieVideo').files[0];
+    if (!video) {
+      alert('Please upload a selfie video.');
+      return;
+    }
+    const videoUrl = await uploadFile(video, 'kyc-selfie-videos');
+    if (!videoUrl) {
+      alert('Video upload failed.');
+      return;
+    }
+    kycData.video_url = videoUrl;
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      alert('User not logged in.');
+      return;
+    }
+
+    const { error } = await supabase.from('kyc_verifications').insert({
+      user_id: user.id,
+      id_type: kycData.id_type,
+      id_number: kycData.id_number,
+      front_url: kycData.front_url,
+      back_url: kycData.back_url,
+      video_url: kycData.video_url,
+      status: 'pending'
+    });
+
+    if (error) {
+      console.error('Save error:', error.message);
+      alert('Database save failed.');
+      return;
+    }
+
+    showStep(4);
+  }
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('kyc_verifications')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error || !data) return;
+
+    const status = data.status;
+    const createdAt = new Date(data.created_at);
+    const now = new Date();
+    const minutesPassed = (now - createdAt) / (1000 * 60);
+
+    if (status === 'approved') {
+      if (minutesPassed >= 10) {
+        document.body.innerHTML = `
+          <a href="profile.html" class="back-button">← Back to Profile</a>
+          <div class="step active">
+            <h2>KYC Status: ✅ Completed</h2>
+            <p>Your KYC has been successfully completed but in future you may have to do KYC again, currently your KYC verification is successful ✓</p>
+          </div>
+        `;
+      } else {
+        document.body.innerHTML = `
+          <a href="profile.html" class="back-button">← Back to Profile</a>
+          <div class="step active">
+            <h2>KYC Status: ⏳ Approved, Waiting</h2>
+            <p>Your KYC has been approved. It will be marked complete after 10 minutes. Please wait a little longer.</p>
+          </div>
+        `;
+      }
+    } else if (status === 'pending') {
+      document.body.innerHTML = `
+        <a href="profile.html" class="back-button">← Back to Profile</a>
+        <div class="step active">
+          <h2>KYC Status: ⏳ Pending Verification</h2>
+          <p>Your KYC is under review. Please wait 10 minutes. If everything is correct, your KYC will be automatically verified.</p>
+        </div>
+      `;
+    } else if (status === 'rejected') {
+      alert('Your KYC was rejected. Please redo the verification.');
+      showStep(1); // Start again from Step 1
+    }
+  });
+</script></body>
+</html>

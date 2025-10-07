@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Withdraw Crypto</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+    .back-button {
+      margin-bottom: 15px;
+      font-size: 18px;
+      color: #4f46e5;
+      cursor: pointer;
+    }
+    .container {
+      background-color: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+      margin: auto;
+    }
+    select, input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    button {
+      margin-top: 15px;
+      width: 100%;
+      padding: 12px;
+      background-color: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .notification {
+      margin-top: 15px;
+      text-align: center;
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="back-button" onclick="window.location.href='withdrawal.html'">⬅ Back</div>
+  <div class="container">
+    <h2>Withdraw Crypto</h2>
+
+    <select id="tokenSelect"></select>
+    <select id="blockchainSelect"></select>
+
+    <input type="text" id="addressInput" placeholder="Withdrawal Address" />
+    <input type="text" id="memoInput" placeholder="Memo/Tag (optional)" style="display:none;" />
+    <input type="number" id="amountInput" placeholder="Enter Amount" />
+
+    <button onclick="submitCryptoWithdrawal()">Withdraw</button>
+    <div class="notification" id="notification"></div>
+  </div>
+
+  <!-- ✅ Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script>
+    const supabase = window.supabase.createClient(
+      'https://hwrvqyipozrsxyjdpqag.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM'
+    );
+
+    let allTokens = [];
+
+    async function loadTokens() {
+      const { data, error } = await supabase
+        .from('token_info_withdrawal')
+        .select('*');
+
+      const note = document.getElementById("notification");
+
+      if (error || !data || data.length === 0) {
+        note.textContent = "❌ Failed to load tokens";
+        console.log(error);
+        return;
+      }
+
+      allTokens = data;
+      updateTokenSelect();
+    }
+
+    function updateTokenSelect() {
+      const tokenSelect = document.getElementById("tokenSelect");
+      const uniqueTokens = [...new Set(allTokens.map(t => t.token_name))];
+      tokenSelect.innerHTML = uniqueTokens.map(t => `<option value="${t}">${t}</option>`).join('');
+      updateBlockchainSelect();
+    }
+
+    function updateBlockchainSelect() {
+      const selectedToken = document.getElementById("tokenSelect").value;
+      const blockchainSelect = document.getElementById("blockchainSelect");
+      const blockchains = allTokens.filter(t => t.token_name === selectedToken);
+      blockchainSelect.innerHTML = blockchains.map(b => `<option value="${b.blockchain}">${b.blockchain}</option>`).join('');
+      checkMemoDisplay();
+    }
+
+    function checkMemoDisplay() {
+      const token = document.getElementById("tokenSelect").value;
+      const blockchain = document.getElementById("blockchainSelect").value;
+      const selected = allTokens.find(t => t.token_name === token && t.blockchain === blockchain);
+      document.getElementById("memoInput").style.display = selected?.has_memo ? "block" : "none";
+    }
+
+    function generateOrderID() {
+      return Math.floor(10000000 + Math.random() * 90000000).toString();
+    }
+
+    async function submitCryptoWithdrawal() {
+      const token = document.getElementById("tokenSelect").value;
+      const blockchain = document.getElementById("blockchainSelect").value;
+      const address = document.getElementById("addressInput").value.trim();
+      const memo = document.getElementById("memoInput").value.trim();
+      const amount = parseFloat(document.getElementById("amountInput").value);
+      const note = document.getElementById("notification");
+
+      const selected = allTokens.find(t => t.token_name === token && t.blockchain === blockchain);
+
+      if (!selected) return note.textContent = "❌ Invalid token or blockchain";
+      if (!address || address.length < 10) return note.textContent = "❌ Enter valid address";
+      if (!amount || amount < 5 || amount > 27) {
+        return note.textContent = "❌ Minimum withdrawal allowed: 5 to 27 USDT";
+      }
+
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) return note.textContent = "❌ Not logged in";
+
+      const orderId = generateOrderID();
+
+      const { data: inserted, error: insertError } = await supabase.from("withdrawals").insert([{
+        uid: user.id,
+        token_name: token,
+        blockchain: blockchain,
+        to_address: address,
+        memo_tag: memo || null,
+        amount: amount,
+        status: 'pending',
+        type: 'withdrawal',
+        method: 'crypto',
+        order_id: orderId,
+        reference: token  // ✅ Balance section में ₹ की जगह token name दिखाने के लिए
+      }]).select();
+
+      if (insertError) {
+        console.error(insertError);
+        return note.textContent = "❌ Withdrawal failed";
+      }
+
+      note.style.color = "green";
+      note.textContent = "✅ Withdrawal request submitted";
+
+      localStorage.setItem("last_withdrawal", JSON.stringify(inserted[0]));
+
+      setTimeout(() => {
+        window.location.href = "transactions.html";
+      }, 2000);
+    }
+
+    document.getElementById("tokenSelect").addEventListener("change", updateBlockchainSelect);
+    document.getElementById("blockchainSelect").addEventListener("change", checkMemoDisplay);
+
+    loadTokens();
+  </script>
+</body>
+</html>

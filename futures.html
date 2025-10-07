@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>  
+  <meta charset="UTF-8" />  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>  
+  <title>Futures – AvicnKnov Ex</title>  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />  
+  <style>  
+    body {  
+      margin: 0;  
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;  
+      background-color: #fff;  
+    }  
+
+    .futures-tabs {  
+      display: flex;  
+      justify-content: space-around;  
+      margin: 15px 5px;  
+      border-bottom: 1px solid #ddd;  
+    }  
+
+    .futures-tabs div {  
+      flex: 1;  
+      text-align: center;  
+      padding: 12px 0;  
+      font-size: 15px;  
+      font-weight: 500;  
+      color: #444;  
+      border-bottom: 2px solid transparent;  
+      cursor: pointer;  
+      transition: all 0.3s;  
+    }  
+
+    .futures-tabs .active {  
+      color: #007bff;  
+      border-bottom: 2px solid #007bff;  
+      font-weight: bold;  
+    }  
+
+    .section {  
+      display: none;  
+      padding: 20px;  
+      text-align: center;  
+      color: #555;  
+    }  
+
+    .section.active {  
+      display: block;  
+    }
+  </style>  
+</head>  
+<body>  
+
+  <div class="futures-tabs">  
+    <div class="tab-btn active" onclick="showFutures('usdc')">USD-C</div>  
+    <div class="tab-btn" onclick="showFutures('usdm')">USD-M</div>  
+    <div class="tab-btn" onclick="showFutures('nexus')">NEXUS</div>  
+    <div class="tab-btn" onclick="showFutures('primex')">PRIME&X</div>
+  </div>  
+
+  <div class="section active" id="usdc"></div>  
+  <div class="section" id="usdm"></div>  
+  <div class="section" id="nexus"></div>  
+  <div class="section" id="primex"></div>
+
+  <script>  
+    function showFutures(tabId) {  
+      const tabs = document.querySelectorAll(".tab-btn");  
+      tabs.forEach(t => t.classList.remove("active"));  
+
+      const sections = document.querySelectorAll(".section");  
+      sections.forEach(s => s.classList.remove("active"));  
+
+      document.querySelector(`[onclick="showFutures('${tabId}')"]`).classList.add("active");  
+      document.getElementById(tabId).classList.add("active");  
+    }  
+  </script>  
+
+  <script src="futures-usdc.js"></script>
+  <script src="futures-usdm.js"></script>
+  <script src="futures-nexus.js"></script>
+  <script src="futures-primex.js"></script>
+
+</body>  
+</html>

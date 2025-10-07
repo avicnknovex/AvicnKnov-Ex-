@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>More Options</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .back-btn:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-top: 80px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            color: white;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.8);
+            font-size: 1.1rem;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 50px;
+        }
+
+        .option-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 30px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            background: white;
+        }
+
+        .option-card:active {
+            transform: translateY(-4px) scale(0.98);
+        }
+
+        .card-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+        }
+
+        .option-card:hover .card-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .card-icon i {
+            font-size: 24px;
+            color: white;
+        }
+
+        .card-content {
+            flex: 1;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .card-desc {
+            color: #718096;
+            font-size: 0.95rem;
+        }
+
+        .card-arrow {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            opacity: 0.6;
+        }
+
+        .option-card:hover .card-arrow {
+            transform: translateX(5px);
+            opacity: 1;
+            color: #667eea;
+        }
+
+        .future-note {
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            font-style: italic;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .option-card {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .option-card:nth-child(1) { animation-delay: 0.1s; }
+        .option-card:nth-child(2) { animation-delay: 0.2s; }
+        .option-card:nth-child(3) { animation-delay: 0.3s; }
+        .option-card:nth-child(4) { animation-delay: 0.4s; }
+        .option-card:nth-child(5) { animation-delay: 0.5s; }
+        .option-card:nth-child(6) { animation-delay: 0.6s; }
+
+        @media (max-width: 768px) {
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .title {
+                font-size: 2rem;
+            }
+            
+            .option-card {
+                padding: 25px;
+                gap: 15px;
+            }
+            
+            .card-icon {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .card-icon i {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="back-btn" onclick="goBack()">
+        <i class="fas fa-arrow-left"></i>
+        <span>Dashboard</span>
+    </button>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="title">More Options</h1>
+            <p class="subtitle">Explore additional features and tools</p>
+        </div>
+
+        <div class="options-grid">
+            <div class="option-card" onclick="navigateTo('earn-nx.html')">
+                <div class="card-icon">
+                    <i class="fas fa-coins"></i>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">EARN NX</h3>
+                    <p class="card-desc">Start earning NX points today</p>
+                </div>
+                <div class="card-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+
+            <div class="option-card" onclick="navigateTo('reward-box.html')">
+                <div class="card-icon">
+                    <i class="fas fa-gift"></i>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">REWARD BOX</h3>
+                    <p class="card-desc">Claim your daily rewards</p>
+                </div>
+                <div class="card-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+
+            <div class="option-card" onclick="navigateTo('nft-kvon.html')">
+                <div class="card-icon">
+                    <i class="fas fa-palette"></i>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">NFT KVON</h3>
+                    <p class="card-desc">Explore NFT collections</p>
+                </div>
+                <div class="card-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+
+            <div class="option-card" onclick="navigateTo('news.html')">
+                <div class="card-icon">
+                    <i class="fas fa-newspaper"></i>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">NEWS</h3>
+                    <p class="card-desc">Latest updates and announcements</p>
+                </div>
+                <div class="card-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+
+            <div class="option-card" onclick="navigateTo('pre-launch.html')">
+                <div class="card-icon">
+                    <i class="fas fa-rocket"></i>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">PRE LAUNCH</h3>
+                    <p class="card-desc">Get ready for upcoming features</p>
+                </div>
+                <div class="card-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+
+            <div class="option-card" onclick="navigateTo('mt-future.html')">
+                <div class="card-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">M&T FUTURE</h3>
+                    <p class="card-desc">Monitor trading futures</p>
+                </div>
+                <div class="card-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="future-note">
+            <p>More features coming soon...</p>
+        </div>
+    </div>
+
+    <script>
+        function navigateTo(page) {
+            const card = event.currentTarget;
+            
+            // Add click animation
+            card.style.transform = 'translateY(-4px) scale(0.95)';
+            
+            // Add ripple effect
+            const ripple = document.createElement('div');
+            const rect = card.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = event.clientX - rect.left - size / 2;
+            const y = event.clientY - rect.top - size / 2;
+            
+            ripple.style.cssText = `
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(102, 126, 234, 0.3);
+                transform: scale(0);
+                animation: ripple 0.6s linear;
+                left: ${x}px;
+                top: ${y}px;
+                width: ${size}px;
+                height: ${size}px;
+                pointer-events: none;
+                z-index: 1;
+            `;
+            
+            card.style.position = 'relative';
+            card.appendChild(ripple);
+            
+            // Navigate after animation
+            setTimeout(() => {
+                document.body.style.opacity = '0';
+                document.body.style.transform = 'scale(0.95)';
+                document.body.style.transition = 'all 0.3s ease';
+                
+                setTimeout(() => {
+                    window.location.href = page;
+                }, 300);
+            }, 400);
+            
+            // Remove ripple
+            setTimeout(() => {
+                if (ripple.parentNode) {
+                    ripple.parentNode.removeChild(ripple);
+                }
+            }, 600);
+        }
+
+        function goBack() {
+            const btn = event.currentTarget;
+            btn.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+                btn.style.transform = '';
+                document.body.style.opacity = '0';
+                document.body.style.transform = 'scale(0.95)';
+                document.body.style.transition = 'all 0.3s ease';
+                
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 300);
+            }, 100);
+        }
+
+        // Add ripple animation CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Page entrance animation
+        document.body.style.opacity = '0';
+        document.body.style.transform = 'scale(0.95)';
+        document.body.style.transition = 'all 0.3s ease';
+
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.body.style.opacity = '1';
+                document.body.style.transform = 'scale(1)';
+            }, 100);
+        });
+    </script>
+</body>
+</html>

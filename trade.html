@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>  
+  <meta charset="UTF-8" />  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>  
+  <title>Trade – AvicnKnov Ex</title>  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />  
+  <style>  
+    body {  
+      margin: 0;  
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;  
+      background-color: #fff;  
+    }  
+
+    .trade-tabs {  
+      display: flex;  
+      justify-content: space-around;  
+      margin: 15px 5px;  
+      border-bottom: 1px solid #ddd;  
+    }  
+
+    .trade-tabs div {  
+      flex: 1;  
+      text-align: center;  
+      padding: 12px 0;  
+      font-size: 15px;  
+      font-weight: 500;  
+      color: #444;  
+      border-bottom: 2px solid transparent;  
+      cursor: pointer;  
+      transition: all 0.3s;  
+    }  
+
+    .trade-tabs .active {  
+      color: #007bff;  
+      border-bottom: 2px solid #007bff;  
+      font-weight: bold;  
+    }  
+
+    .section {  
+      display: none;  
+      padding: 20px;  
+      text-align: center;  
+      color: #555;  
+    }  
+
+    .section.active {  
+      display: block;  
+    }
+  </style>  
+</head>  
+<body>    
+
+  <!-- ✅ Top Trade Tabs -->    
+  <div class="trade-tabs">  
+    <div class="tab-btn active" onclick="showTrade('convert')">Convert</div>  
+    <div class="tab-btn" onclick="showTrade('spot')">Spot</div>  
+    <div class="tab-btn" onclick="showTrade('margin')">Margin</div>  
+    <div class="tab-btn" onclick="showTrade('buysell')">Buy/Sell</div>  
+    <div class="tab-btn" onclick="showTrade('p2p')">P2P</div>  
+  </div>    
+
+  <!-- ✅ Section Content Area -->    
+  <div class="section active" id="convert"></div>  
+  <div class="section" id="spot"></div>  
+  <div class="section" id="margin"></div>  
+  <div class="section" id="buysell"></div>  
+  <div class="section" id="p2p"></div>    
+
+  <!-- ✅ JavaScript to switch tabs -->    
+  <script>  
+    function showTrade(tabId) {  
+      const tabs = document.querySelectorAll(".tab-btn");  
+      tabs.forEach(t => t.classList.remove("active"));  
+
+      const sections = document.querySelectorAll(".section");  
+      sections.forEach(s => s.classList.remove("active"));  
+
+      document.querySelector(`[onclick="showTrade('${tabId}')"]`).classList.add("active");  
+      document.getElementById(tabId).classList.add("active");  
+    }  
+  </script>
+
+  <!-- ✅ External JS Files (Now Connected) -->
+  <script src="trade-convert.js"></script>
+  <script src="trade-spot.js"></script>
+  <script src="trade-margin.js"></script>
+  <script src="trade-buysell.js"></script>
+  <script src="trade-p2p.js"></script>
+
+</body>  
+</html>
