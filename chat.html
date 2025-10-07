@@ -3,429 +3,496 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AvicnKnov Support Chat</title>
+    <title>AvicnKnov Agent 2.0 - Live Chat</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f3f4f6;
+        /* Custom Styles */
+        #chat-messages::-webkit-scrollbar { width: 8px; }
+        #chat-messages::-webkit-scrollbar-track { background: #f1f1f1; }
+        #chat-messages::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        #chat-messages::-webkit-scrollbar-thumb:hover { background: #555; }
+        .agent-bubble {
+            background-color: #eef2ff; /* indigo-50 */
+            border-bottom-left-radius: 0.5rem;
         }
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-        .chat-header {
-            background-color: #4f46e5;
+        .user-bubble {
+            background-color: #3b82f6; /* blue-500 */
             color: white;
-            padding: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-bottom-right-radius: 0.5rem;
         }
-        .chat-messages {
-            flex-grow: 1;
-            padding: 1.5rem;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            background-color: #f9fafb;
-        }
-        .message {
-            max-width: 80%;
-            padding: 0.75rem 1rem;
-            border-radius: 1rem;
-            word-wrap: break-word;
-        }
-        .message.you {
-            align-self: flex-end;
-            background-color: #4f46e5;
-            color: white;
-            border-bottom-right-radius: 0.25rem;
-        }
-        .message.ai {
-            align-self: flex-start;
-            background-color: #ffffff;
-            color: #1f2937;
-            border: 1px solid #e5e7eb;
-            border-bottom-left-radius: 0.25rem;
-        }
-        .message-sender {
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-            opacity: 0.7;
-        }
-        .ai .message-sender {
-            color: #4f46e5;
-        }
-        .you .message-sender {
-            color: #d1d5db;
-        }
-        .chat-input-area {
-            background-color: #ffffff;
-            padding: 1rem;
-            border-top: 1px solid #e5e7eb;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .language-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-        .lang-btn {
-            padding: 0.5rem 1rem;
-            border-radius: 9999px;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-        .lang-btn.active {
-            background-color: #4f46e5;
-            color: white;
-            transform: scale(1.05);
-        }
-        .lang-btn:not(.active) {
-            background-color: #e5e7eb;
-            color: #4b5563;
-        }
-        .loading-dots span {
-            animation: bounce 0.6s infinite alternate;
-        }
-        .loading-dots span:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-        .loading-dots span:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-        @keyframes bounce {
-            from { transform: translateY(0); }
-            to { transform: translateY(-5px); }
-        }
-        .problem-btn {
-            background-color: #4f46e5;
-            color: white;
-            font-weight: 600;
-            padding: 0.5rem 1rem;
-            border-radius: 9999px;
-            transition: background-color 0.2s;
-        }
-        .problem-btn:hover {
-            background-color: #6d28d9;
+        .status-gradient {
+            background: linear-gradient(90deg, #4f46e5, #3b82f6);
         }
     </style>
 </head>
-<body>
-    <div class="chat-container">
-        <div class="chat-header">
-            <button onclick="goBack()" class="flex items-center gap-2 text-white hover:text-gray-200 transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+
+    <div class="w-full max-w-4xl h-[90vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
+        
+        <div class="p-4 border-b border-gray-200 flex justify-between items-center status-gradient text-white">
+            <button onclick="goBackToHelp()" class="flex items-center gap-2 px-3 py-1.5 hover:bg-white/10 rounded-lg transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                 </svg>
-                <span class="font-semibold text-lg hidden sm:block">Back</span>
+                <span class="font-medium">Back</span>
             </button>
-            <h1 class="text-xl font-bold">AvicnKnov Agent 2.0</h1>
-            <div class="w-6"></div>
-        </div>
-
-        <div id="chatMessages" class="chat-messages">
-            </div>
-
-        <div class="bg-white p-4">
-            <div id="languageSelection" class="language-buttons mb-4">
-                <button onclick="setLanguage('en')" id="lang-en" class="lang-btn active">English</button>
-                <button onclick="setLanguage('hi')" id="lang-hi" class="lang-btn">Hindi</button>
+            
+            <div class="text-center">
+                <h1 class="text-lg font-bold">AvicnKnov Agent 2.0</h1>
+                <p id="timerDisplay" class="text-sm font-semibold opacity-90">5:00</p>
             </div>
             
-            <div class="chat-input-area">
-                <label for="image-upload" class="cursor-pointer">
-                    <svg class="w-7 h-7 text-gray-400 hover:text-blue-500 transition-colors" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M4 3a2 2 0 00-2 2v14a2 2 0 002 2h16a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 11.5l-3-3-4 4V17h10l-4-4zm-4-6a2 2 0 100-4 2 2 0 000 4z"/>
+            <div class="relative">
+                <select id="languageSelector" onchange="setLanguage(this.value)" class="bg-white text-blue-600 text-sm font-semibold py-1.5 px-3 rounded-lg appearance-none cursor-pointer focus:ring-2 focus:ring-blue-300">
+                    <option value="en">English</option>
+                    <option value="hi">Hindi</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-blue-600">
+                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                </div>
+            </div>
+        </div>
+        
+        <div id="chat-messages" class="flex-grow p-6 space-y-4 overflow-y-auto">
+            </div>
+
+        <div class="p-4 border-t border-gray-200 bg-gray-50">
+            <form id="chatForm" onsubmit="sendMessage(event)" class="flex items-center gap-3">
+                
+                <label for="imageUpload" class="cursor-pointer text-gray-500 hover:text-blue-600 transition-colors">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                     </svg>
-                    <input type="file" id="image-upload" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                    <input type="file" id="imageUpload" name="image" accept="image/*" class="hidden" onchange="handleImageSelect(this.files[0])">
                 </label>
-                <input type="text" id="chatInput" placeholder="Type your message..." class="flex-grow px-4 py-3 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
-                <button onclick="sendMessage()" class="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition-colors">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+
+                <input type="text" id="messageInput" placeholder="Type your message..." required autocomplete="off" 
+                       class="flex-grow px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800">
+                
+                <button type="submit" id="sendButton" class="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition-colors shrink-0">
+                    <svg class="w-5 h-5 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                     </svg>
+                </button>
+            </form>
+
+            <div id="imagePreview" class="mt-2 hidden flex items-center gap-3 p-2 bg-white border border-blue-200 rounded-lg">
+                <p class="text-sm text-gray-600 font-medium">Image Selected: <span id="imageFileName" class="text-blue-600"></span></p>
+                <button onclick="clearImageSelect()" class="text-red-500 hover:text-red-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
         </div>
+
+        <div id="suggestedAction" class="p-4 border-t border-gray-200 bg-yellow-50 hidden">
+            <p id="suggestionText" class="text-sm text-yellow-800 font-medium mb-2"></p>
+            <button onclick="goToHelpSection()" class="w-full bg-yellow-600 text-white py-2 px-4 rounded-lg hover:bg-yellow-700 transition-colors font-semibold">
+                Go to Help Section
+            </button>
+        </div>
+
     </div>
 
     <script>
-        // Supabase configuration
-        const supabaseUrl = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        // --- Configuration (Supabase Keys) ---
+        const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+        const AI_AGENT_NAME = 'AvicnKnov Agent 2.0';
+        const CHAT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+        const MAX_WARNINGS = 2;
 
-        const chatMessages = document.getElementById('chatMessages');
-        const chatInput = document.getElementById('chatInput');
-        const languageSelection = document.getElementById('languageSelection');
-
-        let userName = '';
-        let userLang = 'en';
-        let badLanguageCount = 0;
+        // Supabase Client Initialization
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        let currentUser = localStorage.getItem('currentUser') || 'default_user';
         let chatStartTime = Date.now();
-        const chatDurationLimit = 5 * 60 * 1000; // 5 minutes in milliseconds
-        const badLanguageLimit = 3;
+        let timerInterval;
+        let warnings = 0;
+        let chatState = 'greeting'; // greeting, name_pending, active, warning, problem_detected
+        let selectedLanguage = localStorage.getItem('chatLanguage') || 'en';
+        let imageToSend = null;
 
-        // Function to create and add a message to the chat
-        function addMessage(text, sender, isImage = false) {
-            const messageDiv = document.createElement('div');
-            messageDiv.classList.add('message', sender);
+        // --- Helper Data: Problem Keywords & Categories (from help.html structure) ---
+        const problemMap = {
+            'account': 'account_security',
+            'security': 'account_security',
+            'password': 'account_security',
+            'login': 'account_security',
+            'deposit': 'deposit',
+            'upi': 'deposit',
+            'p2p deposit': 'deposit',
+            'crypto deposit': 'deposit',
+            'withdrawal': 'withdrawal',
+            'p2p withdrawal': 'withdrawal',
+            'crypto withdrawal': 'withdrawal',
+            'scam': 'p2p',
+            'order': 'p2p',
+            'p2p': 'p2p',
+            'trading': 'trading',
+            'trade': 'trading',
+            'exchange': 'trading',
+            'kyc': 'kyc',
+            'verification': 'kyc',
+        };
 
-            const senderSpan = document.createElement('span');
-            senderSpan.classList.add('message-sender');
-            senderSpan.textContent = sender === 'ai' ? 'AvicnKnov Agent 2.0' : 'You';
-            messageDiv.appendChild(senderSpan);
+        const categoryDetails = {
+            'account_security': { en: "Account/Security issues. You need to fill Name, Username, UID, and Description.", hi: "खाता/सुरक्षा समस्याएँ। आपको नाम, यूज़रनेम, UID, और विवरण भरना होगा।" },
+            'deposit': { en: "Deposit issues. You need to fill Name, Username, UID, and Description.", hi: "जमा (Deposit) समस्याएँ। आपको नाम, यूज़रनेम, UID, और विवरण भरना होगा।" },
+            'withdrawal': { en: "Withdrawal issues. You need to fill Name, Username, UID, and Description.", hi: "निकासी (Withdrawal) समस्याएँ। आपको नाम, यूज़रनेम, UID, और विवरण भरना होगा।" },
+            'p2p': { en: "P2P trading issues. You need to fill Name, Username, UID, P2P Order ID, and Description.", hi: "पी2पी ट्रेडिंग समस्याएँ। आपको नाम, यूज़रनेम, UID, P2P ऑर्डर ID, और विवरण भरना होगा।" },
+            'trading': { en: "Trading issues. You need to fill Name, Username, UID, Section, and Description.", hi: "ट्रेडिंग समस्याएँ। आपको नाम, यूज़रनेम, UID, सेक्शन, और विवरण भरना होगा।" },
+            'kyc': { en: "KYC issues. You need to fill Name, Username, UID, and Description.", hi: "KYC समस्याएँ। आपको नाम, यूज़रनेम, UID, और विवरण भरना होगा।" },
+            'other': { en: "Other issues. You need to fill Name, Username, UID, and Description.", hi: "अन्य समस्याएँ। आपको नाम, यूज़रनेम, UID, और विवरण भरना होगा।" },
+        };
 
-            if (isImage) {
-                const img = document.createElement('img');
-                img.src = text;
-                img.classList.add('w-full', 'max-h-60', 'object-contain', 'rounded-lg', 'mt-1');
-                messageDiv.appendChild(img);
-            } else {
-                const textNode = document.createElement('p');
-                textNode.innerHTML = text;
-                messageDiv.appendChild(textNode);
+        // --- Language Mapping ---
+        const phrases = {
+            en: {
+                greeting: "Hello there! I'm AvicnKnov Agent 2.0. How can I assist you with your problem today?",
+                active_prompt: "Please explain your issue clearly. I'm here to help you find the correct report section.",
+                warning_1: "⚠️ Warning 1: Please stick to your problem. This is a support channel. If you continue with non-support topics, I will have to end the chat.",
+                warning_2: "⚠️ Warning 2: This is your final warning. Please clearly state your support issue or I will close the chat and redirect you.",
+                closing: "The chat is now ending due to non-support communication. You can come back and try again. Redirecting you to the Help Section...",
+                problem_detected_prefix: "I have detected that your issue is related to **",
+                problem_detected_suffix: "**.\n\nBased on your problem, I recommend submitting a report in the **",
+                problem_detected_suffix_end: "** section.",
+                problem_details: "You should fill in details like: ",
+                other_issue: "It seems your issue is complex or doesn't fit a specific category. Please select **OTHER** in the Help Section and provide a detailed description.",
+                other_issue_btn: "Go to Other Section",
+                timer_end: "Your 5 minutes of chat time are over. Redirecting you to the Help Section...",
+                image_upload: "🖼️ User sent an image: ",
+                name_prompt: "What is your name?",
+            },
+            hi: {
+                greeting: "नमस्ते! मैं AvicnKnov Agent 2.0 हूँ। मैं आज आपकी समस्या में कैसे सहायता कर सकता हूँ?",
+                active_prompt: "कृपया अपनी समस्या स्पष्ट रूप से बताएं। मैं आपको सही रिपोर्ट सेक्शन खोजने में मदद करने के लिए यहाँ हूँ।",
+                warning_1: "⚠️ चेतावनी 1: कृपया अपनी समस्या पर ही ध्यान दें। यह एक सहायता चैनल है। यदि आप गैर-सहायता विषयों पर बात करते हैं, तो मुझे चैट समाप्त करनी पड़ेगी।",
+                warning_2: "⚠️ चेतावनी 2: यह आपकी अंतिम चेतावनी है। कृपया अपनी सहायता समस्या स्पष्ट रूप से बताएं, अन्यथा मैं चैट बंद करके आपको रीडायरेक्ट कर दूँगा।",
+                closing: "गैर-सहायता संचार के कारण चैट अब समाप्त हो रही है। आप वापस आकर फिर से प्रयास कर सकते हैं। आपको सहायता अनुभाग (Help Section) पर रीडायरेक्ट किया जा रहा है...",
+                problem_detected_prefix: "मैंने पता लगाया है कि आपकी समस्या **",
+                problem_detected_suffix: "** से संबंधित है।\n\nआपकी समस्या के आधार पर, मैं आपको **",
+                problem_detected_suffix_end: "** सेक्शन में रिपोर्ट जमा करने की सलाह देता हूँ।",
+                problem_details: "आपको इन डिटेल्स को भरना होगा: ",
+                other_issue: "ऐसा लगता है कि आपकी समस्या जटिल है या किसी विशिष्ट श्रेणी में फिट नहीं होती है। कृपया सहायता अनुभाग में **अन्य (OTHER)** विकल्प चुनें और विस्तृत विवरण प्रदान करें।",
+                other_issue_btn: "अन्य सेक्शन पर जाएँ",
+                timer_end: "आपकी 5 मिनट की चैट समय सीमा पूरी हो गई है। आपको सहायता अनुभाग (Help Section) पर रीडायरेक्ट किया जा रहा है...",
+                image_upload: "🖼️ यूज़र ने एक इमेज भेजी है: ",
+                name_prompt: "आपका नाम क्या है?",
             }
+        };
 
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
+        // --- Core Functions ---
 
-        // Function to add a loading indicator
-        function addLoadingIndicator() {
-            const loadingDiv = document.createElement('div');
-            loadingDiv.classList.add('message', 'ai', 'loading');
-            loadingDiv.innerHTML = '<span class="message-sender">AvicnKnov Agent 2.0</span><div class="loading-dots flex gap-1 mt-1"><span>•</span><span>•</span><span>•</span></div>';
-            chatMessages.appendChild(loadingDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        // Function to remove the loading indicator
-        function removeLoadingIndicator() {
-            const loadingDiv = chatMessages.querySelector('.loading');
-            if (loadingDiv) {
-                loadingDiv.remove();
-            }
-        }
-
-        // Handle language selection
         function setLanguage(lang) {
-            userLang = lang;
-            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`lang-${lang}`).classList.add('active');
+            selectedLanguage = lang;
+            localStorage.setItem('chatLanguage', lang);
+            document.getElementById('languageSelector').value = lang;
             
-            // Re-prompt based on the new language
-            if (lang === 'hi') {
-                addMessage("नमस्ते, आपका नाम क्या है? मैं आपकी क्या मदद कर सकता हूँ?", 'ai');
-            } else {
-                addMessage("Hello, what's your name? How can I help you?", 'ai');
+            // Re-display appropriate prompt based on current state
+            if (chatState === 'name_pending') {
+                 displayMessage('agent', phrases[lang].name_prompt);
+            } else if (chatState === 'active' || chatState === 'problem_detected') {
+                 displayMessage('agent', phrases[lang].active_prompt);
+            } else if (chatState === 'greeting') {
+                 displayMessage('agent', phrases[lang].greeting);
             }
         }
 
-        // Check for bad language
-        function isBadLanguage(text) {
-            const badWords = ["badword1", "badword2", "badword3"]; // Replace with an actual list of bad words
-            const lowerCaseText = text.toLowerCase();
-            return badWords.some(word => lowerCaseText.includes(word));
+        function displayMessage(sender, content, imageUrl = null) {
+            const messagesDiv = document.getElementById('chat-messages');
+            const isAgent = sender === 'agent';
+            const senderName = isAgent ? AI_AGENT_NAME : 'You';
+            const bubbleClass = isAgent ? 'agent-bubble' : 'user-bubble';
+            const alignment = isAgent ? 'justify-start' : 'justify-end';
+            const contentClass = isAgent ? 'text-gray-900' : 'text-white';
+            const nameClass = isAgent ? 'text-indigo-600' : 'text-blue-600';
+
+            const messageHtml = `
+                <div class="flex ${alignment}">
+                    <div class="flex flex-col max-w-lg">
+                        <p class="text-xs ${nameClass} mb-0.5 font-semibold">${senderName}</p>
+                        <div class="inline-block px-4 py-3 rounded-xl ${bubbleClass} shadow-md rounded-${isAgent ? 'tr' : 'tl'}-xl">
+                            <p class="text-sm ${contentClass} whitespace-pre-wrap">${content}</p>
+                            ${imageUrl ? `<img src="${imageUrl}" alt="Uploaded Image" class="mt-2 rounded-lg max-w-full h-auto cursor-pointer" onclick="window.open('${imageUrl}', '_blank')">` : ''}
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">${new Date().toLocaleTimeString()}</p>
+                    </div>
+                </div>
+            `;
+            messagesDiv.insertAdjacentHTML('beforeend', messageHtml);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
-        // Get AI response
-        async function getAIResponse(userMessage) {
-            const currentTime = Date.now();
-            if (currentTime - chatStartTime > chatDurationLimit) {
-                if (userLang === 'hi') {
-                    return "क्षमा करें, आपकी चैट का समय समाप्त हो गया है। कृपया एक नई चैट शुरू करें।";
-                } else {
-                    return "Sorry, your chat duration has expired. Please start a new chat.";
-                }
-            }
-
-            if (isBadLanguage(userMessage)) {
-                badLanguageCount++;
-                if (badLanguageCount >= badLanguageLimit) {
-                    setTimeout(() => {
-                        window.close(); // Close the chat window after a brief delay
-                    }, 3000);
-                    if (userLang === 'hi') {
-                        return "आपकी भाषा अनुचित है। यह चैट बंद हो रही है।";
-                    } else {
-                        return "Your language is inappropriate. This chat is closing.";
-                    }
-                }
-                if (userLang === 'hi') {
-                    return "कृपया अपनी भाषा को सुधारें।";
-                } else {
-                    return "Please improve your language.";
-                }
-            }
-
-            if (!userName) {
-                userName = userMessage.trim();
-                if (userLang === 'hi') {
-                    return `नमस्ते ${userName}! मैं आपकी क्या मदद कर सकता हूँ?`;
-                } else {
-                    return `Hello, ${userName}! How can I help you?`;
-                }
-            }
+        async function processUserInput(userMessage) {
+            userMessage = userMessage.toLowerCase().trim();
             
-            // Check if the message is related to help
-            const helpKeywords = ['help', 'problem', 'issue', 'not working', 'error', 'सहायता', 'समस्या', 'दिक्कत'];
-            const isHelpRelated = helpKeywords.some(keyword => userMessage.toLowerCase().includes(keyword));
-
-            if (!isHelpRelated) {
-                if (userLang === 'hi') {
-                    return "मेरे पास इस विषय पर ज्ञान नहीं है। कृपया सहायता से संबंधित कुछ और पूछें।";
-                } else {
-                    return "I don't have knowledge about this topic. Please ask something related to help.";
-                }
+            // Check for simple greetings
+            if (chatState === 'greeting' && (userMessage.includes('hi') || userMessage.includes('hello') || userMessage.includes('hey') || userMessage.includes('namaste'))) {
+                 displayMessage('agent', phrases[selectedLanguage].name_prompt);
+                 chatState = 'name_pending';
+                 return;
             }
 
-            // Simple problem detection logic based on keywords
-            let detectedProblem = 'other';
-            let problemText = userMessage.toLowerCase();
-            
-            const problemMap = {
-                'p2p': ['p2p', 'peer to peer', 'payment scam', 'token release'],
-                'deposit': ['deposit', 'add money', 'funds received', 'jamma', 'upi deposit', 'crypto deposit'],
-                'withdrawal': ['withdrawal', 'withdraw', 'paisa nikalna', 'funds not received'],
-                'account': ['account', 'security', 'password', 'login', 'account security', 'khata'],
-                'trading': ['trading', 'trade', 'buy', 'sell', 'buy sell', 'kharidna', 'bechna', 'order', 'chart'],
-                'kyc': ['kyc', 'identity', 'verification', 'adhar', 'pan'],
-                'admin reply': ['reply', 'report', 'admin', 'جواب', 'रिपोर्ट']
-            };
-
-            for (const category in problemMap) {
-                if (problemMap[category].some(keyword => problemText.includes(keyword))) {
-                    detectedProblem = category;
-                    break;
-                }
-            }
-
-            // AI response based on detected problem
-            if (detectedProblem === 'other') {
-                if (userLang === 'hi') {
-                    return "आपकी समस्या को बेहतर ढंग से समझने के लिए, कृपया 'अन्य' रिपोर्ट सेक्शन में जाकर अपनी समस्या का विस्तार से वर्णन करें। <button onclick='goToHelpPage()' class='problem-btn'>रिपोर्ट दर्ज करें</button>";
-                } else {
-                    return "To better understand your problem, please go to the 'Other' report section and describe your issue in detail. <button onclick='goToHelpPage()' class='problem-btn'>Submit Report</button>";
-                }
-            } else if (detectedProblem === 'admin reply') {
-                 if (userLang === 'hi') {
-                    return "आपको अपनी पिछली रिपोर्ट का जवाब चाहिए। कृपया 'रिपोर्ट रिक्वेस्ट' सेक्शन में अपनी रिपोर्ट की स्थिति देखें। <button onclick='goToHelpPage()' class='problem-btn'>रिपोर्ट्स देखें</button>";
-                } else {
-                    return "You need a reply to your previous report. Please check the status of your report in the 'Report Requests' section. <button onclick='goToHelpPage()' class='problem-btn'>View Reports</button>";
-                }
-            } else {
-                 if (userLang === 'hi') {
-                    let hindiCategory = {
-                        'p2p': 'P2P', 'deposit': 'डिपॉजिट', 'withdrawal': 'विड्रॉवल',
-                        'account': 'अकाउंट & सिक्योरिटी', 'trading': 'ट्रेडिंग', 'kyc': 'KYC'
-                    };
-                    return `मुझे लगता है आपकी समस्या ${hindiCategory[detectedProblem]} से संबंधित है। कृपया '${hindiCategory[detectedProblem]}' सेक्शन में जाकर एक रिपोर्ट दर्ज करें। <button onclick='goToHelpPage("${detectedProblem}")' class='problem-btn'>रिपोर्ट दर्ज करें</button>`;
-                } else {
-                    let englishCategory = {
-                        'p2p': 'P2P', 'deposit': 'Deposit', 'withdrawal': 'Withdrawal',
-                        'account': 'Account & Security', 'trading': 'Trading', 'kyc': 'KYC'
-                    };
-                    return `It seems your problem is related to ${englishCategory[detectedProblem]}. Please submit a report in the '${englishCategory[detectedProblem]}' section. <button onclick='goToHelpPage("${detectedProblem}")' class='problem-btn'>Submit Report</button>`;
-                }
-            }
-        }
-
-        // Send a message
-        async function sendMessage() {
-            const message = chatInput.value.trim();
-            if (!message) return;
-
-            addMessage(message, 'you');
-            chatInput.value = '';
-
-            addLoadingIndicator();
-
-            const aiResponse = await getAIResponse(message);
-            
-            setTimeout(() => {
-                removeLoadingIndicator();
-                addMessage(aiResponse, 'ai');
-            }, Math.random() * 1500 + 500); // Random delay for a more natural feel
-        }
-
-        // Handle image upload
-        async function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            addMessage('Uploading image...', 'you');
-            
-            const filePath = `${userName}/${Date.now()}_${file.name}`;
-            const { data, error } = await supabase.storage
-                .from('ai-image-bucket')
-                .upload(filePath, file);
-
-            if (error) {
-                addMessage('Failed to upload image. Please try again.', 'ai');
-                console.error('Image upload error:', error);
+            // Capture name
+            if (chatState === 'name_pending') {
+                const userName = userMessage.charAt(0).toUpperCase() + userMessage.slice(1);
+                localStorage.setItem('userName', userName);
+                displayMessage('agent', `${userName}, ${phrases[selectedLanguage].active_prompt}`);
+                chatState = 'active';
                 return;
             }
 
-            const { data: publicUrlData } = supabase.storage
-                .from('ai-image-bucket')
-                .getPublicUrl(filePath);
+            // --- AI Logic: Problem Detection & Warning ---
+            if (chatState === 'active' || chatState === 'problem_detected') {
+                
+                // 1. Problem Detection
+                let detectedCategory = null;
+                for (const keyword in problemMap) {
+                    if (userMessage.includes(keyword)) {
+                        detectedCategory = problemMap[keyword];
+                        break;
+                    }
+                }
 
-            const imageUrl = publicUrlData.publicUrl;
-            
-            // Remove the "Uploading image..." message and add the actual image
-            const lastMessage = chatMessages.lastElementChild;
-            if (lastMessage && lastMessage.textContent === 'Uploading image...') {
-                lastMessage.remove();
+                if (detectedCategory) {
+                    warnings = 0; // Reset warnings if a problem is detected
+                    chatState = 'problem_detected';
+                    
+                    const categoryName = getCategoryName(detectedCategory);
+                    const details = categoryDetails[detectedCategory][selectedLanguage];
+                    
+                    const response = 
+                        phrases[selectedLanguage].problem_detected_prefix + 
+                        categoryName + phrases[selectedLanguage].problem_detected_suffix + 
+                        categoryName + phrases[selectedLanguage].problem_detected_suffix_end +
+                        `\n\n${phrases[selectedLanguage].problem_details}${details}`;
+
+                    displayMessage('agent', response);
+                    
+                    // Show button to go to section
+                    showSuggestedAction(categoryName, detectedCategory);
+                    
+                } else if (isNonSupportTopic(userMessage)) {
+                    // 2. Non-Support Topic Warning
+                    warnings++;
+                    if (warnings >= MAX_WARNINGS) {
+                        displayMessage('agent', phrases[selectedLanguage].closing);
+                        setTimeout(goBackToHelp, 3000);
+                        endChat();
+                        return;
+                    } else {
+                        displayMessage('agent', warnings === 1 ? phrases[selectedLanguage].warning_1 : phrases[selectedLanguage].warning_2);
+                    }
+                } else {
+                    // 3. Other or General Query
+                    warnings = 0;
+                    displayMessage('agent', phrases[selectedLanguage].other_issue);
+                    showSuggestedAction(getCategoryName('other'), 'other');
+                }
             }
-            addMessage(imageUrl, 'you', true);
-
-            // AI's response to the image
-            addLoadingIndicator();
-            const aiResponse = userLang === 'hi' ? "मुझे आपकी भेजी हुई तस्वीर मिल गई है। कृपया अपनी समस्या का वर्णन करें।": "I have received the image you sent. Please describe your problem.";
-            setTimeout(() => {
-                removeLoadingIndicator();
-                addMessage(aiResponse, 'ai');
-            }, Math.random() * 1500 + 500);
         }
-
-        // Go back to the help page
-        function goBack() {
-            window.history.back();
-        }
-
-        // Navigate to the help page and open a specific section
-        function goToHelpPage(category = '') {
-            if (category) {
-                // This is a placeholder. A real implementation would use localStorage or URL parameters
-                // to tell the help.html page which section to open.
-                // For this example, we'll just navigate to the page.
-                localStorage.setItem('openHelpSection', category);
-            }
-            window.location.href = 'help.html';
-        }
-
-        // Event listeners
-        chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
         
-        // Initial welcome message
+        function isNonSupportTopic(message) {
+            const nonSupportKeywords = ['weather', 'joke', 'tell me about', 'who are you', 'what is your name', 'how are you', 'how old are you', 'do you love me'];
+            for (const keyword of nonSupportKeywords) {
+                if (message.includes(keyword)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // --- UI & Utility Functions ---
+
+        function startChatTimer() {
+            timerInterval = setInterval(() => {
+                const elapsedTime = Date.now() - chatStartTime;
+                const remainingTime = CHAT_DURATION_MS - elapsedTime;
+
+                if (remainingTime <= 0) {
+                    clearInterval(timerInterval);
+                    document.getElementById('timerDisplay').textContent = "0:00 - Ended";
+                    displayMessage('agent', phrases[selectedLanguage].timer_end);
+                    setTimeout(goBackToHelp, 3000);
+                    endChat();
+                    return;
+                }
+
+                const minutes = Math.floor(remainingTime / 60000);
+                const seconds = Math.floor((remainingTime % 60000) / 1000);
+                document.getElementById('timerDisplay').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function endChat() {
+            clearInterval(timerInterval);
+            document.getElementById('messageInput').disabled = true;
+            document.getElementById('sendButton').disabled = true;
+            document.getElementById('imageUpload').disabled = true;
+        }
+        
+        function goBackToHelp() {
+            // Close the chat window/tab.
+            window.close(); 
+            // In a single-page app flow: window.location.href = '/help.html';
+        }
+
+        function getCategoryName(categoryId) {
+            const categories = {
+                'account_security': 'ACCOUNT & SECURITY',
+                'deposit': 'DEPOSIT',
+                'withdrawal': 'WITHDRAWAL',
+                'p2p': 'P2P',
+                'trading': 'TRADING',
+                'kyc': 'KYC',
+                'other': 'OTHER'
+            };
+            return categories[categoryId] || categoryId.toUpperCase();
+        }
+        
+        let targetCategory = 'other'; // For suggestedAction button
+        function showSuggestedAction(categoryName, categoryId) {
+            targetCategory = categoryId;
+            const actionDiv = document.getElementById('suggestedAction');
+            const button = actionDiv.querySelector('button');
+            const text = document.getElementById('suggestionText');
+
+            if (categoryId === 'other') {
+                text.textContent = phrases[selectedLanguage].other_issue;
+                button.textContent = phrases[selectedLanguage].other_issue_btn;
+            } else {
+                text.textContent = `${phrases[selectedLanguage].problem_detected_prefix.replace('I have detected that your issue is related to **', '')}${categoryName}${phrases[selectedLanguage].problem_detected_suffix_end.replace('** section.', '')}`;
+                button.textContent = `Go to ${categoryName} Section`;
+            }
+            
+            actionDiv.classList.remove('hidden');
+        }
+
+        function goToHelpSection() {
+            // Redirect to the help page and inform the user
+            alert(`Redirecting you to the Help Section to fill the ${getCategoryName(targetCategory)} form.`);
+            // Note: In a real environment, you'd navigate to help.html and use the URL hash or local storage to open the correct accordion.
+            window.location.href = '/help.html#' + targetCategory; 
+            goBackToHelp();
+        }
+        
+        // --- Image Upload Functions (Supabase) ---
+
+        function handleImageSelect(file) {
+            if (!file) {
+                clearImageSelect();
+                return;
+            }
+            // Basic file size check (e.g., max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert("File size must be less than 5MB.");
+                clearImageSelect();
+                return;
+            }
+            imageToSend = file;
+            document.getElementById('imageFileName').textContent = file.name;
+            document.getElementById('imagePreview').classList.remove('hidden');
+        }
+
+        function clearImageSelect() {
+            imageToSend = null;
+            document.getElementById('imageUpload').value = null;
+            document.getElementById('imagePreview').classList.add('hidden');
+            document.getElementById('imageFileName').textContent = '';
+        }
+
+        async function uploadImage(file) {
+            try {
+                const filePath = `${currentUser}/chat_image_${Date.now()}_${file.name}`;
+                
+                // Upload file to the specified bucket
+                const { error: uploadError } = await supabase.storage
+                    .from('ai-image-bucket') 
+                    .upload(filePath, file);
+
+                if (uploadError) {
+                    console.error('Image upload error:', uploadError);
+                    alert('Error uploading image. Please ensure the "ai-image-bucket" exists and has public policies set up.');
+                    return null;
+                }
+                
+                // Get the public URL
+                const { data: publicUrlData } = supabase
+                    .storage
+                    .from('ai-image-bucket')
+                    .getPublicUrl(filePath);
+
+                return publicUrlData.publicUrl;
+            } catch (error) {
+                console.error('Upload failed:', error);
+                alert('An unexpected error occurred during upload. Check Supabase connection.');
+                return null;
+            }
+        }
+
+        // --- Form Submission ---
+
+        async function sendMessage(event) {
+            event.preventDefault();
+            const input = document.getElementById('messageInput');
+            const userMessage = input.value.trim();
+            
+            if (!userMessage && !imageToSend) return;
+
+            // 1. Handle Image Upload & Display
+            let imageUrl = null;
+            if (imageToSend) {
+                // Show user message (Image info) immediately
+                displayMessage('user', phrases[selectedLanguage].image_upload + imageToSend.name);
+                
+                imageUrl = await uploadImage(imageToSend);
+                if (imageUrl) {
+                    // Display actual image bubble
+                    displayMessage('user', 'Image Sent', imageUrl);
+                }
+                clearImageSelect();
+            }
+
+            // 2. Handle Text Message & AI Processing
+            if (userMessage) {
+                displayMessage('user', userMessage);
+                input.value = '';
+                
+                // Simulate AI response delay
+                setTimeout(() => {
+                    processUserInput(userMessage);
+                }, 1000); 
+            }
+            
+            input.focus();
+        }
+
+        // --- Initialization ---
+
         document.addEventListener('DOMContentLoaded', () => {
-            setLanguage('en');
+            // Set initial language from local storage or default
+            setLanguage(selectedLanguage);
+            
+            // Start the timer
+            startChatTimer();
+            
+            // Set initial message
+            setTimeout(() => {
+                const userName = localStorage.getItem('userName');
+                if (userName) {
+                    displayMessage('agent', `Hello ${userName}! I'm AvicnKnov Agent 2.0. How can I assist you with your problem today?`);
+                    chatState = 'active';
+                } else {
+                    displayMessage('agent', phrases[selectedLanguage].greeting);
+                }
+            }, 500);
+
+            // Set up Back button logic
+            window.goBackToHelp = () => {
+                // Close the current tab/window. This is the simplest way for a pop-up chat.
+                window.close();
+            };
         });
     </script>
 </body>
