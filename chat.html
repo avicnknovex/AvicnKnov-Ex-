@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AvicnKnov Agent 2.0 - Live Chat</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom Styles */
+        #chat-messages::-webkit-scrollbar { width: 8px; }
+        #chat-messages::-webkit-scrollbar-track { background: #f1f1f1; }
+        #chat-messages::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        #chat-messages::-webkit-scrollbar-thumb:hover { background: #555; }
+        .agent-bubble {
+            background-color: #eef2ff; /* indigo-50 */
+            border-bottom-left-radius: 0.5rem;
+        }
+        .user-bubble {
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+            border-bottom-right-radius: 0.5rem;
+        }
+        .status-gradient {
+            background: linear-gradient(90deg, #4f46e5, #3b82f6);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+
+    <div class="w-full max-w-4xl h-[90vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
+        
+        <div class="p-4 border-b border-gray-200 flex justify-between items-center status-gradient text-white">
+            <button onclick="goBackToHelp()" class="flex items-center gap-2 px-3 py-1.5 hover:bg-white/10 rounded-lg transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                <span class="font-medium">Back</span>
+            </button>
+            
+            <div class="text-center">
+                <h1 class="text-lg font-bold">AvicnKnov Agent 2.0</h1>
+                <p id="timerDisplay" class="text-sm font-semibold opacity-90">5:00</p>
+            </div>
+            
+            <div class="relative">
+                <select id="languageSelector" onchange="setLanguage(this.value)" class="bg-white text-blue-600 text-sm font-semibold py-1.5 px-3 rounded-lg appearance-none cursor-pointer focus:ring-2 focus:ring-blue-300">
+                    <option value="en">English</option>
+                    <option value="hi">Hindi</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-blue-600">
+                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                </div>
+            </div>
+        </div>
+        
+        <div id="chat-messages" class="flex-grow p-6 space-y-4 overflow-y-auto">
+            </div>
+
+        <div class="p-4 border-t border-gray-200 bg-gray-50">
+            <form id="chatForm" onsubmit="sendMessage(event)" class="flex items-center gap-3">
+                
+                <label for="imageUpload" class="cursor-pointer text-gray-500 hover:text-blue-600 transition-colors">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <input type="file" id="imageUpload" name="image" accept="image/*" class="hidden" onchange="handleImageSelect(this.files[0])">
+                </label>
+
+                <input type="text" id="messageInput" placeholder="Type your message..." required autocomplete="off" 
+                       class="flex-grow px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800">
+                
+                <button type="submit" id="sendButton" class="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition-colors shrink-0">
+                    <svg class="w-5 h-5 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                </button>
+            </form>
+
+            <div id="imagePreview" class="mt-2 hidden flex items-center gap-3 p-2 bg-white border border-blue-200 rounded-lg">
+                <p class="text-sm text-gray-600 font-medium">Image Selected: <span id="imageFileName" class="text-blue-600"></span></p>
+                <button onclick="clearImageSelect()" class="text-red-500 hover:text-red-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="suggestedAction" class="p-4 border-t border-gray-200 bg-yellow-50 hidden">
+            <p id="suggestionText" class="text-sm text-yellow-800 font-medium mb-2"></p>
+            <button onclick="goToHelpSection()" class="w-full bg-yellow-600 text-white py-2 px-4 rounded-lg hover:bg-yellow-700 transition-colors font-semibold">
+                Go to Help Section
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Configuration (Supabase Keys) ---
+        const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+        const AI_AGENT_NAME = 'AvicnKnov Agent 2.0';
+        const CHAT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+        const MAX_WARNINGS = 2;
+
+        // Supabase Client Initialization
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        let currentUser = localStorage.getItem('currentUser') || 'default_user';
+        let chatStartTime = Date.now();
+        let timerInterval;
+        let warnings = 0;
+        let chatState = 'greeting'; // greeting, name_pending, active, warning, problem_detected
+        let selectedLanguage = localStorage.getItem('chatLanguage') || 'en';
+        let imageToSend = null;
+
+        // --- Helper Data: Problem Keywords & Categories (from help.html structure) ---
+        const problemMap = {
+            'account': 'account_security',
+            'security': 'account_security',
+            'password': 'account_security',
+            'login': 'account_security',
+            'deposit': 'deposit',
+            'upi': 'deposit',
+            'p2p deposit': 'deposit',
+            'crypto deposit': 'deposit',
+            'withdrawal': 'withdrawal',
+            'p2p withdrawal': 'withdrawal',
+            'crypto withdrawal': 'withdrawal',
+            'scam': 'p2p',
+            'order': 'p2p',
+            'p2p': 'p2p',
+            'trading': 'trading',
+            'trade': 'trading',
+            'exchange': 'trading',
+            'kyc': 'kyc',
+            'verification': 'kyc',
+        };
+
+        const categoryDetails = {
+            'account_security': { en: "Account/Security issues. You need to fill Name, Username, UID, and Description.", hi: "खाता/सुरक्षा समस्याएँ। आपको नाम, यूज़रनेम, UID, और विवरण भरना होगा।" },
+            'deposit': { en: "Deposit issues. You need to fill Name, Username, UID, and Description.", hi: "जमा (Deposit) समस्याएँ। आपको नाम, यूज़रनेम, UID, और विवरण भरना होगा।" },
+            'withdrawal': { en: "Withdrawal issues. You need to fill Name, Username, UID, and Description.", hi: "निकासी (Withdrawal) समस्याएँ। आपको नाम, यूज़रनेम, UID, और विवरण भरना होगा।" },
+            'p2p': { en: "P2P trading issues. You need to fill Name, Username, UID, P2P Order ID, and Description.", hi: "पी2पी ट्रेडिंग समस्याएँ। आपको नाम, यूज़रनेम, UID, P2P ऑर्डर ID, और विवरण भरना होगा।" },
+            'trading': { en: "Trading issues. You need to fill Name, Username, UID, Section, and Description.", hi: "ट्रेडिंग समस्याएँ। आपको नाम, यूज़रनेम, UID, सेक्शन, और विवरण भरना होगा।" },
+            'kyc': { en: "KYC issues. You need to fill Name, Username, UID, and Description.", hi: "KYC समस्याएँ। आपको नाम, यूज़रनेम, UID, और विवरण भरना होगा।" },
+            'other': { en: "Other issues. You need to fill Name, Username, UID, and Description.", hi: "अन्य समस्याएँ। आपको नाम, यूज़रनेम, UID, और विवरण भरना होगा।" },
+        };
+
+        // --- Language Mapping ---
+        const phrases = {
+            en: {
+                greeting: "Hello there! I'm AvicnKnov Agent 2.0. How can I assist you with your problem today?",
+                active_prompt: "Please explain your issue clearly. I'm here to help you find the correct report section.",
+                warning_1: "⚠️ Warning 1: Please stick to your problem. This is a support channel. If you continue with non-support topics, I will have to end the chat.",
+                warning_2: "⚠️ Warning 2: This is your final warning. Please clearly state your support issue or I will close the chat and redirect you.",
+                closing: "The chat is now ending due to non-support communication. You can come back and try again. Redirecting you to the Help Section...",
+                problem_detected_prefix: "I have detected that your issue is related to **",
+                problem_detected_suffix: "**.\n\nBased on your problem, I recommend submitting a report in the **",
+                problem_detected_suffix_end: "** section.",
+                problem_details: "You should fill in details like: ",
+                other_issue: "It seems your issue is complex or doesn't fit a specific category. Please select **OTHER** in the Help Section and provide a detailed description.",
+                other_issue_btn: "Go to Other Section",
+                timer_end: "Your 5 minutes of chat time are over. Redirecting you to the Help Section...",
+                image_upload: "🖼️ User sent an image: ",
+                name_prompt: "What is your name?",
+            },
+            hi: {
+                greeting: "नमस्ते! मैं AvicnKnov Agent 2.0 हूँ। मैं आज आपकी समस्या में कैसे सहायता कर सकता हूँ?",
+                active_prompt: "कृपया अपनी समस्या स्पष्ट रूप से बताएं। मैं आपको सही रिपोर्ट सेक्शन खोजने में मदद करने के लिए यहाँ हूँ।",
+                warning_1: "⚠️ चेतावनी 1: कृपया अपनी समस्या पर ही ध्यान दें। यह एक सहायता चैनल है। यदि आप गैर-सहायता विषयों पर बात करते हैं, तो मुझे चैट समाप्त करनी पड़ेगी।",
+                warning_2: "⚠️ चेतावनी 2: यह आपकी अंतिम चेतावनी है। कृपया अपनी सहायता समस्या स्पष्ट रूप से बताएं, अन्यथा मैं चैट बंद करके आपको रीडायरेक्ट कर दूँगा।",
+                closing: "गैर-सहायता संचार के कारण चैट अब समाप्त हो रही है। आप वापस आकर फिर से प्रयास कर सकते हैं। आपको सहायता अनुभाग (Help Section) पर रीडायरेक्ट किया जा रहा है...",
+                problem_detected_prefix: "मैंने पता लगाया है कि आपकी समस्या **",
+                problem_detected_suffix: "** से संबंधित है।\n\nआपकी समस्या के आधार पर, मैं आपको **",
+                problem_detected_suffix_end: "** सेक्शन में रिपोर्ट जमा करने की सलाह देता हूँ।",
+                problem_details: "आपको इन डिटेल्स को भरना होगा: ",
+                other_issue: "ऐसा लगता है कि आपकी समस्या जटिल है या किसी विशिष्ट श्रेणी में फिट नहीं होती है। कृपया सहायता अनुभाग में **अन्य (OTHER)** विकल्प चुनें और विस्तृत विवरण प्रदान करें।",
+                other_issue_btn: "अन्य सेक्शन पर जाएँ",
+                timer_end: "आपकी 5 मिनट की चैट समय सीमा पूरी हो गई है। आपको सहायता अनुभाग (Help Section) पर रीडायरेक्ट किया जा रहा है...",
+                image_upload: "🖼️ यूज़र ने एक इमेज भेजी है: ",
+                name_prompt: "आपका नाम क्या है?",
+            }
+        };
+
+        // --- Core Functions ---
+
+        function setLanguage(lang) {
+            selectedLanguage = lang;
+            localStorage.setItem('chatLanguage', lang);
+            document.getElementById('languageSelector').value = lang;
+            
+            // Re-display appropriate prompt based on current state
+            if (chatState === 'name_pending') {
+                 displayMessage('agent', phrases[lang].name_prompt);
+            } else if (chatState === 'active' || chatState === 'problem_detected') {
+                 displayMessage('agent', phrases[lang].active_prompt);
+            } else if (chatState === 'greeting') {
+                 displayMessage('agent', phrases[lang].greeting);
+            }
+        }
+
+        function displayMessage(sender, content, imageUrl = null) {
+            const messagesDiv = document.getElementById('chat-messages');
+            const isAgent = sender === 'agent';
+            const senderName = isAgent ? AI_AGENT_NAME : 'You';
+            const bubbleClass = isAgent ? 'agent-bubble' : 'user-bubble';
+            const alignment = isAgent ? 'justify-start' : 'justify-end';
+            const contentClass = isAgent ? 'text-gray-900' : 'text-white';
+            const nameClass = isAgent ? 'text-indigo-600' : 'text-blue-600';
+
+            const messageHtml = `
+                <div class="flex ${alignment}">
+                    <div class="flex flex-col max-w-lg">
+                        <p class="text-xs ${nameClass} mb-0.5 font-semibold">${senderName}</p>
+                        <div class="inline-block px-4 py-3 rounded-xl ${bubbleClass} shadow-md rounded-${isAgent ? 'tr' : 'tl'}-xl">
+                            <p class="text-sm ${contentClass} whitespace-pre-wrap">${content}</p>
+                            ${imageUrl ? `<img src="${imageUrl}" alt="Uploaded Image" class="mt-2 rounded-lg max-w-full h-auto cursor-pointer" onclick="window.open('${imageUrl}', '_blank')">` : ''}
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">${new Date().toLocaleTimeString()}</p>
+                    </div>
+                </div>
+            `;
+            messagesDiv.insertAdjacentHTML('beforeend', messageHtml);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        async function processUserInput(userMessage) {
+            userMessage = userMessage.toLowerCase().trim();
+            
+            // Check for simple greetings
+            if (chatState === 'greeting' && (userMessage.includes('hi') || userMessage.includes('hello') || userMessage.includes('hey') || userMessage.includes('namaste'))) {
+                 displayMessage('agent', phrases[selectedLanguage].name_prompt);
+                 chatState = 'name_pending';
+                 return;
+            }
+
+            // Capture name
+            if (chatState === 'name_pending') {
+                const userName = userMessage.charAt(0).toUpperCase() + userMessage.slice(1);
+                localStorage.setItem('userName', userName);
+                displayMessage('agent', `${userName}, ${phrases[selectedLanguage].active_prompt}`);
+                chatState = 'active';
+                return;
+            }
+
+            // --- AI Logic: Problem Detection & Warning ---
+            if (chatState === 'active' || chatState === 'problem_detected') {
+                
+                // 1. Problem Detection
+                let detectedCategory = null;
+                for (const keyword in problemMap) {
+                    if (userMessage.includes(keyword)) {
+                        detectedCategory = problemMap[keyword];
+                        break;
+                    }
+                }
+
+                if (detectedCategory) {
+                    warnings = 0; // Reset warnings if a problem is detected
+                    chatState = 'problem_detected';
+                    
+                    const categoryName = getCategoryName(detectedCategory);
+                    const details = categoryDetails[detectedCategory][selectedLanguage];
+                    
+                    const response = 
+                        phrases[selectedLanguage].problem_detected_prefix + 
+                        categoryName + phrases[selectedLanguage].problem_detected_suffix + 
+                        categoryName + phrases[selectedLanguage].problem_detected_suffix_end +
+                        `\n\n${phrases[selectedLanguage].problem_details}${details}`;
+
+                    displayMessage('agent', response);
+                    
+                    // Show button to go to section
+                    showSuggestedAction(categoryName, detectedCategory);
+                    
+                } else if (isNonSupportTopic(userMessage)) {
+                    // 2. Non-Support Topic Warning
+                    warnings++;
+                    if (warnings >= MAX_WARNINGS) {
+                        displayMessage('agent', phrases[selectedLanguage].closing);
+                        setTimeout(goBackToHelp, 3000);
+                        endChat();
+                        return;
+                    } else {
+                        displayMessage('agent', warnings === 1 ? phrases[selectedLanguage].warning_1 : phrases[selectedLanguage].warning_2);
+                    }
+                } else {
+                    // 3. Other or General Query
+                    warnings = 0;
+                    displayMessage('agent', phrases[selectedLanguage].other_issue);
+                    showSuggestedAction(getCategoryName('other'), 'other');
+                }
+            }
+        }
+        
+        function isNonSupportTopic(message) {
+            const nonSupportKeywords = ['weather', 'joke', 'tell me about', 'who are you', 'what is your name', 'how are you', 'how old are you', 'do you love me'];
+            for (const keyword of nonSupportKeywords) {
+                if (message.includes(keyword)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // --- UI & Utility Functions ---
+
+        function startChatTimer() {
+            timerInterval = setInterval(() => {
+                const elapsedTime = Date.now() - chatStartTime;
+                const remainingTime = CHAT_DURATION_MS - elapsedTime;
+
+                if (remainingTime <= 0) {
+                    clearInterval(timerInterval);
+                    document.getElementById('timerDisplay').textContent = "0:00 - Ended";
+                    displayMessage('agent', phrases[selectedLanguage].timer_end);
+                    setTimeout(goBackToHelp, 3000);
+                    endChat();
+                    return;
+                }
+
+                const minutes = Math.floor(remainingTime / 60000);
+                const seconds = Math.floor((remainingTime % 60000) / 1000);
+                document.getElementById('timerDisplay').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function endChat() {
+            clearInterval(timerInterval);
+            document.getElementById('messageInput').disabled = true;
+            document.getElementById('sendButton').disabled = true;
+            document.getElementById('imageUpload').disabled = true;
+        }
+        
+        function goBackToHelp() {
+            // Close the chat window/tab.
+            window.close(); 
+            // In a single-page app flow: window.location.href = '/help.html';
+        }
+
+        function getCategoryName(categoryId) {
+            const categories = {
+                'account_security': 'ACCOUNT & SECURITY',
+                'deposit': 'DEPOSIT',
+                'withdrawal': 'WITHDRAWAL',
+                'p2p': 'P2P',
+                'trading': 'TRADING',
+                'kyc': 'KYC',
+                'other': 'OTHER'
+            };
+            return categories[categoryId] || categoryId.toUpperCase();
+        }
+        
+        let targetCategory = 'other'; // For suggestedAction button
+        function showSuggestedAction(categoryName, categoryId) {
+            targetCategory = categoryId;
+            const actionDiv = document.getElementById('suggestedAction');
+            const button = actionDiv.querySelector('button');
+            const text = document.getElementById('suggestionText');
+
+            if (categoryId === 'other') {
+                text.textContent = phrases[selectedLanguage].other_issue;
+                button.textContent = phrases[selectedLanguage].other_issue_btn;
+            } else {
+                text.textContent = `${phrases[selectedLanguage].problem_detected_prefix.replace('I have detected that your issue is related to **', '')}${categoryName}${phrases[selectedLanguage].problem_detected_suffix_end.replace('** section.', '')}`;
+                button.textContent = `Go to ${categoryName} Section`;
+            }
+            
+            actionDiv.classList.remove('hidden');
+        }
+
+        function goToHelpSection() {
+            // Redirect to the help page and inform the user
+            alert(`Redirecting you to the Help Section to fill the ${getCategoryName(targetCategory)} form.`);
+            // Note: In a real environment, you'd navigate to help.html and use the URL hash or local storage to open the correct accordion.
+            window.location.href = '/help.html#' + targetCategory; 
+            goBackToHelp();
+        }
+        
+        // --- Image Upload Functions (Supabase) ---
+
+        function handleImageSelect(file) {
+            if (!file) {
+                clearImageSelect();
+                return;
+            }
+            // Basic file size check (e.g., max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert("File size must be less than 5MB.");
+                clearImageSelect();
+                return;
+            }
+            imageToSend = file;
+            document.getElementById('imageFileName').textContent = file.name;
+            document.getElementById('imagePreview').classList.remove('hidden');
+        }
+
+        function clearImageSelect() {
+            imageToSend = null;
+            document.getElementById('imageUpload').value = null;
+            document.getElementById('imagePreview').classList.add('hidden');
+            document.getElementById('imageFileName').textContent = '';
+        }
+
+        async function uploadImage(file) {
+            try {
+                const filePath = `${currentUser}/chat_image_${Date.now()}_${file.name}`;
+                
+                // Upload file to the specified bucket
+                const { error: uploadError } = await supabase.storage
+                    .from('ai-image-bucket') 
+                    .upload(filePath, file);
+
+                if (uploadError) {
+                    console.error('Image upload error:', uploadError);
+                    alert('Error uploading image. Please ensure the "ai-image-bucket" exists and has public policies set up.');
+                    return null;
+                }
+                
+                // Get the public URL
+                const { data: publicUrlData } = supabase
+                    .storage
+                    .from('ai-image-bucket')
+                    .getPublicUrl(filePath);
+
+                return publicUrlData.publicUrl;
+            } catch (error) {
+                console.error('Upload failed:', error);
+                alert('An unexpected error occurred during upload. Check Supabase connection.');
+                return null;
+            }
+        }
+
+        // --- Form Submission ---
+
+        async function sendMessage(event) {
+            event.preventDefault();
+            const input = document.getElementById('messageInput');
+            const userMessage = input.value.trim();
+            
+            if (!userMessage && !imageToSend) return;
+
+            // 1. Handle Image Upload & Display
+            let imageUrl = null;
+            if (imageToSend) {
+                // Show user message (Image info) immediately
+                displayMessage('user', phrases[selectedLanguage].image_upload + imageToSend.name);
+                
+                imageUrl = await uploadImage(imageToSend);
+                if (imageUrl) {
+                    // Display actual image bubble
+                    displayMessage('user', 'Image Sent', imageUrl);
+                }
+                clearImageSelect();
+            }
+
+            // 2. Handle Text Message & AI Processing
+            if (userMessage) {
+                displayMessage('user', userMessage);
+                input.value = '';
+                
+                // Simulate AI response delay
+                setTimeout(() => {
+                    processUserInput(userMessage);
+                }, 1000); 
+            }
+            
+            input.focus();
+        }
+
+        // --- Initialization ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set initial language from local storage or default
+            setLanguage(selectedLanguage);
+            
+            // Start the timer
+            startChatTimer();
+            
+            // Set initial message
+            setTimeout(() => {
+                const userName = localStorage.getItem('userName');
+                if (userName) {
+                    displayMessage('agent', `Hello ${userName}! I'm AvicnKnov Agent 2.0. How can I assist you with your problem today?`);
+                    chatState = 'active';
+                } else {
+                    displayMessage('agent', phrases[selectedLanguage].greeting);
+                }
+            }, 500);
+
+            // Set up Back button logic
+            window.goBackToHelp = () => {
+                // Close the current tab/window. This is the simplest way for a pop-up chat.
+                window.close();
+            };
+        });
+    </script>
+</body>
+</html>
