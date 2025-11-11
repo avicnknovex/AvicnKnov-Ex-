@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Deposit - AvicnKnov Ex</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      background: #f5f7fa;
+      color: #111;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      background-color: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .header button {
+      background: none;
+      border: none;
+      font-size: 20px;
+      margin-right: 10px;
+      cursor: pointer;
+    }
+
+    .header-title {
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    .options {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .option {
+      background: white;
+      padding: 15px 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    .option:hover {
+      background: #e7f0ff;
+    }
+
+    .option span {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .option i {
+      font-size: 18px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <button onclick="goBack()">←</button>
+    <div class="header-title">Select Deposit Method</div>
+  </div>
+
+  <!-- Options -->
+  <div class="options">
+    <div class="option" onclick="location.href='deposit-upi.html'">
+      <span>Deposit via UPI</span>
+      <i class="fas fa-angle-right"></i>
+    </div>
+    <div class="option" onclick="location.href='deposit-crypto.html'">
+      <span>Deposit via Crypto</span>
+      <i class="fas fa-angle-right"></i>
+    </div>
+    <div class="option" onclick="location.href='deposit-p2p.html'">
+      <span>Deposit via P2P</span>
+      <i class="fas fa-angle-right"></i>
+    </div>
+  </div>
+
+  <!-- FontAwesome -->
+  <script src="https://kit.fontawesome.com/a2e0bf0c6d.js" crossorigin="anonymous"></script>
+
+  <!-- ✅ Final Smart Back Button Script -->
+  <script>
+    // Store where user came from ONLY when arriving at deposit.html
+    if (document.referrer.includes("dashboard.html") || document.referrer.includes("assets.html")) {
+      sessionStorage.setItem("depositEntryPoint", document.referrer.includes("dashboard.html") ? "dashboard.html" : "assets.html");
+    }
+
+    function goBack() {
+      const entry = sessionStorage.getItem("depositEntryPoint");
+      if (entry === "dashboard.html") {
+        window.location.href = "dashboard.html";
+      } else if (entry === "assets.html") {
+        window.location.href = "assets.html";
+      } else {
+        history.back();
+      }
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Withdraw Funds - UPI</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      width: 90%;
+      max-width: 400px;
+    }
+
+    h2 {
+      margin-top: 0;
+      text-align: center;
+      color: #333;
+    }
+
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: 500;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      background-color: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .notification {
+      text-align: center;
+      margin-top: 15px;
+      font-weight: bold;
+      color: red;
+    }
+
+    .back-button {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="back-button" onclick="window.location.href='withdrawal.html'">⬅ Back</div>
+
+  <div class="container">
+    <h2>Withdraw to UPI</h2>
+
+    <label>Amount (₹100 min)</label>
+    <input type="number" id="withdrawAmount" placeholder="Enter amount" />
+
+    <label>UPI ID</label>
+    <input type="text" id="upiId" placeholder="Enter your UPI ID" />
+
+    <button onclick="submitWithdrawal()">Withdraw</button>
+
+    <div class="notification" id="notification"></div>
+  </div>
+
+  <!-- ✅ Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script>
+    const supabase = window.supabase.createClient(
+      'https://hwrvqyipozrsxyjdpqag.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM'
+    );
+
+    function generateOrderId() {
+      return Math.floor(10000000 + Math.random() * 90000000).toString();
+    }
+
+    async function submitWithdrawal() {
+      const amount = parseFloat(document.getElementById("withdrawAmount").value);
+      const upiId = document.getElementById("upiId").value.trim();
+      const notification = document.getElementById("notification");
+
+      if (!amount || amount < 100) {
+        notification.textContent = "❌ Minimum ₹100 required";
+        return;
+      }
+
+      if (!upiId) {
+        notification.textContent = "❌ UPI ID required";
+        return;
+      }
+
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        notification.textContent = "❌ Not logged in";
+        return;
+      }
+
+      const userId = user.id;
+
+      // ✅ Fetch balance from correct table
+      const { data: wallet, error: walletError } = await supabase
+        .from("user_wallets")
+        .select("balance")
+        .eq("uid", userId)
+        .single();
+
+      if (walletError || !wallet) {
+        notification.textContent = "❌ Wallet not found";
+        return;
+      }
+
+      const balance = parseFloat(wallet.balance);
+
+      if (balance < 100 || amount > balance) {
+        notification.textContent = "❌ Insufficient balance";
+        return;
+      }
+
+      const orderId = generateOrderId(); // ✅ 8-digit unique Order ID
+
+      const { error: insertError } = await supabase
+        .from("withdrawals")
+        .insert([
+          {
+            uid: userId,
+            amount: amount,
+            method: "Withdrawal", // ✅ fix for method (instead of UPI ID showing up)
+            status: "pending",
+            type: "UPI",
+            order_id: orderId,
+            created_at: new Date().toISOString()
+          }
+        ]);
+
+      if (insertError) {
+        notification.textContent = "❌ Withdrawal failed";
+        console.error(insertError);
+        return;
+      }
+
+      notification.style.color = "green";
+      notification.textContent = "✅ Withdrawal has been pending...";
+
+      setTimeout(() => {
+        window.location.href = "transactions.html";
+      }, 2000);
+    }
+  </script>
+</body>
+</html>

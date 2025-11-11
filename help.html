@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help & Support</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .section-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+        }
+        .section-content.open {
+            max-height: 1000px;
+        }
+        .live-chat-btn {
+            background: linear-gradient(45deg, #4f46e5, #7c3aed);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .report-card {
+            border-left: 4px solid #4f46e5;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-6 max-w-7xl">
+        <div class="flex items-center justify-between mb-8">
+            <button onclick="goBack()" class="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Back to Dashboard
+            </button>
+            
+            <button onclick="toggleReports()" class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                Report Requests
+                <span id="totalRequestsCount" class="px-2 py-1 text-xs bg-gray-200 rounded-full">0</span>
+                <svg id="reportToggleIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Help & Support</h1>
+                    <p class="text-gray-600 mb-8">Select a category below to submit a report or get help with your issue</p>
+                    
+                    <div class="space-y-4">
+                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                            <button onclick="toggleSection('account_security')" class="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
+                                <span class="font-semibold text-gray-800">ACCOUNT & SECURITY</span>
+                                <svg class="w-5 h-5 transform transition-transform" id="account_security_icon">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </button>
+                            <div id="account_security_content" class="section-content bg-white p-6">
+                                <form onsubmit="submitReport(event, 'account_security')" class="space-y-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                                            <input type="text" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your full name">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Username *</label>
+                                            <input type="text" name="username" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your username">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">UID *</label>
+                                        <input type="text" name="uid" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your UID">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Screenshot</label>
+                                        <div class="flex gap-4">
+                                            <label class="flex items-center">
+                                                <input type="radio" name="hasScreenshot" value="yes" class="mr-2" onclick="toggleScreenshotUpload(true, 'account_security')">
+                                                <span>Yes</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="radio" name="hasScreenshot" value="no" checked class="mr-2" onclick="toggleScreenshotUpload(false, 'account_security')">
+                                                <span>No</span>
+                                            </label>
+                                        </div>
+                                        <input type="file" id="screenshot_account_security" name="screenshot" accept="image/*" class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hidden">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                                        <textarea name="description" required rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Please describe your problem in detail..."></textarea>
+                                    </div>
+                                    <button type="submit" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                                        Submit Report
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                            <button onclick="toggleSection('deposit')" class="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
+                                <span class="font-semibold text-gray-800">DEPOSIT</span>
+                                <svg class="w-5 h-5 transform transition-transform" id="deposit_icon">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </button>
+                            <div id="deposit_content" class="section-content bg-white p-6">
+                                <form onsubmit="submitReport(event, 'deposit')" class="space-y-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                                            <input type="text" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Username *</label>
+                                            <input type="text" name="username" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">UID *</label>
+                                        <input type="text" name="uid" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Problem Type</label>
+                                        <select name="subcategory" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="">Select problem type</option>
+                                            <option value="P2P Deposit">P2P Deposit</option>
+                                            <option value="UPI Deposit">UPI Deposit</option>
+                                            <option value="Crypto Deposit">Crypto Deposit</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Screenshot</label>
+                                        <div class="flex gap-4">
+                                            <label class="flex items-center">
+                                                <input type="radio" name="hasScreenshot" value="yes" class="mr-2" onclick="toggleScreenshotUpload(true, 'deposit')">
+                                                <span>Yes</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="radio" name="hasScreenshot" value="no" checked class="mr-2" onclick="toggleScreenshotUpload(false, 'deposit')">
+                                                <span>No</span>
+                                            </label>
+                                        </div>
+                                        <input type="file" id="screenshot_deposit" name="screenshot" accept="image/*" class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hidden">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                                        <textarea name="description" required rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                                    </div>
+                                    <button type="submit" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                                        Submit Report
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                            <button onclick="toggleSection('withdrawal')" class="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
+                                <span class="font-semibold text-gray-800">WITHDRAWAL</span>
+                                <svg class="w-5 h-5 transform transition-transform" id="withdrawal_icon">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </button>
+                            <div id="withdrawal_content" class="section-content bg-white p-6">
+                                <form onsubmit="submitReport(event, 'withdrawal')" class="space-y-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                                            <input type="text" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Username *</label>
+                                            <input type="text" name="username" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">UID *</label>
+                                        <input type="text" name="uid" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Problem Type</label>
+                                        <select name="subcategory" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="">Select problem type</option>
+                                            <option value="Crypto Withdrawal">Crypto Withdrawal</option>
+                                            <option value="UPI Withdrawal">UPI Withdrawal</option>
+                                            <option value="P2P Withdrawal">P2P Withdrawal</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Screenshot</label>
+                                        <div class="flex gap-4">
+                                            <label class="flex items-center">
+                                                <input type="radio" name="hasScreenshot" value="yes" class="mr-2" onclick="toggleScreenshotUpload(true, 'withdrawal')">
+                                                <span>Yes</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="radio" name="hasScreenshot" value="no" checked class="mr-2" onclick="toggleScreenshotUpload(false, 'withdrawal')">
+                                                <span>No</span>
+                                            </label>
+                                        </div>
+                                        <input type="file" id="screenshot_withdrawal" name="screenshot" accept="image/*" class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hidden">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                                        <textarea name="description" required rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                                    </div>
+                                    <button type="submit" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                                        Submit Report
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                            <button onclick="toggleSection('p2p')" class="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
+                                <span class="font-semibold text-gray-800">P2P</span>
+                                <svg class="w-5 h-5 transform transition-transform" id="p2p_icon">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </button>
+                            <div id="p2p_content" class="section-content bg-white p-6">
+                                <form onsubmit="submitReport(event, 'p2p')" class="space-y-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                                            <input type="text" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Username *</label>
+                                            <input type="text" name="username" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">UID *</label>
+                                        <input type="text" name="uid" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">P2P Order ID</label>
+                                        <input type="text" name="orderId" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Problem Type</label>
+                                        <select name="subcategory" onchange="toggleP2P_UID(this.value)" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="">Select problem type</option>
+                                            <option value="Payment Scam">Payment Scam</option>
+                                            <option value="Token Release Scam">Token Release Scam</option>
+                                            <option value="Order Create Problem">Order Create Problem</option>
+                                            <option value="Report Other User">Report Other User</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div id="other_user_uid_p2p" class="hidden">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Other User's UID *</label>
+                                        <input type="text" name="other_uid" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Screenshot</label>
+                                        <div class="flex gap-4">
+                                            <label class="flex items-center">
+                                                <input type="radio" name="hasScreenshot" value="yes" class="mr-2" onclick="toggleScreenshotUpload(true, 'p2p')">
+                                                <span>Yes</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="radio" name="hasScreenshot" value="no" checked class="mr-2" onclick="toggleScreenshotUpload(false, 'p2p')">
+                                                <span>No</span>
+                                            </label>
+                                        </div>
+                                        <input type="file" id="screenshot_p2p" name="screenshot" accept="image/*" class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hidden">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                                        <textarea name="description" required rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                                    </div>
+                                    <button type="submit" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                                        Submit Report
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                            <button onclick="toggleSection('trading')" class="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
+                                <span class="font-semibold text-gray-800">TRADING</span>
+                                <svg class="w-5 h-5 transform transition-transform" id="trading_icon">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </button>
+                            <div id="trading_content" class="section-content bg-white p-6">
+                                <form onsubmit="submitReport(event, 'trading')" class="space-y-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                                            <input type="text" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Username *</label>
+                                            <input type="text" name="username" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">UID *</label>
+                                        <input type="text" name="uid" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Section</label>
+                                        <input type="text" name="section" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Which section has the problem">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Screenshot</label>
+                                        <div class="flex gap-4">
+                                            <label class="flex items-center">
+                                                <input type="radio" name="hasScreenshot" value="yes" class="mr-2" onclick="toggleScreenshotUpload(true, 'trading')">
+                                                <span>Yes</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="radio" name="hasScreenshot" value="no" checked class="mr-2" onclick="toggleScreenshotUpload(false, 'trading')">
+                                                <span>No</span>
+                                            </label>
+                                        </div>
+                                        <input type="file" id="screenshot_trading" name="screenshot" accept="image/*" class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hidden">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                                        <textarea name="description" required rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                                    </div>
+                                    <button type="submit" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                                        Submit Report
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                            <button onclick="toggleSection('kyc')" class="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
+                                <span class="font-semibold text-gray-800">KYC</span>
+                                <svg class="w-5 h-5 transform transition-transform" id="kyc_icon">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </button>
+                            <div id="kyc_content" class="section-content bg-white p-6">
+                                <form onsubmit="submitReport(event, 'kyc')" class="space-y-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                                            <input type="text" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Username *</label>
+                                            <input type="text" name="username" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">UID *</label>
+                                        <input type="text" name="uid" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Problem Type</label>
+                                        <select name="subcategory" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="">Select problem type</option>
+                                            <option value="KYC Field Problem">KYC Field Problem</option>
+                                            <option value="KYC Submit Problem">KYC Submit Problem</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Screenshot</label>
+                                        <div class="flex gap-4">
+                                            <label class="flex items-center">
+                                                <input type="radio" name="hasScreenshot" value="yes" class="mr-2" onclick="toggleScreenshotUpload(true, 'kyc')">
+                                                <span>Yes</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="radio" name="hasScreenshot" value="no" checked class="mr-2" onclick="toggleScreenshotUpload(false, 'kyc')">
+                                                <span>No</span>
+                                            </label>
+                                        </div>
+                                        <input type="file" id="screenshot_kyc" name="screenshot" accept="image/*" class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hidden">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                                        <textarea name="description" required rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                                    </div>
+                                    <button type="submit" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                                        Submit Report
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                            <button onclick="toggleSection('other')" class="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
+                                <span class="font-semibold text-gray-800">OTHER</span>
+                                <svg class="w-5 h-5 transform transition-transform" id="other_icon">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </button>
+                            <div id="other_content" class="section-content bg-white p-6">
+                                <form onsubmit="submitReport(event, 'other')" class="space-y-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                                            <input type="text" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Username *</label>
+                                            <input type="text" name="username" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">UID *</label>
+                                        <input type="text" name="uid" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Screenshot</label>
+                                        <div class="flex gap-4">
+                                            <label class="flex items-center">
+                                                <input type="radio" name="hasScreenshot" value="yes" class="mr-2" onclick="toggleScreenshotUpload(true, 'other')">
+                                                <span>Yes</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="radio" name="hasScreenshot" value="no" checked class="mr-2" onclick="toggleScreenshotUpload(false, 'other')">
+                                                <span>No</span>
+                                            </label>
+                                        </div>
+                                        <input type="file" id="screenshot_other" name="screenshot" accept="image/*" class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hidden">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                                        <textarea name="description" required rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                                    </div>
+                                    <button type="submit" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                                        Submit Report
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 p-6 rounded-xl live-chat-btn text-white">
+                        <div class="text-center">
+                            <svg class="w-8 h-8 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                            </svg>
+                            <h3 class="text-xl font-bold mb-2">Live Chat Support</h3>
+                            <p class="text-sm mb-4 opacity-90">Need immediate assistance? Chat with our support team now!</p>
+                            <button onclick="openLiveChat()" class="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors flex items-center gap-2 mx-auto">
+                                Start Live Chat
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 bg-white rounded-xl shadow-sm border-2 border-dashed border-blue-200 p-6">
+                    <div class="text-center space-y-4">
+                        <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mx-auto">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900">Can't Find What You're Looking For?</h3>
+                        <p class="text-gray-600 text-sm max-w-md mx-auto">
+                            If you're unable to submit your issue or find a solution through the above options, 
+                            or if you're facing trouble explaining your problem, you can directly reach out to us via email. 
+                            We're constantly working to improve and assist you better.
+                        </p>
+                        <div class="pt-2">
+                            <p class="text-sm font-medium mb-2">Please email us your issue at:</p>
+                            <button onclick="window.open('mailto:help.avicnkvonteam@gmail.com')" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                                help.avicnkvonteam@gmail.com
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="reportPanel" class="hidden lg:block">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center gap-3 mb-4">
+                        <h2 class="text-xl font-semibold text-gray-900">Report Requests</h2>
+                        <span id="requestCount" class="px-2 py-1 text-xs bg-gray-200 rounded-full">0</span>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-6">Your submitted reports and admin replies</p>
+                    
+                    <div id="reportsList" class="space-y-4">
+                        <p class="text-gray-500 text-center py-8">No reports submitted yet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase configuration
+        const supabaseUrl = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // ** FIX: currentUser ID ko localStorage mein store aur retrieve karein **
+        let currentUser = localStorage.getItem('currentUser');
+        if (!currentUser) {
+            currentUser = 'user_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('currentUser', currentUser);
+        }
+
+        // Toggle section functionality
+        function toggleSection(sectionId) {
+            const content = document.getElementById(sectionId + '_content');
+            const icon = document.getElementById(sectionId + '_icon');
+            
+            // Close all other sections
+            document.querySelectorAll('.section-content').forEach(section => {
+                if (section.id !== sectionId + '_content') {
+                    section.classList.remove('open');
+                }
+            });
+            
+            // Reset all other icons
+            document.querySelectorAll('[id$="_icon"]').forEach(iconEl => {
+                if (iconEl.id !== sectionId + '_icon') {
+                    iconEl.style.transform = 'rotate(0deg)';
+                }
+            });
+            
+            // Toggle current section
+            if (content.classList.contains('open')) {
+                content.classList.remove('open');
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.classList.add('open');
+                icon.style.transform = 'rotate(90deg)';
+            }
+        }
+
+        // Toggle screenshot upload input
+        function toggleScreenshotUpload(show, category) {
+            const screenshotInput = document.getElementById(`screenshot_${category}`);
+            if (show) {
+                screenshotInput.classList.remove('hidden');
+            } else {
+                screenshotInput.classList.add('hidden');
+                screenshotInput.value = ''; // Clear the file input
+            }
+        }
+
+        // Toggle P2P other user UID input
+        function toggleP2P_UID(value) {
+            const otherUIDInput = document.getElementById('other_user_uid_p2p');
+            if (value === 'Report Other User') {
+                otherUIDInput.classList.remove('hidden');
+                otherUIDInput.querySelector('input').setAttribute('required', 'required');
+            } else {
+                otherUIDInput.classList.add('hidden');
+                otherUIDInput.querySelector('input').removeAttribute('required');
+                otherUIDInput.querySelector('input').value = '';
+            }
+        }
+
+        // Submit report function
+        async function submitReport(event, category) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            let screenshotUrl = null;
+            const screenshotFile = formData.get('screenshot');
+
+            if (screenshotFile && screenshotFile.size > 0) {
+                const filePath = `${currentUser}/${category}_${Date.now()}_${screenshotFile.name}`;
+                const { data, error: uploadError } = await supabase.storage
+                    .from('report-images')
+                    .upload(filePath, screenshotFile);
+
+                if (uploadError) {
+                    console.error('Error uploading screenshot:', uploadError);
+                    alert('Error uploading screenshot. Please try again.');
+                    return;
+                }
+                
+                const { data: publicUrlData } = supabase
+                    .storage
+                    .from('report-images')
+                    .getPublicUrl(filePath);
+
+                screenshotUrl = publicUrlData.publicUrl;
+            }
+
+            const reportData = {
+                name: formData.get('name'),
+                username: currentUser, // ** FIX: username ko currentUser se set kiya **
+                uid: formData.get('uid'),
+                category: category,
+                subcategory: formData.get('subcategory') || null,
+                order_id: formData.get('orderId') || null,
+                section: formData.get('section') || null,
+                other_uid: formData.get('other_uid') || null,
+                has_screenshot: formData.get('hasScreenshot'),
+                screenshot_url: screenshotUrl,
+                description: formData.get('description'),
+                status: 'pending',
+                created_at: new Date().toISOString()
+            };
+
+            try {
+                const { error } = await supabase
+                    .from('user_help')
+                    .insert([reportData]);
+                
+                if (error) {
+                    console.error('Error submitting report:', error);
+                    alert('Error submitting report. Please try again.');
+                    return;
+                }
+                
+                alert('Report submitted successfully! You can see it in the request section.');
+                form.reset();
+                
+                // Close the section
+                const content = document.getElementById(category + '_content');
+                const icon = document.getElementById(category + '_icon');
+                content.classList.remove('open');
+                icon.style.transform = 'rotate(0deg)';
+                
+                // Refresh reports list
+                loadReports();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to submit report. Please try again.');
+            }
+        }
+
+        // Load user reports
+        async function loadReports() {
+            try {
+                const { data: reports, error } = await supabase
+                    .from('user_help')
+                    .select('*')
+                    .eq('username', currentUser) // ** FIX: yahan bhi currentUser ka istemal karein **
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    console.error('Error loading reports:', error);
+                    return;
+                }
+                
+                displayReports(reports || []);
+                
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Display reports in the panel
+        function displayReports(reports) {
+            const reportsList = document.getElementById('reportsList');
+            const requestCount = document.getElementById('requestCount');
+            const totalRequestsCount = document.getElementById('totalRequestsCount');
+            
+            requestCount.textContent = reports.length;
+            totalRequestsCount.textContent = reports.length;
+            
+            if (reports.length === 0) {
+                reportsList.innerHTML = '<p class="text-gray-500 text-center py-8">No reports submitted yet</p>';
+                return;
+            }
+            
+            reportsList.innerHTML = reports.map(report => {
+                const createdAt = new Date(report.created_at).toLocaleString();
+                const repliedAt = report.replied_at ? new Date(report.replied_at).toLocaleString() : null;
+                
+                return `
+                    <div class="report-card bg-gray-50 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="px-2 py-1 text-xs rounded-full ${
+                                report.status === 'replied' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-orange-100 text-orange-800'
+                            }">
+                                ${report.status === 'replied' ? '✓ Replied' : '⏳ Pending'}
+                            </span>
+                            <span class="text-xs text-gray-500">${createdAt}</span>
+                        </div>
+                        
+                        <h4 class="font-medium text-gray-900 mb-1">
+                            ${getCategoryName(report.category)}
+                        </h4>
+                        
+                        ${report.subcategory ? `<p class="text-xs text-gray-600 mb-2">Type: ${report.subcategory}</p>` : ''}
+                        ${report.other_uid ? `<p class="text-xs text-gray-600 mb-2">Other User UID: ${report.other_uid}</p>` : ''}
+                        
+                        <p class="text-sm text-gray-700 mb-3">${report.description}</p>
+
+                        ${report.screenshot_url ? `
+                            <div class="mb-3">
+                                <a href="${report.screenshot_url}" target="_blank" class="text-blue-600 hover:underline text-sm">View Screenshot</a>
+                            </div>
+                        ` : ''}
+                        
+                        ${report.admin_reply ? `
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+                                <p class="text-sm font-medium text-blue-900 mb-1">Admin Reply:</p>
+                                <p class="text-sm text-blue-800">${report.admin_reply}</p>
+                                ${repliedAt ? `<p class="text-xs text-blue-600 mt-1">Replied on: ${repliedAt}</p>` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Get category display name
+        function getCategoryName(categoryId) {
+            const categories = {
+                'account_security': 'ACCOUNT & SECURITY',
+                'deposit': 'DEPOSIT',
+                'withdrawal': 'WITHDRAWAL',
+                'p2p': 'P2P',
+                'trading': 'TRADING',
+                'kyc': 'KYC',
+                'other': 'OTHER'
+            };
+            return categories[categoryId] || categoryId.toUpperCase();
+        }
+
+        // Toggle reports panel (mobile)
+        function toggleReports() {
+            const panel = document.getElementById('reportPanel');
+            const icon = document.getElementById('reportToggleIcon');
+            
+            if (panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>';
+            } else {
+                panel.classList.add('hidden');
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>';
+            }
+        }
+
+        // Go back function
+        function goBack() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '/dashboard'; // Fallback URL
+            }
+        }
+
+        // Open live chat
+        function openLiveChat() {
+            window.open('/chat.html', '_blank', 'width=800,height=600');
+        }
+
+        // Auto-cleanup function (runs every hour)
+        async function autoCleanup() {
+            try {
+                const seventyTwoHoursAgo = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
+                
+                const { error } = await supabase
+                    .from('user_help')
+                    .delete()
+                    .not('admin_reply', 'is', null)
+                    .not('replied_at', 'is', null)
+                    .lt('replied_at', seventyTwoHoursAgo);
+                
+                if (error) {
+                    console.error('Auto cleanup error:', error);
+                } else {
+                    console.log('Auto cleanup completed');
+                    loadReports(); // Refresh the list
+                }
+            } catch (error) {
+                console.error('Auto cleanup error:', error);
+            }
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load initial reports
+            loadReports();
+            
+            // Set up auto-cleanup to run every hour
+            setInterval(autoCleanup, 60 * 60 * 1000);
+            
+            // Run initial cleanup
+            autoCleanup();
+            
+            // Set up periodic refresh of reports (every 30 seconds)
+            setInterval(loadReports, 30000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Markets – AvicnKnov Ex</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #fff;
+    }
+
+    .search-box {
+      margin: 10px;
+      text-align: center;
+    }
+
+    .search-box input {
+      width: 90%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 25px;
+      border: 1px solid #ccc;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: space-around;
+      margin: 10px 5px;
+      overflow-x: auto;
+    }
+
+    .tabs div {
+      flex: 1;
+      text-align: center;
+      padding: 10px 0;
+      border-bottom: 2px solid transparent;
+      color: #444;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .tabs .active {
+      border-bottom: 2px solid #007bff;
+      color: #007bff;
+      font-weight: bold;
+    }
+
+    .section {
+      display: none;
+      padding: 10px;
+      color: #555;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    .fav-tabs {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .fav-tab {
+      padding: 8px 14px;
+      border: none;
+      background: #e0e0e0;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .fav-tab.active {
+      background: #00ffe1;
+      color: black;
+      box-shadow: 0 0 8px #00ffe1;
+    }
+
+    .fav-content {
+      display: none;
+    }
+
+    .fav-content.active {
+      display: block;
+    }
+
+    /* Demo content styling */
+    .demo-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      background: #f9f9f9;
+      margin: 5px 0;
+      border-radius: 5px;
+    }
+
+    .demo-item .name {
+      font-weight: bold;
+      color: #333;
+    }
+
+    .demo-item .price {
+      color: #007bff;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 🔍 Search Box -->
+  <div class="search-box">
+    <input type="text" placeholder="Search tokens, pairs, or sections...">
+  </div>
+
+  <!-- 🔝 Top Tabs -->
+  <div class="tabs">
+    <div class="tab-btn active" onclick="showSection('favourites')">Favourites</div>
+    <div class="tab-btn" onclick="showSection('market')">Market</div>
+    <div class="tab-btn" onclick="showSection('alpha')">Alpha</div>
+    <div class="tab-btn" onclick="showSection('flach')">Flach</div>
+  </div>
+
+  <!-- ⭐ Favourites Section -->
+  <div class="section active" id="favourites">
+    <div class="fav-tabs">
+      <button class="fav-tab active" onclick="showFavTab('all', event)">All</button>
+      <button class="fav-tab" onclick="showFavTab('holdings', event)">Holdings</button>
+      <button class="fav-tab" onclick="showFavTab('spot', event)">Spot</button>
+      <button class="fav-tab" onclick="showFavTab('futures', event)">Futures</button>
+    </div>
+    <div id="all" class="fav-content active"></div>
+    <div id="holdings" class="fav-content"></div>
+    <div id="spot" class="fav-content"></div>
+    <div id="futures" class="fav-content"></div>
+  </div>
+
+  <!-- 📊 Market Section -->
+  <div class="section" id="market">
+    <div class="fav-tabs">
+      <button class="fav-tab active" onclick="showMarketTab('crypto', event)">Crypto</button>
+      <button class="fav-tab" onclick="showMarketTab('market-spot', event)">Spot</button>
+      <button class="fav-tab" onclick="showMarketTab('usdm', event)">USD-M</button>
+      <button class="fav-tab" onclick="showMarketTab('coinm', event)">COIN-M</button>
+    </div>
+    <div id="crypto" class="fav-content active"></div>
+    <div id="market-spot" class="fav-content"></div>
+    <div id="usdm" class="fav-content"></div>
+    <div id="coinm" class="fav-content"></div>
+  </div>
+
+  <!-- 🧠 Alpha Section -->
+  <div class="section" id="alpha">
+    <div class="fav-tabs">
+      <button class="fav-tab active" onclick="showAlphaTab('alpha-all', event)">All</button>
+      <button class="fav-tab" onclick="showAlphaTab('alpha-coinm', event)">COIN-M</button>
+      <button class="fav-tab" onclick="showAlphaTab('alpha-mark', event)">Mark</button>
+    </div>
+    <div id="alpha-all" class="fav-content active"></div>
+    <div id="alpha-coinm" class="fav-content"></div>
+    <div id="alpha-mark" class="fav-content"></div>
+  </div>
+
+  <!-- ⚡ Flach Section -->
+  <div class="section" id="flach">
+    <div class="fav-tabs">
+      <button class="fav-tab active" onclick="showFlachTab('rubikb', event)">RUBIK-B</button>
+      <button class="fav-tab" onclick="showFlachTab('plqn', event)">PLQN</button>
+    </div>
+    <div id="rubikb" class="fav-content active"></div>
+    <div id="plqn" class="fav-content"></div>
+  </div>
+
+  <!-- 🔁 JavaScript Logic -->
+  <script>
+    // Section Switch
+    function showSection(sectionId) {
+      document.querySelectorAll(".tab-btn").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+
+      document.getElementById(sectionId).classList.add("active");
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        if (btn.textContent.trim().toLowerCase() === sectionId) {
+          btn.classList.add("active");
+        }
+      });
+    }
+
+    // Favourites Tabs
+    function showFavTab(tabId, event) {
+      const tabs = document.querySelectorAll("#favourites .fav-tab");
+      const contents = document.querySelectorAll("#favourites .fav-content");
+
+      tabs.forEach(tab => tab.classList.remove("active"));
+      contents.forEach(c => c.classList.remove("active"));
+
+      document.getElementById(tabId).classList.add("active");
+      event.target.classList.add("active");
+    }
+
+    // Market Tabs
+    function showMarketTab(tabId, event) {
+      const tabs = document.querySelectorAll("#market .fav-tab");
+      const contents = document.querySelectorAll("#market .fav-content");
+
+      tabs.forEach(tab => tab.classList.remove("active"));
+      contents.forEach(c => c.classList.remove("active"));
+
+      document.getElementById(tabId).classList.add("active");
+      event.target.classList.add("active");
+    }
+
+    // Alpha Tabs
+    function showAlphaTab(tabId, event) {
+      const tabs = document.querySelectorAll("#alpha .fav-tab");
+      const contents = document.querySelectorAll("#alpha .fav-content");
+
+      tabs.forEach(tab => tab.classList.remove("active"));
+      contents.forEach(c => c.classList.remove("active"));
+
+      document.getElementById(tabId).classList.add("active");
+      event.target.classList.add("active");
+    }
+
+    // Flach Tabs
+    function showFlachTab(tabId, event) {
+      const tabs = document.querySelectorAll("#flach .fav-tab");
+      const contents = document.querySelectorAll("#flach .fav-content");
+
+      tabs.forEach(tab => tab.classList.remove("active"));
+      contents.forEach(c => c.classList.remove("active"));
+
+      document.getElementById(tabId).classList.add("active");
+      event.target.classList.add("active");
+    }
+  </script>
+
+  <!-- External JS Files (corrected names) -->
+  <script src="favourites-all.js"></script>
+  <script src="favourites-holdings.js"></script>
+  <script src="favourites-spot.js"></script>
+  <script src="favourites-futures.js"></script>
+
+  <script src="market-crypto.js"></script>
+  <script src="market-spot.js"></script>
+  <script src="market-usdm.js"></script>
+  <script src="market-coinm.js"></script>
+
+  <script src="alpha-all.js"></script>
+  <script src="alpha-coinm.js"></script>
+  <script src="alpha-mark.js"></script>
+
+  <!-- Fixed script names for Flach section -->
+  <script src="flach-rubikb.js"></script>
+  <script src="flach-plqn.js"></script>
+
+</body>
+</html>

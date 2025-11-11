@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reward Box - Create & Redeem Codes</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .nav-icon:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+
+        .nav-icon svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 100px 20px 40px;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #fff, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(255,255,255,0.3);
+        }
+
+        .subtitle {
+            text-align: center;
+            opacity: 0.9;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+
+        .tab-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+            gap: 20px;
+        }
+
+        .tab-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .tab-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .card-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-align: center;
+            color: #ffd700;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .form-input {
+            width: 100%;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #ffd700;
+            box-shadow: 0 0 10px rgba(255,215,0,0.3);
+        }
+
+        .form-input::placeholder {
+            color: rgba(255,255,255,0.6);
+        }
+
+        .form-select {
+            width: 100%;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .form-select option {
+            background: #333;
+            color: white;
+        }
+
+        .amount-qty-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .code-display {
+            background: rgba(0,0,0,0.3);
+            border: 2px dashed #ffd700;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+            animation: fadeInScale 0.5s ease;
+        }
+
+        .code-display.show {
+            display: block;
+        }
+
+        .code-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            color: #ffd700;
+            word-break: break-all;
+            margin-bottom: 15px;
+        }
+
+        .copy-btn {
+            background: linear-gradient(45deg, #48CAE4, #0077B6);
+            padding: 10px 20px;
+            border-radius: 15px;
+            border: none;
+            color: white;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .code-timer {
+            margin-top: 15px;
+            font-size: 1rem;
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .balance-info {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .balance-amount {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .price-display {
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .history-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .history-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            transform: scale(1.2);
+            color: #ff6b6b;
+        }
+
+        .history-item {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .history-user {
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+
+        .history-details {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin: 5px 0;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 3000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            max-width: 300px;
+            word-wrap: break-word;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.error {
+            background: linear-gradient(45deg, #ff4757, #ff3742);
+        }
+
+        .toast.success {
+            background: linear-gradient(45deg, #2ed573, #1e90ff);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2rem;
+            }
+            
+            .card {
+                padding: 25px;
+                margin: 0 10px;
+            }
+            
+            .tab-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .tab-btn {
+                width: 200px;
+            }
+            
+            .amount-qty-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="nav-icon" onclick="goToDashboard()">
+            <svg viewBox="0 0 24 24">
+                <path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" />
+            </svg>
+        </div>
+        
+        <div class="nav-icon" onclick="showHistory()">
+            <svg viewBox="0 0 24 24">
+                <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z" />
+            </svg>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1 class="title">🎁 Reward Box</h1>
+        <p class="subtitle">Create & Redeem reward codes with your friends!</p>
+
+        <div class="tab-container">
+            <button class="tab-btn active" onclick="switchTab('redeem')">🎯 Redeem Code</button>
+            <button class="tab-btn" onclick="switchTab('create')">🏗️ Create Code</button>
+        </div>
+
+        <!-- Redeem Tab -->
+        <div class="tab-content active" id="redeemTab">
+            <div class="card">
+                <h2 class="card-title">🎯 Redeem Reward Code</h2>
+                
+                <div class="form-group">
+                    <label class="form-label">Enter 22-Character Code</label>
+                    <input type="text" class="form-input" id="redeemCode" placeholder="Enter your reward code here..." maxlength="22">
+                </div>
+                
+                <button class="btn" onclick="redeemCode()">🎁 Redeem Reward</button>
+            </div>
+        </div>
+
+        <!-- Create Tab -->
+        <div class="tab-content" id="createTab">
+            <div class="card">
+                <h2 class="card-title">🏗️ Create Reward Code</h2>
+                
+                <div class="balance-info">
+                    <div>Your Balance</div>
+                    <div class="balance-amount" id="userBalance">₹0</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Select Token Type</label>
+                    <select class="form-select" id="tokenType" onchange="updateTokenPrice()">
+                        <option value="INR">INR (Indian Rupees)</option>
+                        <option value="BTC">Bitcoin (BTC)</option>
+                        <option value="ETH">Ethereum (ETH)</option>
+                        <option value="BNB">BNB</option>
+                        <option value="SOL">Solana (SOL)</option>
+                        <option value="XRP">XRP</option>
+                        <option value="ADA">Cardano (ADA)</option>
+                        <option value="DOGE">Dogecoin (DOGE)</option>
+                        <option value="MATIC">Polygon (MATIC)</option>
+                        <option value="DOT">Polkadot (DOT)</option>
+                        <option value="LTC">Litecoin (LTC)</option>
+                    </select>
+                    <div class="price-display" id="tokenPrice">Current Price: Loading...</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Reward Per Person</label>
+                    <div class="amount-qty-row">
+                        <div>
+                            <input type="number" class="form-input" id="rewardAmount" placeholder="Amount (₹)" min="0" step="0.01" oninput="calculateQuantity()">
+                        </div>
+                        <div>
+                            <input type="number" class="form-input" id="rewardQuantity" placeholder="Quantity" min="0" step="0.00000001" oninput="calculateAmount()">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Usage Limit (How many people can redeem)</label>
+                    <input type="number" class="form-input" id="usageLimit" placeholder="Enter usage limit" min="1" max="1000" oninput="calculateTotalCost()">
+                </div>
+                
+                <div class="price-display" id="totalCost">Total Cost: ₹0</div>
+                
+                <button class="btn" onclick="createCode()">🚀 Create Code</button>
+                
+                <div class="code-display" id="codeDisplay">
+                    <div style="margin-bottom: 10px;">🎉 Your Generated Code:</div>
+                    <div class="code-text" id="generatedCode"></div>
+                    <button class="copy-btn" onclick="copyCode()">📋 Copy Code</button>
+                    <button class="copy-btn" onclick="shareCode()">📤 Share Code</button>
+                    <div class="code-timer" id="codeTimer">
+                        ⏰ Code will disappear in: 10 seconds
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="history-modal" id="historyModal">
+        <div class="history-content">
+            <button class="close-btn" onclick="closeHistory()">&times;</button>
+            <h2 style="margin-bottom: 25px; text-align: center;">📊 Redemption History</h2>
+            <div id="historyList">
+                <div style="text-align: center; opacity: 0.7;">Loading history...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase configuration
+        const SUPA_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+        const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+        
+        const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+        
+        let currentUser = null;
+        let userBalance = 0;
+        let userHoldings = {};
+        let tokenPrices = {};
+        let isCalculating = false;
+        let codeTimer = null;
+
+        const TOKEN_IDS = {
+            'BTC': 'bitcoin',
+            'ETH': 'ethereum', 
+            'BNB': 'binancecoin',
+            'SOL': 'solana',
+            'XRP': 'ripple',
+            'ADA': 'cardano',
+            'DOGE': 'dogecoin',
+            'MATIC': 'matic-network',
+            'DOT': 'polkadot',
+            'LTC': 'litecoin'
+        };
+
+        // Initialize
+        async function init() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    showToast('Please log in to access reward box', 'error');
+                    setTimeout(() => goToDashboard(), 2000);
+                    return;
+                }
+                
+                currentUser = user;
+                await loadUserBalance();
+                await loadUserHoldings();
+                await loadTokenPrices();
+                updateBalanceDisplay();
+                updateTokenPrice();
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showToast('Failed to load user data', 'error');
+            }
+        }
+
+        // Load token prices
+        async function loadTokenPrices() {
+            try {
+                const ids = Object.values(TOKEN_IDS).join(',');
+                const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=inr`);
+                const data = await response.json();
+                
+                tokenPrices = { INR: 1 };
+                for (const [token, id] of Object.entries(TOKEN_IDS)) {
+                    tokenPrices[token] = data[id]?.inr || 0;
+                }
+            } catch (error) {
+                console.error('Error loading token prices:', error);
+                tokenPrices = {
+                    INR: 1, BTC: 3500000, ETH: 280000, BNB: 25000, SOL: 12000,
+                    XRP: 180, ADA: 45, DOGE: 12, MATIC: 85, DOT: 6500, LTC: 8500
+                };
+            }
+        }
+
+        // Load user balance
+        async function loadUserBalance() {
+            try {
+                const { data, error } = await supabase
+                    .from('user_wallets')
+                    .select('balance')
+                    .eq('uid', currentUser.id)
+                    .single();
+                
+                if (!error && data) {
+                    userBalance = Number(data.balance || 0);
+                }
+            } catch (error) {
+                console.error('Error loading balance:', error);
+            }
+        }
+
+        // Load user holdings
+        async function loadUserHoldings() {
+            try {
+                const { data, error } = await supabase
+                    .from('user_holdings')
+                    .select('symbol, qty')
+                    .eq('user_id', currentUser.id);
+                
+                if (!error && data) {
+                    userHoldings = {};
+                    data.forEach(holding => {
+                        userHoldings[holding.symbol] = Number(holding.qty || 0);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading holdings:', error);
+            }
+        }
+
+        // Update balance display
+        function updateBalanceDisplay() {
+            const tokenType = document.getElementById('tokenType').value;
+            let displayBalance = 0;
+            let unit = '';
+            
+            if (tokenType === 'INR') {
+                displayBalance = userBalance;
+                unit = '₹';
+            } else {
+                displayBalance = userHoldings[tokenType] || 0;
+                unit = tokenType;
+            }
+            
+            document.getElementById('userBalance').textContent = `${unit}${displayBalance.toLocaleString()}`;
+        }
+
+        // Update token price
+        function updateTokenPrice() {
+            const tokenType = document.getElementById('tokenType').value;
+            const priceElement = document.getElementById('tokenPrice');
+            
+            if (tokenType === 'INR') {
+                priceElement.textContent = 'Current Price: ₹1 = ₹1';
+            } else {
+                const price = tokenPrices[tokenType] || 0;
+                priceElement.textContent = `Current Price: 1 ${tokenType} = ₹${price.toLocaleString()}`;
+            }
+            
+            updateBalanceDisplay();
+            calculateTotalCost();
+        }
+
+        // Calculate quantity from amount
+        function calculateQuantity() {
+            if (isCalculating) return;
+            isCalculating = true;
+            
+            const tokenType = document.getElementById('tokenType').value;
+            const amount = parseFloat(document.getElementById('rewardAmount').value) || 0;
+            const price = tokenPrices[tokenType] || 1;
+            
+            const quantity = tokenType === 'INR' ? amount : (amount / price);
+            document.getElementById('rewardQuantity').value = quantity > 0 ? quantity.toFixed(8) : '';
+            
+            calculateTotalCost();
+            isCalculating = false;
+        }
+
+        // Calculate amount from quantity
+        function calculateAmount() {
+            if (isCalculating) return;
+            isCalculating = true;
+            
+            const tokenType = document.getElementById('tokenType').value;
+            const quantity = parseFloat(document.getElementById('rewardQuantity').value) || 0;
+            const price = tokenPrices[tokenType] || 1;
+            
+            const amount = tokenType === 'INR' ? quantity : (quantity * price);
+            document.getElementById('rewardAmount').value = amount > 0 ? amount.toFixed(2) : '';
+            
+            calculateTotalCost();
+            isCalculating = false;
+        }
+
+        // Calculate total cost
+        function calculateTotalCost() {
+            const amount = parseFloat(document.getElementById('rewardAmount').value) || 0;
+            const usageLimit = parseInt(document.getElementById('usageLimit').value) || 0;
+            const totalCost = amount * usageLimit;
+            
+            document.getElementById('totalCost').textContent = `Total Cost: ₹${totalCost.toLocaleString()}`;
+        }
+
+        // Switch tabs
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tab + 'Tab').classList.add('active');
+            
+            document.getElementById('codeDisplay').classList.remove('show');
+            if (codeTimer) {
+                clearInterval(codeTimer);
+                codeTimer = null;
+            }
+        }
+
+        // Generate code
+        function generateCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < 22; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        // Create code
+        async function createCode() {
+            try {
+                const tokenType = document.getElementById('tokenType').value;
+                const rewardAmount = parseFloat(document.getElementById('rewardAmount').value);
+                const rewardQuantity = parseFloat(document.getElementById('rewardQuantity').value);
+                const usageLimit = parseInt(document.getElementById('usageLimit').value);
+                
+                if (!rewardAmount || rewardAmount <= 0) {
+                    showToast('Please enter a valid reward amount', 'error');
+                    return;
+                }
+                
+                if (!rewardQuantity || rewardQuantity <= 0) {
+                    showToast('Please enter a valid reward quantity', 'error');
+                    return;
+                }
+                
+                if (!usageLimit || usageLimit <= 0) {
+                    showToast('Please enter a valid usage limit', 'error');
+                    return;
+                }
+                
+                const totalCost = rewardAmount * usageLimit;
+                if (totalCost < 100) {
+                    showToast('Minimum total reward value should be ₹100', 'error');
+                    return;
+                }
+                
+                // Check balance
+                if (tokenType === 'INR') {
+                    if (userBalance < totalCost) {
+                        showToast('Insufficient INR balance', 'error');
+                        return;
+                    }
+                } else {
+                    const requiredQty = rewardQuantity * usageLimit;
+                    const availableQty = userHoldings[tokenType] || 0;
+                    if (availableQty < requiredQty) {
+                        showToast(`Insufficient ${tokenType} balance`, 'error');
+                        return;
+                    }
+                }
+                
+                const code = generateCode();
+                const expiresAt = new Date();
+                expiresAt.setHours(expiresAt.getHours() + 70);
+                
+                const { error } = await supabase
+                    .from('redeem_codes')
+                    .insert({
+                        code: code,
+                        creator_id: currentUser.id,
+                        token_type: tokenType,
+                        reward_amount: rewardAmount,
+                        reward_quantity: rewardQuantity,
+                        usage_limit: usageLimit,
+                        used_count: 0,
+                        expires_at: expiresAt.toISOString(),
+                        is_active: true,
+                        redemption_history: []
+                    });
+                
+                if (error) {
+                    console.error('Error creating code:', error);
+                    showToast('Failed to create code', 'error');
+                    return;
+                }
+                
+                // Deduct balance
+                if (tokenType === 'INR') {
+                    await updateUserBalance(userBalance - totalCost);
+                } else {
+                    const requiredQty = rewardQuantity * usageLimit;
+                    const availableQty = userHoldings[tokenType] || 0;
+                    await updateUserHolding(tokenType, availableQty - requiredQty);
+                }
+                
+                // Show code
+                document.getElementById('generatedCode').textContent = code;
+                document.getElementById('codeDisplay').classList.add('show');
+                
+                // Start 10 second timer
+                let timeLeft = 10;
+                const timerElement = document.getElementById('codeTimer');
+                codeTimer = setInterval(() => {
+                    timeLeft--;
+                    timerElement.textContent = `⏰ Code will disappear in: ${timeLeft} seconds`;
+                    
+                    if (timeLeft <= 0) {
+                        document.getElementById('codeDisplay').classList.remove('show');
+                        clearInterval(codeTimer);
+                        codeTimer = null;
+                    }
+                }, 1000);
+                
+                showToast('Code created successfully!', 'success');
+                
+                // Clear form
+                document.getElementById('rewardAmount').value = '';
+                document.getElementById('rewardQuantity').value = '';
+                document.getElementById('usageLimit').value = '';
+                document.getElementById('totalCost').textContent = 'Total Cost: ₹0';
+                
+                // Refresh data
+                await loadUserBalance();
+                await loadUserHoldings();
+                updateBalanceDisplay();
+                
+            } catch (error) {
+                console.error('Error creating code:', error);
+                showToast('Failed to create code', 'error');
+            }
+        }
+
+        // Redeem code
+        async function redeemCode() {
+            try {
+                const code = document.getElementById('redeemCode').value.trim().toUpperCase();
+                
+                if (!code || code.length !== 22) {
+                    showToast('Please enter a valid 22-character code', 'error');
+                    return;
+                }
+                
+                const { data: codeData, error: codeError } = await supabase
+                    .from('redeem_codes')
+                    .select('*')
+                    .eq('code', code)
+                    .eq('is_active', true)
+                    .single();
+                
+                if (codeError || !codeData) {
+                    showToast('Invalid or expired code', 'error');
+                    return;
+                }
+                
+                const now = new Date();
+                const expiresAt = new Date(codeData.expires_at);
+                if (now > expiresAt) {
+                    showToast('This code has expired', 'error');
+                    return;
+                }
+                
+                if (codeData.used_count >= codeData.usage_limit) {
+                    showToast('This code has reached its usage limit', 'error');
+                    return;
+                }
+                
+                // Check if already redeemed
+                const history = codeData.redemption_history || [];
+                const alreadyRedeemed = history.some(entry => entry.user_id === currentUser.id);
+                
+                if (alreadyRedeemed) {
+                    showToast('You have already redeemed this code', 'error');
+                    return;
+                }
+                
+                // Add reward
+                if (codeData.token_type === 'INR') {
+                    await updateUserBalance(userBalance + codeData.reward_amount);
+                } else {
+                    const currentQty = userHoldings[codeData.token_type] || 0;
+                    await updateUserHolding(codeData.token_type, currentQty + codeData.reward_quantity);
+                }
+                
+                // Update redemption history
+                const newHistory = [...history, {
+                    user_id: currentUser.id,
+                    redeemed_at: new Date().toISOString()
+                }];
+                
+                await supabase
+                    .from('redeem_codes')
+                    .update({ 
+                        used_count: codeData.used_count + 1,
+                        redemption_history: newHistory
+                    })
+                    .eq('id', codeData.id);
+                
+                showToast(`Successfully redeemed ${codeData.reward_amount} ${codeData.token_type}!`, 'success');
+                
+                document.getElementById('redeemCode').value = '';
+                
+                await loadUserBalance();
+                await loadUserHoldings();
+                updateBalanceDisplay();
+                
+            } catch (error) {
+                console.error('Error redeeming code:', error);
+                showToast('Failed to redeem code', 'error');
+            }
+        }
+
+        // Update user balance
+        async function updateUserBalance(newBalance) {
+            try {
+                const { error } = await supabase
+                    .from('user_wallets')
+                    .upsert({ 
+                        uid: currentUser.id, 
+                        balance: newBalance 
+                    }, { 
+                        onConflict: 'uid' 
+                    });
+                
+                if (!error) {
+                    userBalance = newBalance;
+                }
+            } catch (error) {
+                console.error('Error updating balance:', error);
+            }
+        }
+
+        // Update user holding
+        async function updateUserHolding(symbol, newQty) {
+            try {
+                if (newQty <= 0) {
+                    await supabase
+                        .from('user_holdings')
+                        .delete()
+                        .eq('user_id', currentUser.id)
+                        .eq('symbol', symbol);
+                } else {
+                    await supabase
+                        .from('user_holdings')
+                        .upsert({
+                            user_id: currentUser.id,
+                            symbol: symbol,
+                            qty: newQty,
+                            cost_inr: 0
+                        }, { onConflict: 'user_id,symbol' });
+                }
+                
+                userHoldings[symbol] = newQty;
+            } catch (error) {
+                console.error('Error updating holding:', error);
+            }
+        }
+
+        // Show history
+        async function showHistory() {
+            try {
+                document.getElementById('historyModal').style.display = 'flex';
+                
+                const { data, error } = await supabase
+                    .from('redeem_codes')
+                    .select('*')
+                    .or(`creator_id.eq.${currentUser.id},redemption_history.cs.[{"user_id":"${currentUser.id}"}]`)
+                    .order('created_at', { ascending: false });
+                
+                const historyList = document.getElementById('historyList');
+                
+                if (!data || data.length === 0) {
+                    historyList.innerHTML = '<div style="text-align: center; opacity: 0.7;">No history found</div>';
+                    return;
+                }
+                
+                let html = '';
+                data.forEach(codeData => {
+                    const history = codeData.redemption_history || [];
+                    
+                    if (history.length > 0) {
+                        history.forEach(entry => {
+                            if (entry.user_id === currentUser.id) {
+                                const redeemTime = new Date(entry.redeemed_at).toLocaleString();
+                                html += `
+                                    <div class="history-item">
+                                        <div class="history-user">You redeemed a code</div>
+                                        <div class="history-details">Reward: ${codeData.reward_amount} ${codeData.token_type}</div>
+                                        <div class="history-details">Time: ${redeemTime}</div>
+                                    </div>
+                                `;
+                            }
+                        });
+                    }
+                    
+                    if (codeData.creator_id === currentUser.id && history.length > 0) {
+                        history.forEach(entry => {
+                            if (entry.user_id !== currentUser.id) {
+                                const redeemTime = new Date(entry.redeemed_at).toLocaleString();
+                                const userId = entry.user_id.substring(0, 3) + '####';
+                                html += `
+                                    <div class="history-item">
+                                        <div class="history-user">${userId}</div>
+                                        <div class="history-details">Redeemed your code: ${codeData.reward_amount} ${codeData.token_type}</div>
+                                        <div class="history-details">Time: ${redeemTime}</div>
+                                    </div>
+                                `;
+                            }
+                        });
+                    }
+                });
+                
+                if (!html) {
+                    html = '<div style="text-align: center; opacity: 0.7;">No redemption history found</div>';
+                }
+                
+                historyList.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error loading history:', error);
+                document.getElementById('historyList').innerHTML = '<div style="text-align: center; color: #ff6b6b;">Error loading history</div>';
+            }
+        }
+
+        // Close history
+        function closeHistory() {
+            document.getElementById('historyModal').style.display = 'none';
+        }
+
+        // Copy code
+        function copyCode() {
+            const code = document.getElementById('generatedCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                showToast('Code copied to clipboard!', 'success');
+            });
+        }
+
+        // Share code
+        function shareCode() {
+            const code = document.getElementById('generatedCode').textContent;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Reward Code',
+                    text: `Use this reward code: ${code}`,
+                });
+            } else {
+                copyCode();
+            }
+        }
+
+        // Go to dashboard
+        function goToDashboard() {
+            window.location.href = '/dashboard.html';
+        }
+
+        // Show toast
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 3000);
+        }
+
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

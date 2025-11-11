@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Security Settings</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f0f0;
+    }
+    .container {
+      max-width: 400px;
+      margin: 60px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .back-button {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      text-decoration: none;
+      color: #007bff;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    .back-button:hover {
+      text-decoration: underline;
+    }
+    .message {
+      text-align: center;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <a class="back-button" href="profile.html">← Back</a>
+
+  <div class="container">
+    <h2>Change Password</h2>
+    <input type="password" id="oldPassword" placeholder="Enter Old Password" />
+    <input type="password" id="newPassword" placeholder="Enter New Password (8–12 characters)" />
+    <input type="password" id="confirmPassword" placeholder="Confirm New Password" />
+    <button id="changeBtn">Update Password</button>
+    <div class="message" id="message"></div>
+  </div>
+
+  <!-- ✅ Load Supabase SDK First -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- ✅ All logic runs AFTER supabase is available -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const supabaseUrl = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+      const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+      const oldPasswordInput = document.getElementById("oldPassword");
+      const newPasswordInput = document.getElementById("newPassword");
+      const confirmPasswordInput = document.getElementById("confirmPassword");
+      const messageEl = document.getElementById("message");
+
+      document.getElementById("changeBtn").addEventListener("click", async () => {
+        const oldPassword = oldPasswordInput.value;
+        const newPassword = newPasswordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+        messageEl.textContent = "";
+        messageEl.style.color = "red";
+
+        if (!oldPassword || !newPassword || !confirmPassword) {
+          messageEl.textContent = "Please fill all fields.";
+          return;
+        }
+
+        if (newPassword.length < 8 || newPassword.length > 12) {
+          messageEl.textContent = "New password must be 8 to 12 characters.";
+          return;
+        }
+
+        if (newPassword !== confirmPassword) {
+          messageEl.textContent = "New passwords do not match.";
+          return;
+        }
+
+        const {
+          data: { user },
+          error: userError
+        } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          messageEl.textContent = "User not logged in.";
+          return;
+        }
+
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: user.email,
+          password: oldPassword
+        });
+
+        if (signInError) {
+          messageEl.textContent = "Old password is incorrect.";
+          return;
+        }
+
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: newPassword
+        });
+
+        if (updateError) {
+          messageEl.textContent = "Password update failed.";
+        } else {
+          messageEl.style.color = "green";
+          messageEl.textContent = "Password updated successfully!";
+          oldPasswordInput.value = "";
+          newPasswordInput.value = "";
+          confirmPasswordInput.value = "";
+        }
+      });
+    });
+  </script>
+</body>
+</html>

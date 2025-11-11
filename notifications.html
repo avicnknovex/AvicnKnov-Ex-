@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Notifications</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+      position: relative;
+    }
+    .notification {
+      background: white;
+      padding: 15px;
+      margin: 10px 0;
+      border-left: 5px solid #007bff;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .notification h3 {
+      margin: 0 0 5px 0;
+    }
+    .notification p {
+      margin: 0;
+    }
+    .back-button {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+      text-decoration: none;
+    }
+    .back-button:hover {
+      background: #0056b3;
+    }
+    .back-button svg {
+      margin-right: 5px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 🔙 Back Button -->
+  <a class="back-button" href="dashboard.html">
+    <svg xmlns="http://www.w3.org/2000/svg" height="16" viewBox="0 0 24 24" width="16" fill="white">
+      <path d="M0 0h24v24H0z" fill="none"/>
+      <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+    </svg>
+    Back
+  </a>
+
+  <h2 style="text-align:center;">Your Notifications</h2>
+  <div id="notifications" style="margin-top: 60px;">Loading...</div>
+
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+    const supabaseUrl = "https://hwrvqyipozrsxyjdpqag.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM";
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      document.getElementById("notifications").innerHTML = "Please log in to view your notifications.";
+    } else {
+      const userId = user.id;
+
+      const { data, error } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        document.getElementById("notifications").innerHTML = "Error loading notifications.";
+        console.error(error);
+      } else if (data.length === 0) {
+        document.getElementById("notifications").innerHTML = "No notifications found.";
+      } else {
+        const container = document.getElementById("notifications");
+        container.innerHTML = "";
+        data.forEach((n) => {
+          const div = document.createElement("div");
+          div.className = "notification";
+          div.innerHTML = `<h3>${n.title}</h3><p>${n.message}</p>`;
+          container.appendChild(div);
+        });
+      }
+    }
+  </script>
+</body>
+</html>

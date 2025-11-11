@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AvicnKnov Ex Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #fff;
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      flex-wrap: wrap;
+    }
+    .top-bar a {
+      margin: 0 8px;
+      text-decoration: none;
+      color: #000;
+      display: inline-block;
+    }
+    .top-bar img.profile-icon {
+      width: 28px;
+      height: 28px;
+    }
+    .top-bar img.small-icon {
+      width: 24px;
+      height: 24px;
+    }
+    .fa-icon {
+      font-size: 22px;
+    }
+    .search-container {
+      position: relative;
+      flex: 1;
+      text-align: center;
+    }
+    .search-input {
+      padding: 6px 10px;
+      width: 90%;
+      max-width: 300px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+    .search-results {
+      position: absolute;
+      top: 38px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 300px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      z-index: 10;
+    }
+    .search-results div {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      text-align: center;
+    }
+    .search-results div:hover {
+      background-color: #f0f0f0;
+    }
+    .balance-box {
+      margin: 10px 20px;
+      text-align: left;
+    }
+    .balance-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .balance-header span {
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .balance-header select {
+      padding: 4px 10px;
+      font-size: 14px;
+      border-radius: 10px;
+    }
+    .balance-value {
+      font-size: 28px;
+      font-weight: bold;
+      text-align: left;
+      margin-top: 4px;
+    }
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+      margin: 20px 20px;
+    }
+    .buttons button {
+      flex: 1;
+      margin: 0 5px;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    .buttons .deposit {
+      background: linear-gradient(to right, #3b82f6, #60a5fa);
+    }
+    .buttons .withdrawal {
+      background: linear-gradient(to right, #10b981, #34d399);
+    }
+    .buttons .transactions {
+      background: linear-gradient(to right, #f59e0b, #fbbf24);
+    }
+    .feature-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin: 10px;
+    }
+    .feature-buttons button {
+      padding: 8px 12px;
+      border-radius: 12px;
+      background-color: #eee;
+      border: none;
+      cursor: pointer;
+    }
+    .title {
+      text-align: center;
+      font-weight: bold;
+      font-size: 20px;
+      margin-top: 10px;
+    }
+    .news-box {
+      margin: 10px;
+      border: 2px solid #000;
+      border-radius: 10px;
+      height: calc(100vh - 420px);
+      overflow: hidden;
+      padding: 0;
+      position: relative;
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    }
+    
+    /* Perfect fitting और attractive display */
+    .news-item {
+      width: 100%;
+      height: 100%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      top: 0;
+      left: 0;
+      opacity: 0;
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+    
+    .news-item.active {
+      display: flex;
+      opacity: 1;
+    }
+    
+    .news-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 8px;
+      transition: transform 0.3s ease;
+    }
+    
+    .news-item img:hover {
+      transform: scale(1.02);
+    }
+    
+    .news-item video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    
+    .news-item .text-content {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+      box-sizing: border-box;
+      text-align: center;
+      background: linear-gradient(135deg, rgba(30,60,114,0.95) 0%, rgba(42,82,152,0.95) 100%);
+      border-radius: 8px;
+      color: #fff;
+      backdrop-filter: blur(10px);
+    }
+    
+    .news-item .text-content h3 {
+      margin: 0 0 25px 0;
+      font-size: 32px;
+      font-weight: bold;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      background: linear-gradient(45deg, #fff, #e3f2fd);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+    
+    .news-item .text-content p {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.8;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      max-width: 90%;
+    }
+    
+    /* Loading state */
+    .loading-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #fff;
+      font-size: 20px;
+      background: rgba(0,0,0,0.7);
+      border-radius: 8px;
+    }
+    
+    /* Click indicator */
+    .news-item.clickable::after {
+      content: "🔗";
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      font-size: 20px;
+      opacity: 0.7;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <a href="profile.html">
+      <img src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="Profile" class="profile-icon">
+    </a>
+    <div class="search-container">
+      <input type="text" class="search-input" placeholder="Search in dashboard..." />
+      <div class="search-results" id="search-results"></div>
+    </div>
+    <div>
+      <a href="notifications.html">
+        <img src="https://cdn-icons-png.flaticon.com/512/1827/1827392.png" alt="Notifications" class="small-icon">
+      </a>
+      <a href="help.html" title="Support">
+        <i class="fas fa-headset fa-icon"></i>
+      </a>
+    </div>
+  </div>
+
+  <div class="balance-box">
+    <div class="balance-header">
+      <span>Total Balance</span>
+      <select id="currency">
+        <option>INR</option>
+        <option>USD</option>
+        <option>BTC</option>
+        <option>ETH</option>
+        <option>BNB</option>
+        <option>USDT</option>
+        <option>XRP</option>
+        <option>EUR</option>
+        <option>JPY</option>
+        <option>GBP</option>
+      </select>
+    </div>
+    <div class="balance-value" id="balanceValue">0.0</div>
+  </div>
+
+  <div class="buttons">
+    <button class="deposit" onclick="location.href='deposit.html'">Deposit</button>
+    <button class="withdrawal" onclick="location.href='withdrawal.html'">Withdrawal</button>
+    <button class="transactions" onclick="location.href='transactions.html'">Transactions</button>
+  </div>
+
+  <div class="feature-buttons">
+    <button onclick="location.href='earn-nx.html'">Earn-NX</button>
+    <button onclick="location.href='reward-box.html'">Reward Hub</button>
+    <button onclick="location.href='nft-kvon.html'">NFT Kvon</button>
+    <button onclick="location.href='news.html'">News</button>
+    <button onclick="location.href='pre-launch.html'">Pre Launch</button>
+    <button onclick="location.href='mt-future.html'">M&T Future</button>
+    <button onclick="location.href='more.html'">More</button>
+  </div>
+
+  <div class="title">AvicnKnov Ex</div>
+  <div class="title" style="font-size: 14px; text-align:left; margin-left:10px">AvicnKnov Nex</div>
+  <div class="news-box" id="news-box">
+    <div class="loading-state">
+      <i class="fas fa-spinner fa-spin" style="margin-right: 10px;"></i>
+      Loading news content...
+    </div>
+  </div>
+
+  <script>
+    const searchInput = document.querySelector('.search-input');
+    const searchResultsContainer = document.getElementById('search-results');
+    const buttons = [
+      'Earn-NX', 'Reward Box', 'NFT Kvon', 'News', 'Pre Launch', 'M&T Future', 'More',
+      'DEPOSIT', 'WITHDRAWAL', 'TRANSACTIONS'
+    ];
+    searchInput.addEventListener('input', () => {
+      const query = searchInput.value.toLowerCase().trim();
+      searchResultsContainer.innerHTML = '';
+      if (query.length > 0) {
+        const matches = buttons.filter(b => b.toLowerCase().includes(query));
+        matches.forEach(match => {
+          const div = document.createElement('div');
+          div.textContent = match;
+          div.onclick = () => alert('Redirecting to: ' + match);
+          searchResultsContainer.appendChild(div);
+        });
+      }
+    });
+    
+    // Supabase configuration
+    const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+    
+    let newsItems = [];
+    let currentIndex = 0;
+    let rotationInterval;
+    let currentVideo = null;
+    
+    async function loadNewsContent() {
+      try {
+        if (!window.supabase) {
+          throw new Error('Supabase not loaded');
+        }
+        
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        const { data, error } = await supabaseClient
+          .from('news_box_ak')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order');
+        
+        if (error) throw error;
+        
+        newsItems = data || [];
+        displayNewsContent();
+        
+      } catch (error) {
+        console.error('Error loading news:', error);
+        document.getElementById('news-box').innerHTML = 
+          '<div class="loading-state" style="color: #e74c3c;">Error loading content</div>';
+      }
+    }
+    
+    function displayNewsContent() {
+      const newsBox = document.getElementById('news-box');
+      
+      if (newsItems.length === 0) {
+        newsBox.innerHTML = '<div class="loading-state">No content available</div>';
+        return;
+      }
+      
+      newsBox.innerHTML = '';
+      
+      newsItems.forEach((item, index) => {
+        const newsItem = document.createElement('div');
+        newsItem.className = `news-item ${index === 0 ? 'active' : ''}`;
+        
+        // Add click functionality if link exists
+        if (item.click_url && item.click_url.trim()) {
+          newsItem.classList.add('clickable');
+          newsItem.onclick = () => window.open(item.click_url, '_blank');
+        }
+        
+        if (item.content_type === 'image' || item.content_type === 'gif') {
+          newsItem.innerHTML = `<img src="${item.content_url}" alt="${item.title || ''}" />`;
+        } else if (item.content_type === 'video') {
+          newsItem.innerHTML = `
+            <video muted controls onended="handleVideoEnd()" onplay="handleVideoPlay(this)">
+              <source src="${item.content_url}" type="video/mp4">
+              Video not supported
+            </video>`;
+        } else if (item.content_type === 'text') {
+          newsItem.innerHTML = `
+            <div class="text-content">
+              ${item.title ? '<h3>' + item.title + '</h3>' : ''}
+              <p>${item.content_text}</p>
+            </div>`;
+        }
+        
+        newsBox.appendChild(newsItem);
+      });
+      
+      // Start rotation if multiple items
+      if (newsItems.length > 1) {
+        startRotation();
+      }
+    }
+    
+    function handleVideoPlay(video) {
+      currentVideo = video;
+      // Pause rotation when video is playing
+      if (rotationInterval) {
+        clearInterval(rotationInterval);
+      }
+    }
+    
+    function handleVideoEnd() {
+      currentVideo = null;
+      // Resume rotation after video ends
+      if (newsItems.length > 1) {
+        setTimeout(() => {
+          goToNext();
+          startRotation();
+        }, 500);
+      }
+    }
+    
+    function goToNext() {
+      document.querySelectorAll('.news-item').forEach(item => item.classList.remove('active'));
+      currentIndex = (currentIndex + 1) % newsItems.length;
+      document.querySelectorAll('.news-item')[currentIndex].classList.add('active');
+    }
+    
+    function startRotation() {
+      if (rotationInterval) clearInterval(rotationInterval);
+      
+      rotationInterval = setInterval(() => {
+        const activeItem = document.querySelector('.news-item.active');
+        const hasVideo = activeItem && activeItem.querySelector('video');
+        
+        // Don't rotate if video is playing
+        if (hasVideo && currentVideo && !currentVideo.paused) {
+          return;
+        }
+        
+        goToNext();
+      }, 3000); // 3 seconds for images/gifs/text
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(loadNewsContent, 1000);
+    });
+    
+    // Pause rotation when tab is not visible
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        if (rotationInterval) clearInterval(rotationInterval);
+      } else {
+        if (newsItems.length > 1 && (!currentVideo || currentVideo.paused)) {
+          startRotation();
+        }
+      }
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="wallet-balance.js"></script>
+</body>
+</html>

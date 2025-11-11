@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transactions - AvicnKnov Ex</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f9fafb;
+      margin: 0; padding: 0;
+      color: #111827;
+    }
+    header {
+      background: #1e3a8a;
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    header .back-btn {
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+    main {
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+    .transaction-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .transaction-table thead {
+      background-color: #e0e7ff;
+    }
+    .transaction-table th, .transaction-table td {
+      padding: 12px 15px;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+    .transaction-table td {
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .status {
+      font-weight: bold;
+      padding: 5px 10px;
+      border-radius: 5px;
+      display: inline-block;
+    }
+    .pending { background-color: #fde68a; color: #92400e; }
+    .processing { background-color: #bfdbfe; color: #1e40af; }
+    .successful { background-color: #bbf7d0; color: #065f46; }
+    .rejected { background-color: #fecaca; color: #991b1b; }
+    .no-orders {
+      margin-top: 50px;
+      text-align: center;
+      color: #6b7280;
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <button class="back-btn" onclick="goBack()">
+      <i class="fa fa-arrow-left"></i>
+    </button>
+    <h1>Transactions</h1>
+  </header>
+  <main>
+    <table class="transaction-table" id="transactionTable" style="display:none;">
+      <thead>
+        <tr>
+          <th>ORDER ID</th>
+          <th>DEPOSIT & WITHDRAWAL</th>
+          <th>AMOUNT</th>
+          <th>DATE & TIME</th>
+          <th>STATUS</th>
+        </tr>
+      </thead>
+      <tbody id="transactionBody"></tbody>
+    </table>
+    <div class="no-orders" id="noOrders">Loading...</div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const { createClient } = supabase;
+    const supabaseClient = createClient(
+      'https://hwrvqyipozrsxyjdpqag.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM'
+    );
+
+    function goBack() {
+      const ref = document.referrer;
+      if (ref.includes("assets")) {
+        window.location.href = "assets.html";
+      } else {
+        window.location.href = "dashboard.html";
+      }
+    }
+
+    function capitalize(str) {
+      if (!str) return '';
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function formatDate(dateStr) {
+      const date = new Date(dateStr);
+      return date.toLocaleString();
+    }
+
+    async function loadTransactions() {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) {
+        document.getElementById('noOrders').innerText = 'Please login to view your transactions.';
+        return;
+      }
+
+      const [deposits, withdrawals] = await Promise.all([
+        supabaseClient.from('deposits').select('*').eq('uid', user.id).order('created_at', { ascending: false }),
+        supabaseClient.from('withdrawals').select('*').eq('uid', user.id).order('created_at', { ascending: false })
+      ]);
+
+      const all = [...(deposits.data || []), ...(withdrawals.data || [])]
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      const table = document.getElementById('transactionTable');
+      const body = document.getElementById('transactionBody');
+      const noOrders = document.getElementById('noOrders');
+
+      if (all.length === 0) {
+        table.style.display = 'none';
+        noOrders.innerText = 'No Orders Found.';
+        return;
+      }
+
+      table.style.display = 'table';
+      noOrders.style.display = 'none';
+      body.innerHTML = '';
+
+      all.forEach(txn => {
+        const isCrypto = (txn.method || '').toLowerCase() === 'crypto';
+        const amountDisplay = isCrypto
+          ? `${txn.amount || '0.00'} USDT`
+          : `₹${txn.amount || '0.00'}`;
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${txn.order_id || txn.id || 'N/A'}</td>
+          <td>${capitalize(txn.type || 'Deposit')} - ${capitalize(txn.method || '')}</td>
+          <td>${amountDisplay}</td>
+          <td>${formatDate(txn.created_at)}</td>
+          <td><span class="status ${txn.status.toLowerCase()}">${capitalize(txn.status)}</span></td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    loadTransactions();
+  </script>
+</body>
+</html>

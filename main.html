@@ -1,0 +1,195 @@
+<!DOCTYPE html>  <html lang="en">  
+<head>  
+  <meta charset="UTF-8" />  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>  
+  <title>AvicnKnov Ex</title>  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>  
+  <style>  
+    * { margin: 0; padding: 0; box-sizing: border-box; }  
+    html, body {  
+      height: 100%;  
+      overflow: hidden;  
+    }  
+    body {  
+      font-family: 'Segoe UI', sans-serif;  
+      background: white;  
+      color: black;  
+    }  .tab-section {  
+  display: none;  
+  width: 100%;  
+}  
+
+.tab-section.active {  
+  display: block;  
+}  
+
+.tab-section iframe {  
+  width: 100%;  
+  border: none;  
+  display: block;  
+}  
+
+.bottom-nav {  
+  position: fixed;  
+  bottom: 0;  
+  width: 100%;  
+  display: flex;  
+  justify-content: space-around;  
+  background-color: #f1f1f1;  
+  padding: 6px 0 2px;  
+  border-top: 1px solid #ccc;  
+  z-index: 999;  
+}  
+
+.bottom-nav a {  
+  text-decoration: none;  
+  color: #000;  
+  font-size: 12px;  
+  display: flex;  
+  flex-direction: column;  
+  align-items: center;  
+  gap: 4px;  
+}  
+
+.bottom-nav a i {  
+  font-size: 18px;  
+}  
+
+.bottom-nav a.active {  
+  color: dodgerblue;  
+  font-weight: bold;  
+}  
+
+.bottom-nav svg {  
+  margin-bottom: 2px;  
+}
+
+  </style>  
+</head>  
+<body>    <!-- ✅ DASHBOARD SECTION -->    <div id="dashboard" class="tab-section active">  
+    <iframe src="dashboard.html" id="iframe-dashboard"></iframe>  
+  </div>    <!-- ✅ MARKETS SECTION -->    <div id="markets" class="tab-section">  
+    <iframe src="markets.html" id="iframe-markets"></iframe>  
+  </div>    <!-- ✅ TRADE SECTION -->    <div id="trade" class="tab-section">  
+    <iframe src="trade.html" id="iframe-trade"></iframe>  
+  </div>    <!-- ✅ FUTURES SECTION -->    <div id="futures" class="tab-section">  
+    <iframe src="futures.html" id="iframe-futures"></iframe>  
+  </div>    <!-- ✅ ASSETS SECTION -->    <div id="assets" class="tab-section">  
+    <iframe src="assets.html" id="iframe-assets"></iframe>  
+  </div>    <!-- ✅ BOTTOM NAVIGATION -->    <div class="bottom-nav" id="bottom-nav">  
+    <a href="#" class="nav-btn active" onclick="switchTab('dashboard', this)">  
+      <i class="fas fa-home"></i>  
+      Home  
+    </a>  
+    <a href="#" class="nav-btn" onclick="switchTab('markets', this)">  
+      <i class="fas fa-chart-line"></i>  
+      Markets  
+    </a>  
+    <a href="#" class="nav-btn" onclick="switchTab('trade', this)">  
+      <i class="fas fa-exchange-alt"></i>  
+      Trade  
+    </a>  
+    <a href="#" class="nav-btn" onclick="switchTab('futures', this)">  
+      <span style="display: flex; flex-direction: column; align-items: center; font-size: 12px;">  
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"  
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">  
+          <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-4 0v-9a2 2 0 0 1 2-2h2" fill="white"/>  
+          <rect x="9.5" y="10" width="1" height="6" rx="0.5" fill="black"/>  
+          <rect x="13.5" y="6" width="1" height="12" rx="0.5" fill="black"/>  
+          <rect x="17.5" y="10" width="1" height="6" rx="0.5" fill="black"/>  
+        </svg>  
+        Futures  
+      </span>  
+    </a>  
+    <a href="#" class="nav-btn" onclick="switchTab('assets', this)">  
+      <i class="fas fa-wallet"></i>  
+      Assets  
+    </a>  
+  </div>    <!-- ✅ TAB SWITCH SCRIPT + HEIGHT FIX -->    <script>  
+    function adjustIframeHeights() {  
+      const bottomNav = document.getElementById('bottom-nav');  
+      const navHeight = bottomNav.offsetHeight;  
+      const viewHeight = window.innerHeight;  
+  
+      document.querySelectorAll('iframe').forEach(iframe => {  
+        iframe.style.height = (viewHeight - navHeight) + "px";  
+      });  
+    }  
+  
+    window.addEventListener('load', adjustIframeHeights);  
+    window.addEventListener('resize', adjustIframeHeights);  
+  
+    function switchTab(tabId, element) {  
+      document.querySelectorAll('.tab-section').forEach(sec => sec.classList.remove('active'));  
+      document.getElementById(tabId).classList.add('active');  
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));  
+      element.classList.add('active');  
+    }  
+  </script>    <!-- ✅ Supabase Session Check -->    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>    <script>  
+    const client = supabase.createClient(  
+      'https://hwrvqyipozrsxyjdpqag.supabase.co',  
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM'  
+    );  
+  
+    async function checkUserSession() {  
+      const { data: { session } } = await client.auth.getSession();  
+      if (!session) {  
+        alert("❌ आप लॉगिन नहीं हैं। Login Page पर भेजा जा रहा है...");  
+        window.location.href = "index.html";  
+      }  
+    }  
+  
+    checkUserSession();  
+  </script>    <!-- ✅ Bottom Nav Hide for specific pages -->    <script>  
+    const bottomNav = document.getElementById("bottom-nav");  
+  
+    function checkIframePages() {  
+      const hiddenPages = [  
+        "profile.html",  
+        "kyc.html",  
+        "security.html",  
+        "edit-profile.html",  
+        "new.html",  
+        "notification.html",  
+        "help.html",  
+        "withdrawal.html",  
+        "deposit.html",  
+        "transactions.html",  
+        "deposit-upi.html",  
+        "deposit-p2p.html",  
+        "deposit-crypto.html",  
+        "withdrawal-upi.html",  
+        "withdrawal-p2p.html",  
+        "withdrawal-crypto.html",  
+        "wallet.html",  
+        "earn-nx.html",  
+        "reward-box.html",  
+        "nt-knov.html",  
+        "per-launch.html",  
+        "mt-future.html",  
+        "more.html"  
+      ];  
+  
+      const allIframes = document.querySelectorAll("iframe");  
+  
+      allIframes.forEach((iframe) => {  
+        iframe.onload = function () {  
+          try {  
+            const url = iframe.contentWindow.location.href;  
+            const filename = url.split("/").pop();  
+  
+            if (hiddenPages.includes(filename)) {  
+              bottomNav.style.display = "none";  
+            } else {  
+              bottomNav.style.display = "flex";  
+            }  
+          } catch (e) {  
+            bottomNav.style.display = "flex";  
+          }  
+        };  
+      });  
+    }  
+  
+    window.addEventListener("DOMContentLoaded", checkIframePages);  
+  </script>  </body>  
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>AvicnKnov Ex – Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+      * { margin:0; padding:0; box-sizing:border-box; font-family: sans-serif; }
+      body, html {
+        height:100%; width:100%;
+        background: url('https://imgpx.com/mbRZiaEdwWxL.png') no-repeat center center fixed;
+        background-size: cover;
+        display:flex; align-items:center; justify-content:center;
+      }
+      .container {
+        background: rgba(0, 0, 0, 0.65);
+        padding: 30px; border-radius: 15px;
+        box-shadow: 0 0 20px #00ffe1;
+        max-width: 400px;
+        width: 90%;
+        text-align: center;
+        color: white;
+      }
+      .title {
+        font-size: 2rem;
+        margin-bottom: 20px;
+        color: #00ffe1;
+        text-shadow: 0 0 8px #00ffe1;
+      }
+      .menu {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-bottom: 15px;
+        gap: 10px;
+      }
+      .menu button {
+        background: rgba(255,255,255,0.1);
+        border: none;
+        padding: 10px 16px;
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+      .menu button.active {
+        background: #00ffe1;
+        color: black;
+        font-weight: bold;
+      }
+      .form {
+        display: none;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 10px;
+      }
+      .form.active {
+        display: flex;
+      }
+      .form input, .form button {
+        padding: 12px;
+        border: none;
+        border-radius: 6px;
+        width: 100%;
+        outline: none;
+      }
+      .form input {
+        background: rgba(255,255,255,0.2);
+        color: white;
+      }
+      .form button {
+        background: #00ffe1;
+        color: black;
+        font-weight: bold;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="title">AvicnKnov Ex</div>
+      <div class="menu">
+        <button id="btn-login" onclick="showForm('login')">Login</button>
+        <button id="btn-register" onclick="showForm('register')">Create Account</button>
+        <button id="btn-forgot" onclick="showForm('forgot')">Forgot Password</button>
+      </div>
+
+      <div id="login" class="form">
+        <input type="email" id="login-email" placeholder="Gmail">
+        <input type="password" id="login-pass" placeholder="Password">
+        <button onclick="login()">Login</button>
+      </div>
+
+      <div id="register" class="form">
+        <input type="text" id="reg-name" placeholder="Full Name">
+        <input type="date" id="reg-dob">
+        <input type="email" id="reg-email" placeholder="Gmail">
+        <input type="password" id="reg-pass" placeholder="Password">
+        <button onclick="register()">Register</button>
+      </div>
+
+      <div id="forgot" class="form">
+        <input type="email" id="forgot-email" placeholder="Registered Gmail">
+        <button onclick="resetPassword()">Send Reset Link</button>
+      </div>
+    </div>
+
+    <script>
+      const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+      const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      // ✅ Fixed showForm function
+      function showForm(formId) {
+        const forms = document.querySelectorAll('.form');
+        const buttons = document.querySelectorAll('.menu button');
+        forms.forEach(f => f.classList.remove('active'));
+        buttons.forEach(b => b.classList.remove('active'));
+        document.getElementById(formId).classList.add('active');
+        document.getElementById(`btn-${formId}`).classList.add('active');
+      }
+
+      async function login() {
+        const email = document.getElementById('login-email').value;
+        const pass = document.getElementById('login-pass').value;
+        if (!email || !pass) return alert("Fill all fields");
+        let { error } = await sb.auth.signInWithPassword({ email, password: pass });
+        if (error) alert("❌ " + error.message);
+        else window.location.href = "main.html";
+      }
+
+      async function register() {
+        const name = document.getElementById('reg-name').value;
+        const dob = document.getElementById('reg-dob').value;
+        const email = document.getElementById('reg-email').value;
+        const pass = document.getElementById('reg-pass').value;
+        if (!name || !dob || !email || !pass) return alert("Fill all fields");
+        const age = new Date().getFullYear() - new Date(dob).getFullYear();
+        if (age < 17 || age > 110) return alert("Age must be between 17 and 110");
+
+        let { error } = await sb.auth.signUp({
+          email,
+          password: pass,
+          options: {
+            data: { full_name: name, dob },
+            emailRedirectTo: 'https://avicnkvon-ex.github.io/AvicnKnov-Ex-/success.html'
+          }
+        });
+
+        if (error) alert("❌ " + error.message);
+        else alert("✅ Registered! Check your Gmail to verify.");
+      }
+
+      async function resetPassword() {
+        const email = document.getElementById('forgot-email').value;
+        if (!email) return alert("Enter your Gmail");
+        let { error } = await sb.auth.resetPasswordForEmail(email, {
+          redirectTo: 'https://avicnkvon-ex.github.io/AvicnKnov-Ex-/reset-password.html'
+        });
+        if (error) alert("❌ " + error.message);
+        else alert("🔗 Reset link sent to " + email);
+      }
+
+      window.onload = () => {
+        const forms = document.querySelectorAll('.form');
+        forms.forEach(f => f.classList.remove('active'));
+        const buttons = document.querySelectorAll('.menu button');
+        buttons.forEach(b => b.classList.remove('active'));
+      };
+    </script>
+  </body>
+</html>
