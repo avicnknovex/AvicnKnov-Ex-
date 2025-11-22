@@ -304,7 +304,7 @@
                 full_name: name, 
                 username: username
             }, 
-            emailRedirectTo: 'https://9f08ecca-635b-4dc1-9276-4b36c44dedc9-00-2joipi7fgveru.pike.replit.dev/success.html'
+            emailRedirectTo: 'https://avicnknovex.netlify.app/success.html'
           }
         });
 
@@ -342,7 +342,7 @@
         if (!email) return alert("Enter your Registered Gmail");
         
         let { error } = await sb.auth.resetPasswordForEmail(email, {
-          redirectTo: 'https://9f08ecca-635b-4dc1-9276-4b36c44dedc9-00-2joipi7fgveru.pike.replit.dev/forget-password.html'
+          redirectTo: 'https://avicnknovex.netlify.app/reset-password.html'
         });
         
         if (error) alert("❌ " + error.message);
