@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>AvicnKnov Ex – Login</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-      /* ... (Your CSS remains unchanged) ... */
       * { margin:0; padding:0; box-sizing:border-box; font-family: sans-serif; }
       body, html {
         height:100%; width:100%;
@@ -23,7 +21,6 @@
         width: 90%;
         text-align: center;
         color: white;
-        position: relative; 
       }
       .title {
         font-size: 2rem;
@@ -61,21 +58,15 @@
       .form.active {
         display: flex;
       }
-      /* --- Form Elements Styling --- */
-      .form input, .form button, .form select {
+      .form input, .form button {
         padding: 12px;
         border: none;
         border-radius: 6px;
         width: 100%;
         outline: none;
-        appearance: none; 
       }
-      .form input, .form select {
+      .form input {
         background: rgba(255,255,255,0.2);
-        color: white;
-      }
-      .form select option {
-        background: #111;
         color: white;
       }
       .form button {
@@ -84,116 +75,27 @@
         font-weight: bold;
         cursor: pointer;
       }
-      /* --- Radio Group Styling --- */
-      .radio-group {
-        display: flex;
-        justify-content: space-around;
-      }
-      .radio-group label {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        cursor: pointer;
-        padding: 8px;
-        background: rgba(255,255,255,0.1);
-        border-radius: 6px;
-        transition: background 0.3s;
-      }
-      .radio-group input[type="radio"]:checked + span {
-        color: #00ffe1;
-        font-weight: bold;
-      }
-      .radio-group input[type="radio"] {
-        accent-color: #00ffe1;
-      }
-
-      /* --- Support Icon Styling (Bottom Right) --- */
-      .support-icon-container {
-        position: fixed; 
-        bottom: 20px;
-        right: 20px;
-        z-index: 1000;
-      }
-      .support-icon-button {
-        background: #00ffe1;
-        border: none;
-        border-radius: 50%; 
-        width: 60px;
-        height: 60px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        box-shadow: 0 4px 15px rgba(0, 255, 225, 0.6);
-        transition: all 0.3s ease;
-      }
-      .support-icon-button:hover {
-        background: #fff;
-        box-shadow: 0 4px 20px rgba(0, 255, 225, 1);
-        transform: scale(1.05);
-      }
-      .support-icon-button i {
-        color: black;
-        font-size: 2rem;
-      }
     </style>
   </head>
   <body>
-    <div class="support-icon-container">
-        <a href="support.html" class="support-icon-button" title="Support/Help Center">
-            <i class="fas fa-headset"></i> 
-        </a>
-    </div>
-
     <div class="container">
       <div class="title">AvicnKnov Ex</div>
       <div class="menu">
         <button id="btn-login" onclick="showForm('login')">Login</button>
         <button id="btn-register" onclick="showForm('register')">Create Account</button>
+        <button id="btn-forgot" onclick="showForm('forgot')">Forgot Password</button>
       </div>
 
       <div id="login" class="form">
         <input type="email" id="login-email" placeholder="Gmail">
         <input type="password" id="login-pass" placeholder="Password">
         <button onclick="login()">Login</button>
-        <button onclick="showForm('forgot')" style="background: rgba(255,255,255,0.1); color: #00ffe1; font-weight: normal;">Forgot Password?</button>
       </div>
 
       <div id="register" class="form">
         <input type="text" id="reg-name" placeholder="Full Name">
-        <input type="text" id="reg-username" placeholder="Username">
         <input type="date" id="reg-dob">
-        
-        <select id="reg-country">
-            <option value="">Select Country</option>
-        </select>
-
-        <button 
-            id="btn-show-gender" 
-            onclick="toggleGenderOptions()" 
-            style="background: rgba(255,255,255,0.1); color: #00ffe1; font-weight: normal;"
-        >
-            Select Gender
-        </button>
-
-        <div id="gender-options-container" style="display: none; margin-top: -10px;">
-            <div class="radio-group">
-                <label>
-                    <input type="radio" name="gender" value="male" id="reg-gender-male" onclick="handleGenderSelect('Male')">
-                    <span>Male</span>
-                </label>
-                <label>
-                    <input type="radio" name="gender" value="female" id="reg-gender-female" onclick="handleGenderSelect('Female')">
-                    <span>Female</span>
-                </label>
-                <label>
-                    <input type="radio" name="gender" value="other" id="reg-gender-other" onclick="handleGenderSelect('Other')">
-                    <span>Other</span>
-                </label>
-            </div>
-        </div>
         <input type="email" id="reg-email" placeholder="Gmail">
-
         <input type="password" id="reg-pass" placeholder="Password">
         <button onclick="register()">Register</button>
       </div>
@@ -208,187 +110,63 @@
       const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
       const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
       const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      const USER_DETAILS_TABLE = 'user-details'; 
 
-      // ✅ नया ग्लोबल वेरिएबल/स्टेट:
-      let selectedGenderText = ''; // यह चुने हुए जेंडर को स्टोर करेगा
-
-      // Function to manage forms and menu buttons
+      // ✅ Fixed showForm function
       function showForm(formId) {
         const forms = document.querySelectorAll('.form');
-        const menuButtons = document.querySelectorAll('.menu button');
-        
+        const buttons = document.querySelectorAll('.menu button');
         forms.forEach(f => f.classList.remove('active'));
-        menuButtons.forEach(b => b.classList.remove('active'));
-
+        buttons.forEach(b => b.classList.remove('active'));
         document.getElementById(formId).classList.add('active');
-        
-        if (formId === 'login') {
-            document.getElementById('btn-login').classList.add('active');
-        } else if (formId === 'register') {
-            document.getElementById('btn-register').classList.add('active');
-            // FIX: जब Register Form खुलता है तो Gender options को छिपा कर रखें
-            document.getElementById('gender-options-container').style.display = 'none';
-            document.getElementById('btn-show-gender').textContent = selectedGenderText || 'Select Gender';
-            document.getElementById('btn-show-gender').style.backgroundColor = 'rgba(255,255,255,0.1)';
-            document.getElementById('btn-show-gender').style.color = '#00ffe1';
-        } else if (formId === 'forgot') {
-            document.getElementById('btn-login').classList.add('active');
-        }
+        document.getElementById(`btn-${formId}`).classList.add('active');
       }
-
-      // ✅ FIX 2: GENDER OPTIONS TOGGLE FUNCTION (केवल दिखाने/छिपाने के लिए)
-      function toggleGenderOptions() {
-          const container = document.getElementById('gender-options-container');
-          const isHidden = container.style.display === 'none';
-          
-          container.style.display = isHidden ? 'flex' : 'none';
-          
-          // बटन का टेक्स्ट चुने हुए जेंडर पर निर्भर करेगा, लेकिन जब विकल्प खुले हों तो हम "Hide" नहीं दिखा रहे हैं।
-          if (!isHidden) {
-             document.getElementById('btn-show-gender').textContent = selectedGenderText || 'Select Gender';
-             document.getElementById('btn-show-gender').style.backgroundColor = 'rgba(255,255,255,0.1)';
-             document.getElementById('btn-show-gender').style.color = '#00ffe1';
-          }
-      }
-      
-      // ✅ FIX 3: HANDLE GENDER SELECTION (विकल्प चुनने और छिपाने के लिए)
-      function handleGenderSelect(text) {
-          selectedGenderText = text; // ग्लोबल वेरिएबल अपडेट करें
-          const button = document.getElementById('btn-show-gender');
-          
-          // 1. बटन का टेक्स्ट अपडेट करें
-          button.textContent = 'Gender: ' + text;
-          button.style.backgroundColor = '#00ffe1'; // selected होने पर रंग बदलें
-          button.style.color = 'black';
-          
-          // 2. ऑप्शन कंटेनर को छिपा दें
-          document.getElementById('gender-options-container').style.display = 'none';
-      }
-
 
       async function login() {
         const email = document.getElementById('login-email').value;
         const pass = document.getElementById('login-pass').value;
         if (!email || !pass) return alert("Fill all fields");
-
-        let { error } = await sb.auth.signInWithPassword({ email: email, password: pass });
-        
+        let { error } = await sb.auth.signInWithPassword({ email, password: pass });
         if (error) alert("❌ " + error.message);
         else window.location.href = "main.html";
       }
 
       async function register() {
         const name = document.getElementById('reg-name').value;
-        const username = document.getElementById('reg-username').value;
         const dob = document.getElementById('reg-dob').value;
-        const country = document.getElementById('reg-country').value;
-        const gender = document.querySelector('input[name="gender"]:checked')?.value;
         const email = document.getElementById('reg-email').value;
         const pass = document.getElementById('reg-pass').value;
-        
-        // Validation: Gender अब अनिवार्य है
-        if (!name || !username || !dob || !country || !gender || !email || !pass) {
-             return alert("❌ Please fill all fields and select a Gender.");
-        }
-
+        if (!name || !dob || !email || !pass) return alert("Fill all fields");
         const age = new Date().getFullYear() - new Date(dob).getFullYear();
-        if (age < 17 || age > 110) return alert("❌ Age must be between 17 and 110");
-        
-        // --- 1. Supabase Email Authentication ---
-        let { data: authData, error: authError } = await sb.auth.signUp({
+        if (age < 17 || age > 110) return alert("Age must be between 17 and 110");
+
+        let { error } = await sb.auth.signUp({
           email,
           password: pass,
           options: {
-            data: { 
-                full_name: name, 
-                username: username
-            }, 
-            emailRedirectTo: 'https://avicnknovex.netlify.app/success.html'
+            data: { full_name: name, dob },
+            emailRedirectTo: 'https://avicnkvon-ex.github.io/AvicnKnov-Ex-/success.html'
           }
         });
 
-        if (authError) {
-            return alert("❌ Registration Error: " + authError.message);
-        }
-
-        // --- 2. Insert details into 'user-details' table ---
-        const creationTime = new Date().toISOString();
-        let { error: dbError } = await sb.from(USER_DETAILS_TABLE).insert([
-          {
-            auth_uuid: authData.user.id,
-            account_mode: 'gmail', 
-            email: email,
-            phone_number: null,
-            full_name: name,
-            username: username,
-            dob: dob,
-            country: country,
-            gender: gender,
-            created_at: creationTime
-          }
-        ]);
-
-        if (dbError) {
-             console.error("Database Insert Error:", dbError.message);
-             alert("✅ Registered! Check your Gmail to verify. Note: Minor data storage issue. (Please ensure RLS is handled on 'user-details')");
-        } else {
-             alert("✅ Registered! Check your Gmail to verify.");
-        }
+        if (error) alert("❌ " + error.message);
+        else alert("✅ Registered! Check your Gmail to verify.");
       }
 
       async function resetPassword() {
         const email = document.getElementById('forgot-email').value;
-        if (!email) return alert("Enter your Registered Gmail");
-        
+        if (!email) return alert("Enter your Gmail");
         let { error } = await sb.auth.resetPasswordForEmail(email, {
-          redirectTo: 'https://avicnknovex.netlify.app/reset-password.html'
+          redirectTo: 'https://avicnkvon-ex.github.io/AvicnKnov-Ex-/reset-password.html'
         });
-        
         if (error) alert("❌ " + error.message);
         else alert("🔗 Reset link sent to " + email);
       }
 
-      // Function to populate the Country dropdown (remains unchanged)
-      function populateCountries() {
-        const countrySelect = document.getElementById('reg-country');
-        const countries = [
-            "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan", 
-            "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", 
-            "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", 
-            "Chile", "China", "Colombia", "Comoros", "Congo (Brazzaville)", "Congo (Kinshasa)", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czechia", 
-            "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", 
-            "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", 
-            "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", 
-            "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", 
-            "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", 
-            "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", 
-            "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", 
-            "Palestine State", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", 
-            "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", 
-            "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", 
-            "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", 
-            "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", 
-            "United States of America", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
-        ];
-        
-        countries.forEach(country => {
-            const option = document.createElement('option');
-            option.value = country;
-            option.textContent = country;
-            countrySelect.appendChild(option);
-        });
-      }
-
       window.onload = () => {
-        // Initial state
         const forms = document.querySelectorAll('.form');
         forms.forEach(f => f.classList.remove('active'));
         const buttons = document.querySelectorAll('.menu button');
         buttons.forEach(b => b.classList.remove('active'));
-        
-        populateCountries();
-        showForm('login'); // Login form को डिफ़ॉल्ट रूप से दिखाओ (आपके मूल कोड के अनुसार)
       };
     </script>
   </body>
