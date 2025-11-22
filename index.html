@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-      /* --- Base Styles --- */
+      /* ... (Your CSS remains unchanged) ... */
       * { margin:0; padding:0; box-sizing:border-box; font-family: sans-serif; }
       body, html {
         height:100%; width:100%;
@@ -17,7 +17,7 @@
       }
       .container {
         background: rgba(0, 0, 0, 0.65);
-        padding: 30px; border-radius: 1-5px;
+        padding: 30px; border-radius: 15px;
         box-shadow: 0 0 20px #00ffe1;
         max-width: 400px;
         width: 90%;
@@ -192,7 +192,6 @@
                 </label>
             </div>
         </div>
-
         <input type="email" id="reg-email" placeholder="Gmail">
 
         <input type="password" id="reg-pass" placeholder="Password">
@@ -211,8 +210,10 @@
       const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       const USER_DETAILS_TABLE = 'user-details'; 
 
-      let selectedGenderText = ''; 
+      // ✅ नया ग्लोबल वेरिएबल/स्टेट:
+      let selectedGenderText = ''; // यह चुने हुए जेंडर को स्टोर करेगा
 
+      // Function to manage forms and menu buttons
       function showForm(formId) {
         const forms = document.querySelectorAll('.form');
         const menuButtons = document.querySelectorAll('.menu button');
@@ -226,6 +227,7 @@
             document.getElementById('btn-login').classList.add('active');
         } else if (formId === 'register') {
             document.getElementById('btn-register').classList.add('active');
+            // FIX: जब Register Form खुलता है तो Gender options को छिपा कर रखें
             document.getElementById('gender-options-container').style.display = 'none';
             document.getElementById('btn-show-gender').textContent = selectedGenderText || 'Select Gender';
             document.getElementById('btn-show-gender').style.backgroundColor = 'rgba(255,255,255,0.1)';
@@ -235,12 +237,14 @@
         }
       }
 
+      // ✅ FIX 2: GENDER OPTIONS TOGGLE FUNCTION (केवल दिखाने/छिपाने के लिए)
       function toggleGenderOptions() {
           const container = document.getElementById('gender-options-container');
           const isHidden = container.style.display === 'none';
           
           container.style.display = isHidden ? 'flex' : 'none';
           
+          // बटन का टेक्स्ट चुने हुए जेंडर पर निर्भर करेगा, लेकिन जब विकल्प खुले हों तो हम "Hide" नहीं दिखा रहे हैं।
           if (!isHidden) {
              document.getElementById('btn-show-gender').textContent = selectedGenderText || 'Select Gender';
              document.getElementById('btn-show-gender').style.backgroundColor = 'rgba(255,255,255,0.1)';
@@ -248,14 +252,17 @@
           }
       }
       
+      // ✅ FIX 3: HANDLE GENDER SELECTION (विकल्प चुनने और छिपाने के लिए)
       function handleGenderSelect(text) {
-          selectedGenderText = text; 
+          selectedGenderText = text; // ग्लोबल वेरिएबल अपडेट करें
           const button = document.getElementById('btn-show-gender');
           
+          // 1. बटन का टेक्स्ट अपडेट करें
           button.textContent = 'Gender: ' + text;
-          button.style.backgroundColor = '#00ffe1'; 
+          button.style.backgroundColor = '#00ffe1'; // selected होने पर रंग बदलें
           button.style.color = 'black';
           
+          // 2. ऑप्शन कंटेनर को छिपा दें
           document.getElementById('gender-options-container').style.display = 'none';
       }
 
@@ -280,7 +287,7 @@
         const email = document.getElementById('reg-email').value;
         const pass = document.getElementById('reg-pass').value;
         
-        // --- 1. Basic Validation ---
+        // Validation: Gender अब अनिवार्य है
         if (!name || !username || !dob || !country || !gender || !email || !pass) {
              return alert("❌ Please fill all fields and select a Gender.");
         }
@@ -288,15 +295,7 @@
         const age = new Date().getFullYear() - new Date(dob).getFullYear();
         if (age < 17 || age > 110) return alert("❌ Age must be between 17 and 110");
         
-        // 🚨 FIX: PASSWORD LENGTH VALIDATION 🚨
-        if (pass.length < 8) {
-            return alert("❌ Password must be at least 8 characters long.");
-        }
-        if (pass.length > 16) {
-            return alert("❌ Password cannot exceed 16 characters.");
-        }
-
-        // --- 2. Supabase Email Authentication ---
+        // --- 1. Supabase Email Authentication ---
         let { data: authData, error: authError } = await sb.auth.signUp({
           email,
           password: pass,
@@ -313,7 +312,7 @@
             return alert("❌ Registration Error: " + authError.message);
         }
 
-        // --- 3. Insert details into 'user-details' table ---
+        // --- 2. Insert details into 'user-details' table ---
         const creationTime = new Date().toISOString();
         let { error: dbError } = await sb.from(USER_DETAILS_TABLE).insert([
           {
@@ -350,6 +349,7 @@
         else alert("🔗 Reset link sent to " + email);
       }
 
+      // Function to populate the Country dropdown (remains unchanged)
       function populateCountries() {
         const countrySelect = document.getElementById('reg-country');
         const countries = [
@@ -388,7 +388,7 @@
         buttons.forEach(b => b.classList.remove('active'));
         
         populateCountries();
-        showForm('login'); 
+        showForm('login'); // Login form को डिफ़ॉल्ट रूप से दिखाओ (आपके मूल कोड के अनुसार)
       };
     </script>
   </body>
