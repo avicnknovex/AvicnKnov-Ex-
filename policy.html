@@ -22,35 +22,28 @@
             padding: 0 20px;
         }
 
-        /* ------------------- NEW BACK BUTTON STYLING ------------------- */
+        /* ------------------- MODIFIED BACK BUTTON STYLING ------------------- */
         .back-link {
             position: fixed; /* Screen पर हमेशा फिक्स रहेगा */
             top: 20px;
             left: 20px;
             text-decoration: none;
             color: #007bff;
-            font-size: 1.2em;
+            font-size: 2em; /* Icon को बड़ा किया गया */
             font-weight: 600;
-            display: flex;
-            align-items: center;
             padding: 10px 15px;
             background-color: #ffffff;
-            border-radius: 8px;
+            border-radius: 50%; /* गोल आइकन के लिए */
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
-            z-index: 1000; /* सुनिश्चित करता है कि यह सबसे ऊपर दिखाई दे */
+            z-index: 1000;
+            line-height: 1; /* Icon को केंद्र में रखने में मदद करता है */
         }
 
         .back-link:hover {
             background-color: #e9ecef;
             color: #0056b3;
-            transform: scale(1.05);
-        }
-
-        .back-link span {
-            font-size: 1.5em; /* Icon size */
-            margin-right: 5px;
-            line-height: 1;
+            transform: scale(1.1); /* Hover पर आकर्षक मोशन */
         }
         /* --------------------------------------------------------------- */
 
@@ -265,16 +258,16 @@
             .back-link {
                 top: 10px;
                 left: 10px;
-                padding: 8px 12px;
-                font-size: 1em;
+                padding: 10px;
+                font-size: 1.5em;
             }
         }
     </style>
 </head>
 <body>
 
-    <a href="index.html" class="back-link">
-        <span>&#x2190;</span> Back to Login
+    <a href="index.html" class="back-link" title="Back to Login Page">
+        ←
     </a>
     <header>
         <h1><span style="color: #ffc107;">A</span>vicn<span style="color: #ffc107;">K</span>nov Exchange 🚀</h1>
