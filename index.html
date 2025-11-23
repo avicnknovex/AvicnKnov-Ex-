@@ -186,7 +186,7 @@
     </a>
 
     <script>
-      // Supabase Credentials - CONFIRMED TO BE CORRECT
+      // Supabase Credentials (Saved Information)
       const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
       const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
       const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -216,7 +216,7 @@
         else window.location.href = "main.html";
       }
 
-      // 🛑 यह 'register()' फ़ंक्शन फिक्स किया गया है। 🛑
+      // 🛑 संशोधित register() फ़ंक्शन: अब डेटाबेस इंसर्ट केवल वेरिफिकेशन के बाद ट्रिगर द्वारा होगा।
       async function register() {
         // Get all fields
         const name = document.getElementById('reg-name').value;
@@ -244,12 +244,19 @@
         const age = new Date().getFullYear() - new Date(dob).getFullYear();
         if (age < 17 || age > 110) return alert("Age must be between 17 and 110");
 
-        // 1. Supabase Signup (Account Creation)
-        let { data: authData, error: authError } = await sb.auth.signUp({
+        // 1. Supabase Signup (Account Creation) - Password is HASHED internally.
+        let { error: authError } = await sb.auth.signUp({
           email,
           password: pass,
           options: {
-            data: { full_name: name, dob, username, country, gender }, 
+            // Passing user details in 'data' for the Database Trigger to pick up later
+            data: { 
+                full_name: name, 
+                dob: dob, 
+                username: username, 
+                country: country, 
+                gender: gender 
+            }, 
             emailRedirectTo: 'https://avicnknovex.netlify.app/success.html'
           }
         });
@@ -258,38 +265,8 @@
             return alert("❌ " + authError.message);
         }
         
-        // 2. Insert details into 'user-details' table (FIXED LOGIC)
-        // यह Logic Supabase Auth में सफल साइनअप के तुरंत बाद चलता है।
-        // authData.user में नए user की ID (newUserId) उपलब्ध होती है।
-        if (authData.user) {
-            const newUserId = authData.user.id;
-            const currentTimestamp = new Date().toISOString();
-
-            let { error: dbError } = await sb
-                .from('user-details')
-                .insert([
-                    {
-                        id: newUserId, 
-                        full_name: name,
-                        username: username,
-                        email: email, // Email भी सेव किया जा रहा है 
-                        date_of_birth: dob,
-                        country: country,
-                        gender: gender,
-                        created_at: currentTimestamp, // अकाउंट बनाने का समय
-                    }
-                ]);
-
-            if (dbError) {
-                console.error("Profile insert error:", dbError);
-                // Auth सफल हो गया है, इसलिए उपयोगकर्ता को वेरिफिकेशन के लिए अलर्ट करते हैं
-                // लेकिन DB त्रुटि के बारे में भी बताते हैं।
-                return alert("✅ Registered! Check your Gmail to verify. Note: There was an error saving your full profile details to the 'user-details' table: " + dbError.message);
-            }
-        }
-
-
-        alert("✅ Registered! Check your Gmail to verify.");
+        // 2. Alert user about verification. The Database Trigger handles the profile insertion.
+        alert("✅ Registered! Check your Gmail to verify. Your profile data will be saved once verification is successful.");
       }
 
       async function resetPassword() {
