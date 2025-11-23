@@ -186,6 +186,7 @@
     </a>
 
     <script>
+      // Supabase Credentials - CONFIRMED TO BE CORRECT
       const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
       const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
       const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -215,6 +216,7 @@
         else window.location.href = "main.html";
       }
 
+      // 🛑 यह 'register()' फ़ंक्शन फिक्स किया गया है। 🛑
       async function register() {
         // Get all fields
         const name = document.getElementById('reg-name').value;
@@ -224,7 +226,7 @@
         const dob = document.getElementById('reg-dob').value;
         const email = document.getElementById('reg-email').value;
         const pass = document.getElementById('reg-pass').value;
-        const policyChecked = document.getElementById('reg-policy-check').checked; // NEW CHECKBOX
+        const policyChecked = document.getElementById('reg-policy-check').checked; 
 
         // Validation 
         if (!name || !username || !country || !gender || !dob || !email || !pass) {
@@ -235,7 +237,6 @@
             return alert("Password must be between 8 and 16 characters.");
         }
         
-        // NEW VALIDATION: Policy Check
         if (!policyChecked) {
             return alert("You must agree to the Policy, Service, and Community Guidelines.");
         }
@@ -257,29 +258,36 @@
             return alert("❌ " + authError.message);
         }
         
-        // 2. Insert details into 'user-details' table
-        const newUserId = authData.user.id;
-        const currentTimestamp = new Date().toISOString();
+        // 2. Insert details into 'user-details' table (FIXED LOGIC)
+        // यह Logic Supabase Auth में सफल साइनअप के तुरंत बाद चलता है।
+        // authData.user में नए user की ID (newUserId) उपलब्ध होती है।
+        if (authData.user) {
+            const newUserId = authData.user.id;
+            const currentTimestamp = new Date().toISOString();
 
-        let { error: dbError } = await sb
-            .from('user-details')
-            .insert([
-                {
-                    id: newUserId, 
-                    full_name: name,
-                    username: username,
-                    email: email,
-                    date_of_birth: dob,
-                    country: country,
-                    gender: gender,
-                    created_at: currentTimestamp,
-                }
-            ]);
+            let { error: dbError } = await sb
+                .from('user-details')
+                .insert([
+                    {
+                        id: newUserId, 
+                        full_name: name,
+                        username: username,
+                        email: email, // Email भी सेव किया जा रहा है 
+                        date_of_birth: dob,
+                        country: country,
+                        gender: gender,
+                        created_at: currentTimestamp, // अकाउंट बनाने का समय
+                    }
+                ]);
 
-        if (dbError) {
-            console.error("Profile insert error:", dbError);
-            return alert("✅ Registered! Check your Gmail to verify. Note: There was an error saving your full profile details to the 'user-details' table: " + dbError.message);
+            if (dbError) {
+                console.error("Profile insert error:", dbError);
+                // Auth सफल हो गया है, इसलिए उपयोगकर्ता को वेरिफिकेशन के लिए अलर्ट करते हैं
+                // लेकिन DB त्रुटि के बारे में भी बताते हैं।
+                return alert("✅ Registered! Check your Gmail to verify. Note: There was an error saving your full profile details to the 'user-details' table: " + dbError.message);
+            }
         }
+
 
         alert("✅ Registered! Check your Gmail to verify.");
       }
