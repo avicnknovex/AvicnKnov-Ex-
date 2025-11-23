@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AvicnKnov Exchange Policy & Commitment</title>
+    <style>
+        /* Global Reset and Base Styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f9;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Container for Centering and Max Width */
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        /* Header Section Styling */
+        header {
+            background-color: #007bff; /* Primary Blue */
+            color: #ffffff;
+            padding: 40px 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.8em;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        header h2 {
+            font-size: 1.2em;
+            font-weight: 300;
+            opacity: 0.9;
+        }
+
+        /* Section Headings */
+        .section-title {
+            text-align: center;
+            font-size: 2em;
+            color: #007bff;
+            border-bottom: 3px solid #007bff;
+            display: inline-block;
+            padding-bottom: 5px;
+            margin: 40px 0 20px;
+            font-weight: 600;
+        }
+
+        /* Info Box - Our Commitment */
+        .info-box {
+            background-color: #ffffff;
+            border-left: 5px solid #28a745; /* Success Green */
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .info-box:hover {
+            transform: translateY(-3px); /* Smooth hover effect */
+        }
+
+        .info-box strong {
+            color: #007bff;
+        }
+
+        /* Feature Table - Pillars of Trust */
+        .feature-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .feature-table th, .feature-table td {
+            padding: 18px 20px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .feature-table th {
+            background-color: #007bff;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .feature-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        /* Highlight the edge column */
+        .feature-table td:last-child {
+            font-weight: bold;
+            color: #28a745; /* Green highlight */
+        }
+        
+        /* Policy Charts Grid */
+        .policy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .policy-chart {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-top: 6px solid;
+            transition: all 0.4s ease;
+        }
+
+        .policy-chart:hover {
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            transform: translateY(-5px);
+        }
+
+        .policy-chart h3 {
+            margin-top: 0;
+            font-size: 1.3em;
+            padding-bottom: 10px;
+            border-bottom: 2px dashed #eee;
+        }
+
+        .policy-chart ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .policy-chart ul li {
+            padding: 10px 0;
+            border-bottom: 1px dotted #e0e0e0;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .policy-chart ul li:last-child {
+            border-bottom: none;
+        }
+
+        .policy-chart ul li::before {
+            content: '✓'; /* Custom bullet point */
+            color: #007bff;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 1.1em;
+            line-height: 1.4;
+        }
+        
+        /* Color coding for charts based on theme */
+        #chart1 { border-color: #007bff; } /* Innovation */
+        #chart2 { border-color: #dc3545; } /* Liability - Red for seriousness */
+        #chart3 { border-color: #ffc107; } /* Compliance */
+        #chart4 { border-color: #28a745; } /* Service */
+        #chart5 { border-color: #17a2b8; } /* Communication */
+
+        /* Social Media Links Section */
+        .social-links {
+            text-align: center;
+            margin-top: 50px;
+            padding: 30px 0;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .social-links a {
+            display: inline-block;
+            margin: 0 15px;
+            text-decoration: none;
+            color: #007bff;
+            font-size: 1.1em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .social-links a:hover {
+            color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .social-links .logo {
+            font-size: 2.5em; /* Icon size */
+            display: block;
+            margin-bottom: 5px;
+            line-height: 1;
+        }
+
+        .social-links p {
+            font-size: 1.1em;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 20px 0;
+            margin-top: 40px;
+            border-top: 1px solid #ccc;
+            color: #777;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+            .policy-grid {
+                grid-template-columns: 1fr;
+            }
+            .feature-table th, .feature-table td {
+                padding: 15px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1><span style="color: #ffc107;">A</span>vicn<span style="color: #ffc107;">K</span>nov Exchange 🚀</h1>
+        <h2>The Future of Crypto Trading: Secure, Compliant, Innovative</h2>
+    </header>
+
+    <div class="container">
+
+        <center><h2 class="section-title">Our Commitment to Excellence & Security</h2></center>
+
+        <div class="info-box">
+            <p>Welcome to <strong>AvicnKnov</strong>, a next-generation cryptocurrency exchange built for traders, powered by innovation, and committed to security. We are dedicated to providing a trading environment that is not just fast, but fundamentally safe and compliant.</p>
+            <p style="font-style: italic; color: #555;"><strong>Note:</strong> AvicnKnov is exclusively designed for Exchange Trading.</p>
+        </div>
+
+        <center><h2 class="section-title">🔒 Pillars of Trust: Security & Compliance</h2></center>
+
+        <table class="feature-table">
+            <thead>
+                <tr>
+                    <th>Feature</th>
+                    <th>Description</th>
+                    <th>AvicnKnov Edge</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>**State Registration**</td>
+                    <td>We have successfully obtained the necessary **State License** and are a **Government Registered Entity**, ensuring we operate under stringent regulatory oversight.</td>
+                    <td>**100% Compliant** with all government-mandated policies and regulations, providing a legal and trustworthy foundation.</td>
+                </tr>
+                <tr>
+                    <td>**Advanced Security**</td>
+                    <td>The platform is **100% Safe**, utilizing cutting-edge encryption and robust security protocols to protect user assets and data.</td>
+                    <td>**AI-Augmented Technology** is integrated into our security framework for predictive threat detection and proactive defense against cyber risks.</td>
+                </tr>
+                <tr>
+                    <td>**Dynamic Coin Listings**</td>
+                    <td>A vast selection of **Crypto Assets** has already been launched on our exchange, and we are continuously working to add new, high-potential coins in the near future.</td>
+                    <td>We combine market demand with regulatory checks to ensure a diversified and safe trading portfolio for our users.</td>
+                </tr>
+                <tr>
+                    <td>**Service Guarantee**</td>
+                    <td>We ensure **Fast and Safe Service** delivery to every user, outperforming competitors with our efficient infrastructure and dedicated support.</td>
+                    <td>Our core focus is on maximizing user satisfaction through high-speed execution and reliable platform stability.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <center><h2 class="section-title">📈 AvicnKnov Core Policy Chart</h2></center>
+        
+        <div class="policy-grid">
+
+            <div class="policy-chart" id="chart1">
+                <h3>Chart 1: Trading Environment & Innovation</h3>
+                <ul>
+                    <li>**Advanced Level Exchange:** Built on a foundation of next-gen technology.</li>
+                    <li>**AI-Integrated Technology:** Uses **AI-uploaded technology** for enhanced insights, security, and efficiency.</li>
+                    <li>**Continuous Improvement:** Constant investment to enhance and improve the exchange for a superior experience.</li>
+                    <li>**Trading Focus:** Platform is **strictly for exchange trading purposes only**.</li>
+                    <li>**Future Listings:** Commitment to an aggressive and well-vetted roadmap for new crypto coins.</li>
+                </ul>
+            </div>
+
+            <div class="policy-chart" id="chart2">
+                <h3>Chart 2: User Responsibility & Liability (CRITICAL)</h3>
+                <ul>
+                    <li>**Strict Policy Adherence:** User accepts all inherent risks by using AvicnKnov.</li>
+                    <li style="color: #dc3545; font-weight: bold;">**No Exchange Liability:** AvicnKnov is **NOT responsible** for any losses or adverse events on the platform.</li>
+                    <li style="color: #dc3545;">**Proof/Evidence Disclaimer:** Any proof or evidence against the exchange regarding operational losses **will NOT be considered valid or binding**.</li>
+                    <li>**User Due Diligence:** User is responsible for reading the policy *before* engaging with the exchange.</li>
+                    <li>**Incident Indemnity:** The exchange has **NO connection or liability** to a user's personal trading choices or external incidents.</li>
+                </ul>
+            </div>
+
+            <div class="policy-chart" id="chart3">
+                <h3>Chart 3: Regulatory & Security Compliance</h3>
+                <ul>
+                    <li>**Government Registered:** Operating under a state-level license and adhering to **Government-approved policies**.</li>
+                    <li>**Policy Following:** We strictly follow all regulatory and compliance policies as required by law.</li>
+                    <li>**100% Safety Pledge:** Utilizing enterprise-grade security architecture to guarantee platform and asset safety.</li>
+                    <li>**Transparency:** Our operational policies are publicly available and transparent.</li>
+                    <li>**Commitment to Law:** Compliance is a fundamental part of our platform's design and operation.</li>
+                </ul>
+            </div>
+
+            <div class="policy-chart" id="chart4">
+                <h3>Chart 4: Service & Performance Standard</h3>
+                <ul>
+                    <li>**Best-in-Class Performance:** Dedicated effort to exceed the performance and reliability of other exchanges.</li>
+                    <li>**Fast Execution:** Technology optimized for the fastest possible transaction and order execution speed.</li>
+                    <li>**Safe Operations:** Continuous monitoring and maintenance ensure the platform operates smoothly and securely 24/7.</li>
+                    <li>**User-Centric Design:** Focus on an intuitive and powerful interface for all levels of traders.</li>
+                    <li>**Reliable Uptime:** Striving for maximum uptime to ensure trading continuity.</li>
+                </ul>
+            </div>
+            
+            <div class="policy-chart" id="chart5" style="grid-column: span 2; max-width: 700px; margin: 0 auto;">
+                <h3>Chart 5: Official Communication & Platforms</h3>
+                <ul>
+                    <li>**Verification is Key:** Only trust information provided on our officially registered and verified platforms.</li>
+                    <li style="color: #17a2b8; font-weight: bold;">**Avoid Fake Information:** Users are strongly advised to **avoid and beware of fake information, links, or platforms**.</li>
+                    <li>**Contact for Business/Partnerships:** For promotion, club partnerships, and verified information sharing, contact:</li>
+                    <li style="font-size: 1.2em; color: #dc3545;">**Official Email:** avicnknovbusiness@gmail.com</li>
+                    <li>**Verified Platforms Only:** Interact solely with the official social media channels listed below.</li>
+                </ul>
+            </div>
+
+        </div>
+
+        <center><h2 class="section-title">🔗 Connect with AvicnKnov: Verified Platforms</h2></center>
+
+        <div class="social-links">
+            <p>Join our community across our registered channels to stay updated!</p>
+
+            <a href="https://t.me/AvicnKnov" target="_blank" rel="noopener noreferrer">
+                <span class="logo">✈️</span> Telegram
+            </a>
+            <a href="https://x.com/AvicnKnov?s=09" target="_blank" rel="noopener noreferrer">
+                <span class="logo">🐦</span> X (Twitter)
+            </a>
+            <a href="https://youtube.com/@avicnknov?si=yWHFybgTstYHd3pm" target="_blank" rel="noopener noreferrer">
+                <span class="logo">▶️</span> YouTube
+            </a>
+            <a href="https://www.facebook.com/share/1G8YRZhZ6M/" target="_blank" rel="noopener noreferrer">
+                <span class="logo">📘</span> Facebook
+            </a>
+            <a href="https://www.instagram.com/avicnknov?igsh=a2QwdnhwY3NxZjZ2" target="_blank" rel="noopener noreferrer">
+                <span class="logo">📸</span> Instagram
+            </a>
+        </div>
+
+    </div>
+
+    <footer>
+        &copy; 2025 AvicnKnov Exchange. All Rights Reserved. Read Policy Before Trading.
+    </footer>
+
+</body>
+</html>
