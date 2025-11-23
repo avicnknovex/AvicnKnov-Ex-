@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AvicnKnov Exchange Services & Future</title>
+    <style>
+        /* Global Reset and Base Styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e6f0ff; /* Light Blue/White background for a fresh look */
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        /* ------------------- BACK BUTTON STYLING (Icon Only) ------------------- */
+        .back-link {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            text-decoration: none;
+            color: #17a2b8; /* Cyan/Teal color */
+            font-size: 2em;
+            font-weight: 600;
+            padding: 10px 15px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            line-height: 1;
+        }
+
+        .back-link:hover {
+            background-color: #17a2b8;
+            color: #ffffff;
+            transform: scale(1.1);
+        }
+        /* --------------------------------------------------------------- */
+
+        /* Header Section Styling */
+        header {
+            background: linear-gradient(135deg, #007bff, #0056b3); /* Gradient Header */
+            color: #ffffff;
+            padding: 50px 20px;
+            text-align: center;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        header h1 {
+            font-size: 3.2em;
+            margin-bottom: 5px;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        header p {
+            font-size: 1.4em;
+            font-weight: 300;
+            opacity: 0.9;
+        }
+
+        /* Section Headings */
+        .section-title {
+            text-align: center;
+            font-size: 2.2em;
+            color: #007bff;
+            margin: 40px 0 25px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        /* ------------------- ANIMATED TRADING GRAPH (BOX) ------------------- */
+        .graph-box {
+            background-color: #1a1a2e; /* Dark background for graph */
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            margin: 40px 0;
+            height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* CSS Animation for the Graph Line */
+        @keyframes marketPulse {
+            0% { transform: scaleY(0.6); }
+            25% { transform: scaleY(1.0); }
+            50% { transform: scaleY(0.5); }
+            75% { transform: scaleY(1.1); }
+            100% { transform: scaleY(0.6); }
+        }
+
+        .trading-graph {
+            height: 150px;
+            width: 90%;
+            background: repeating-linear-gradient(
+                to right,
+                #28a745, /* Green for Up */
+                #28a745 10%,
+                #dc3545 10%, /* Red for Down */
+                #dc3545 20%
+            );
+            border-radius: 5px;
+            position: absolute;
+            bottom: 50px;
+            animation: marketPulse 4s infinite alternate; /* The 'Motion' effect */
+            transform-origin: bottom;
+            box-shadow: 0 0 15px rgba(40, 167, 69, 0.7); /* Glow effect */
+        }
+
+        .graph-box::before {
+            content: 'LIVE MARKET SIMULATION';
+            color: #ffffff;
+            position: absolute;
+            top: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+
+        .graph-box::after {
+            content: 'AI-POWERED TRADING INDICATOR';
+            color: #ffc107;
+            position: absolute;
+            bottom: 15px;
+            font-size: 0.9em;
+        }
+        /* --------------------------------------------------------------- */
+
+
+        /* Service Chart Grid */
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .service-card {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #007bff;
+            transition: all 0.3s ease;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            border-left-color: #28a745;
+        }
+
+        .service-card h3 {
+            color: #007bff;
+            font-size: 1.5em;
+            margin-top: 0;
+            border-bottom: 2px dashed #eee;
+            padding-bottom: 10px;
+        }
+
+        .service-card ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .service-card ul li {
+            margin-bottom: 8px;
+            font-size: 1em;
+            color: #555;
+            display: flex;
+            align-items: center;
+        }
+
+        .service-card ul li::before {
+            content: '★';
+            color: #ffc107;
+            font-size: 1.2em;
+            margin-right: 10px;
+            line-height: 1;
+        }
+
+        /* Navigation Buttons at the Bottom */
+        .bottom-nav {
+            text-align: center;
+            margin-top: 50px;
+            padding: 30px;
+            border-top: 2px solid #ccc;
+        }
+
+        .nav-button {
+            display: inline-block;
+            text-decoration: none;
+            color: #ffffff;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin: 0 15px;
+            transition: all 0.3s ease;
+        }
+
+        #community-btn {
+            background-color: #ffc107; /* Yellow */
+        }
+
+        #policy-btn {
+            background-color: #dc3545; /* Red */
+        }
+
+        .nav-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            opacity: 0.9;
+        }
+
+        /* Social Links and Contact Info - Reusing previous style */
+        .social-links {
+            text-align: center;
+            margin-top: 50px;
+            padding: 30px 0;
+            background-color: #f0f8ff;
+            border-radius: 10px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .social-links a {
+            display: inline-block;
+            margin: 0 15px;
+            text-decoration: none;
+            color: #007bff;
+            font-size: 1.1em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .social-links a:hover {
+            color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .social-links .logo {
+            font-size: 2.5em; /* Icon size */
+            display: block;
+            margin-bottom: 5px;
+            line-height: 1;
+        }
+        
+        .contact-info {
+            background-color: #fff;
+            padding: 20px;
+            border: 1px dashed #007bff;
+            border-radius: 8px;
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .contact-info strong {
+            color: #007bff;
+        }
+        
+        .contact-info p {
+            font-size: 1.1em;
+            color: #dc3545; /* Highlight verified email */
+        }
+
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 20px 0;
+            margin-top: 40px;
+            border-top: 1px solid #ccc;
+            color: #777;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            header h1 { font-size: 2.5em; }
+            .service-grid { grid-template-columns: 1fr; }
+            .nav-button { margin: 10px 0; display: block; }
+            .back-link { top: 10px; left: 10px; padding: 8px; font-size: 1.8em; }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="back-link" title="Back to Login Page">
+        ←
+    </a>
+    
+    <header>
+        <h1>AvicnKnov Service Portfolio</h1>
+        <p>Innovation & Security at the Core of Your Trading Experience</p>
+    </header>
+
+    <div class="container">
+
+        <center><h2 class="section-title">AI-Enhanced Trading & Market Pulse</h2></center>
+
+        <div class="graph-box">
+            <div class="trading-graph"></div>
+        </div>
+
+        <center><h2 class="section-title">Core Services & Crypto Universe</h2></center>
+
+        <div class="service-grid">
+
+            <div class="service-card">
+                <h3><span style="color: #28a745;">P2P</span> & Trust System</h3>
+                <ul>
+                    <li>**Safest P2P Platform:** We have developed the **best P2P safe system** in the market.</li>
+                    <li>**Continuous Security:** Ongoing development to make our P2P system even **more secure** in the future.</li>
+                    <li>**Zero-Fee Transactions:** Competitive P2P transaction fees.</li>
+                    <li>**Fast Settlement:** Rapid fund settlement for P2P trades.</li>
+                </ul>
+            </div>
+
+            <div class="service-card">
+                <h3><span style="color: #ffc107;">AI</span> & Safe Trading</h3>
+                <ul>
+                    <li>**AI Integration:** Our trading system extensively uses **Artificial Intelligence**.</li>
+                    <li>**100% Safe Trading:** AI ensures your trading environment is **100% safe** and optimized.</li>
+                    <li>**Advanced Analytics:** AI provides superior risk management and predictive analytics.</li>
+                    <li>**Market Trend Analysis:** Automated trend analysis for smarter decisions.</li>
+                </ul>
+            </div>
+
+            <div class="service-card">
+                <h3>Asset Listings & Variety</h3>
+                <ul>
+                    <li>**Top 150 Meme Coins:** Comprehensive service featuring the **Top 150 Meme Coins**.</li>
+                    <li>**Top 150 Crypto Tokens:** Extensive access to the **Top 150 Crypto Tokens**.</li>
+                    <li>**Diverse Cryptocurrencies:** Service provided for various other Crypto Coins and Cryptocurrencies.</li>
+                    <li>**Future Availability:** Continuous expansion of asset portfolio.</li>
+                </ul>
+            </div>
+
+            <div class="service-card">
+                <h3>Support & Agency</h3>
+                <ul>
+                    <li>**Fast Help & Support:** Dedicated system for quick and efficient user assistance.</li>
+                    <li>**24/7 Availability:** Our support system is available around the clock.</li>
+                    <li>**Agent Service:** Future plans to introduce dedicated Agent Services for key users.</li>
+                    <li>**User-Centric Approach:** Focusing on solving user queries promptly and effectively.</li>
+                </ul>
+            </div>
+
+        </div>
+
+        <center><h2 class="section-title">Future Vision & Evolution</h2></center>
+
+        <div class="service-card" style="border-left-color: #007bff; max-width: 800px; margin: 30px auto;">
+            <h3 style="color: #007bff;">Crypto as a Global Currency</h3>
+            <ul>
+                <li>**Future Goal:** We envision and are working towards making Crypto not just a token, but a **true global currency**.</li>
+                <li>**Years Ahead:** This functionality will be available on our exchange in the coming years.</li>
+                <li>**Be an Early Adopter:** Join AvicnKnov to be part of the future of finance.</li>
+            </ul>
+        </div>
+        
+        <div class="contact-info">
+            <p style="font-size: 1.2em; font-weight: bold;">⚠️ Official Contact Information ⚠️</p>
+            <p>This is the ONLY verified email for partners and official information. **Avoid all fake emails/platforms.**</p>
+            <p>For Partners & Information: <strong>avicnknovbusiness@gmail.com</strong></p>
+        </div>
+
+
+        <div class="bottom-nav">
+            <p style="font-size: 1.1em; color: #555;">If you wish to know more about our platform rules or policies:</p>
+            
+            <a href="community.html" class="nav-button" id="community-btn">
+                Community Guidelines
+            </a>
+            
+            <a href="policy.html" class="nav-button" id="policy-btn">
+                Read Our Policy
+            </a>
+        </div>
+
+
+        <center><h2 class="section-title">🔗 Verified Platforms (Join Our Community)</h2></center>
+        
+        <div class="social-links">
+            <a href="https://t.me/AvicnKnov" target="_blank" rel="noopener noreferrer">
+                <span class="logo">✈️</span> Telegram
+            </a>
+            <a href="https://x.com/AvicnKnov?s=09" target="_blank" rel="noopener noreferrer">
+                <span class="logo">🐦</span> X (Twitter)
+            </a>
+            <a href="https://youtube.com/@avicnknov?si=yWHFybgTstYHd3pm" target="_blank" rel="noopener noreferrer">
+                <span class="logo">▶️</span> YouTube
+            </a>
+            <a href="https://www.facebook.com/share/1G8YRZhZ6M/" target="_blank" rel="noopener noreferrer">
+                <span class="logo">📘</span> Facebook
+            </a>
+            <a href="https://www.instagram.com/avicnknov?igsh=a2QwdnhwY3NxZjZ2" target="_blank" rel="noopener noreferrer">
+                <span class="logo">📸</span> Instagram
+            </a>
+        </div>
+
+    </div>
+
+    <footer>
+        © 2025 AvicnKnov Exchange. Your Journey to the Future of Finance Starts Here.
+    </footer>
+
+</body>
+</html>
