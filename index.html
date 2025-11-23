@@ -1,869 +1,313 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Support & Help Center</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>AvicnKnov Ex – Login</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* CSS for a modern, attractive look */
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f4f7f6;
-            margin: 0;
-            padding: 0;
-            color: #333;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 40px auto;
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Header and Back Button */
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 15px;
-        }
-
-        .header h1 {
-            font-size: 2em;
-            color: #007bff;
-            margin: 0;
-        }
-
-        .back-button {
-            text-decoration: none;
-            color: #555;
-            font-size: 1.5em;
-            padding: 8px;
-            border-radius: 50%;
-            transition: background-color 0.2s;
-        }
-
-        .back-button:hover {
-            background-color: #eee;
-        }
-
-        /* Form Styling */
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #444;
-        }
-
-        input[type="text"],
-        input[type="email"],
-        input[type="tel"],
-        input[type="date"],
-        textarea,
-        select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 1em;
-            transition: border-color 0.3s;
-        }
-
-        input:focus, textarea:focus, select:focus {
-            border-color: #007bff;
-            outline: none;
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        /* Radio/Checkbox Group */
-        .radio-group, .checkbox-group {
-            display: flex;
-            gap: 20px;
-            margin-top: 5px;
-        }
-
-        .radio-group label, .checkbox-group label {
-            font-weight: 400;
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-        }
-
-        .radio-group input[type="radio"], .checkbox-group input[type="checkbox"] {
-            margin-right: 8px;
-            width: auto;
-        }
-
-        /* Dynamic Sections */
-        .dynamic-form-section {
-            border: 1px solid #dcdcdc;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 15px;
-            background-color: #fafafa;
-        }
-
-        /* Submit Button */
-        .submit-button {
-            background-color: #28a745;
-            color: white;
-            padding: 15px 25px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1.1em;
-            font-weight: 600;
-            transition: background-color 0.3s;
-            width: 100%;
-            margin-top: 20px;
-        }
-
-        .submit-button:hover {
-            background-color: #218838;
-        }
-
-        /* AI Chat Button */
-        .chat-button {
-            background-color: #ffc107;
-            color: #333;
-            padding: 15px 25px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1.1em;
-            font-weight: 600;
-            transition: background-color 0.3s;
-            width: 100%;
-            margin-top: 30px;
-        }
-
-        .chat-button:hover {
-            background-color: #e0a800;
-        }
-
-        /* Pop-up Modal (Success Message) */
-        .modal {
-            display: none; 
-            position: fixed; 
-            z-index: 1000; 
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.4); 
-        }
-
-        .modal-content {
-            background-color: #fefefe;
-            margin: 15% auto; 
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%; 
-            max-width: 400px;
-            text-align: center;
-            border-radius: 10px;
-            animation: fadeIn 0.3s;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-
-        @keyframes fadeIn {
-            from {opacity: 0;}
-            to {opacity: 1;}
-        }
-
-        .modal-content h3 {
-            color: #28a745;
-        }
-
-        /* Email Contact */
-        .email-contact {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px dashed #ccc;
-        }
-
-        .email-contact a {
-            color: #007bff;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        
-        .email-contact a:hover {
-            text-decoration: underline;
-        }
-
-        /* AI Chat Box */
-        .ai-chat-box {
-            display: none;
-            position: fixed;
-            bottom: 0;
-            right: 20px;
-            width: 350px;
-            height: 500px;
-            background-color: #fff;
-            border-radius: 10px 10px 0 0;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
-            z-index: 900;
-            flex-direction: column;
-        }
-        
-        .chat-header {
-            background-color: #007bff;
-            color: white;
-            padding: 15px;
-            border-radius: 10px 10px 0 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .chat-header .back-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.2em;
-            cursor: pointer;
-        }
-
-        .chat-messages {
-            flex-grow: 1;
-            padding: 15px;
-            overflow-y: auto;
-            background-color: #f0f4f9;
-        }
-
-        .chat-input {
-            padding: 15px;
-            border-top: 1px solid #eee;
-            display: flex;
-        }
-
-        .chat-input input {
-            flex-grow: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 20px;
-            margin-right: 10px;
-        }
-        
-        .chat-input button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 20px;
-            cursor: pointer;
-        }
-        
-        .message {
-            margin-bottom: 10px;
-            padding: 8px 12px;
-            border-radius: 15px;
-            max-width: 80%;
-        }
-
-        .user-message {
-            background-color: #dcf8c6;
-            align-self: flex-end;
-            margin-left: auto;
-        }
-
-        .ai-message {
-            background-color: #fff;
-            align-self: flex-start;
-        }
-
-        .language-toggle {
-            display: flex;
-            gap: 10px;
-        }
-
-        .timer {
-            font-size: 0.9em;
-            font-weight: 600;
-        }
+      * { margin:0; padding:0; box-sizing:border-box; font-family: sans-serif; }
+      body, html {
+        height:100%; width:100%;
+        background: url('https://imgpx.com/mbRZiaEdwWxL.png') no-repeat center center fixed;
+        background-size: cover;
+        display:flex; align-items:center; justify-content:center;
+      }
+      .container {
+        background: rgba(0, 0, 0, 0.65);
+        padding: 30px; border-radius: 15px;
+        box-shadow: 0 0 20px #00ffe1;
+        max-width: 400px;
+        width: 90%;
+        text-align: center;
+        color: white;
+      }
+      .title {
+        font-size: 2rem;
+        margin-bottom: 20px;
+        color: #00ffe1;
+        text-shadow: 0 0 8px #00ffe1;
+      }
+      .menu {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-bottom: 15px;
+        gap: 10px;
+      }
+      .menu button {
+        background: rgba(255,255,255,0.1);
+        border: none;
+        padding: 10px 16px;
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+      .menu button.active {
+        background: #00ffe1;
+        color: black;
+        font-weight: bold;
+      }
+      .form {
+        display: none;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 10px;
+      }
+      .form.active {
+        display: flex;
+      }
+      .form input[type="email"], .form input[type="password"], .form input[type="text"], 
+      .form input[type="date"], .form button, .form select {
+        padding: 12px;
+        border: none;
+        border-radius: 6px;
+        width: 100%;
+        outline: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+      }
+      .form input:not([type="checkbox"]), .form select {
+        background: rgba(255,255,255,0.2);
+        color: white;
+      }
+      .form select option {
+          color: black;
+          background: #333;
+      }
+      .form button {
+        background: #00ffe1;
+        color: black;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      /* New Support Button CSS */
+      .support-link {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          width: 50px;
+          height: 50px;
+          background: #00ffe1;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 12px rgba(0, 255, 225, 0.5);
+          transition: transform 0.3s;
+          text-decoration: none;
+          z-index: 100;
+      }
+      .support-link:hover {
+          transform: scale(1.1);
+      }
+      .support-icon {
+          font-size: 30px; 
+          color: black;
+          line-height: 1; 
+      }
+      /* New Policy Checkbox Styling */
+      .policy-container {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-top: 10px;
+        text-align: left;
+        font-size: 0.8rem;
+      }
+      .policy-container input[type="checkbox"] {
+        margin-top: 3px;
+        width: auto;
+        min-width: 15px; 
+        height: 15px;
+        cursor: pointer;
+        /* Custom checkmark color */
+        accent-color: #00ffe1; 
+      }
+      .policy-container a {
+        color: #00ffe1;
+        text-decoration: underline;
+        font-weight: bold;
+        cursor: pointer;
+      }
     </style>
-</head>
-<body>
-
+  </head>
+  <body>
     <div class="container">
-        <div class="header">
-            <a href="index.html" class="back-button" title="Go Back">
-                &#9664; </a>
-            <h1>Support Center: Report a Problem</h1>
-        </div>
+      <div class="title">AvicnKnov Ex</div>
+      <div class="menu">
+        <button id="btn-login" onclick="showForm('login')">Login</button>
+        <button id="btn-register" onclick="showForm('register')">Create Account</button>
+      </div>
 
-        <form id="supportForm">
-            <div class="form-group">
-                <label for="problemType">Select Problem Type <span style="color: red;">*</span></label>
-                <select id="problemType" name="problemType" required onchange="showDynamicForm(this.value)">
-                    <option value="">-- Choose an Option --</option>
-                    <option value="login_problem">Login Problem</option>
-                    <option value="create_account_problem">Create Account Problem</option>
-                    <option value="forgot_password_problem">Forgot Password Problem</option>
-                    <option value="other_problem">Other Problem</option>
-                </select>
-            </div>
-            
-            <div id="dynamicFormSection" class="dynamic-form-section" style="display: none;">
-                <div class="form-group">
-                    <label>Your Contact Information (We will use this to reach you) <span style="color: red;">*</span></label>
-                    <div class="radio-group">
-                        <label>
-                            <input type="radio" name="contactType" value="email" required onchange="toggleContactField(this.value)" checked>
-                            Contact Email
-                        </label>
-                        <label>
-                            <input type="radio" name="contactType" value="phone" required onchange="toggleContactField(this.value)">
-                            Contact Phone Number
-                        </label>
-                    </div>
-                    <input type="email" id="contactEmail" name="contactEmail" placeholder="Enter your Contact Email" required>
-                    <input type="tel" id="contactPhone" name="contactPhone" placeholder="Enter your Contact Phone Number" style="display: none;">
-                </div>
+      <div id="login" class="form">
+        <input type="email" id="login-email" placeholder="Gmail">
+        <input type="password" id="login-pass" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <button onclick="showForm('forgot')" style="background: none; color: #00ffe1; font-weight: normal; border: 1px solid #00ffe1; margin-top: 5px;">Forgot Password?</button>
+      </div>
 
-                <div class="form-group">
-                    <label for="description">Detailed Description of Your Problem <span style="color: red;">*</span></label>
-                    <textarea id="description" name="description" rows="5" placeholder="Please describe the issue in detail..." required></textarea>
-                </div>
-
-                <div class="form-group" id="screenshotOptionGroup">
-                    <label>Do you want to submit a Screenshot (Image)? <span style="color: red;">*</span></label>
-                    <div class="radio-group">
-                        <label>
-                            <input type="radio" name="submitScreenshot" value="yes" required onchange="toggleFileUpload('screenshot', this.value)">
-                            Yes
-                        </label>
-                        <label>
-                            <input type="radio" name="submitScreenshot" value="no" required onchange="toggleFileUpload('screenshot', this.value)">
-                            No
-                        </label>
-                    </div>
-                    <input type="file" id="screenshotFile" name="screenshotFile" accept="image/*" style="display: none; margin-top: 10px;">
-                </div>
-                
-                <div class="form-group" id="videoOptionGroup" style="display: none;">
-                    <label>Do you want to submit a Video? <span style="color: red;">*</span></label>
-                    <div class="radio-group">
-                        <label>
-                            <input type="radio" name="submitVideo" value="yes" required onchange="toggleFileUpload('video', this.value)">
-                            Yes
-                        </label>
-                        <label>
-                            <input type="radio" name="submitVideo" value="no" required onchange="toggleFileUpload('video', this.value)">
-                            No
-                        </label>
-                    </div>
-                    <input type="file" id="videoFile" name="videoFile" accept="video/*" style="display: none; margin-top: 10px;">
-                </div>
-
-                <button type="submit" class="submit-button">Submit Report</button>
-
-            </div>
-        </form>
+      <div id="register" class="form">
+        <input type="text" id="reg-name" placeholder="Full Name">
+        <input type="text" id="reg-username" placeholder="Username">
+        <select id="reg-country"></select>
+        <select id="reg-gender"> 
+            <option value="" disabled selected>Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+        </select>
+        <input type="date" id="reg-dob">
+        <input type="email" id="reg-email" placeholder="Gmail">
+        <input type="password" id="reg-pass" placeholder="Password (8-16 chars)">
         
-        <hr style="margin-top: 40px; border: 0; border-top: 1px solid #ddd;">
-        
-        <button class="chat-button" onclick="toggleChatBox()">
-            &#128172; Live Chat with AI Assistant
-        </button>
-        
-        <div class="email-contact">
-            <p>Alternatively, you can contact us via email:</p>
-            <p><strong><a href="mailto:help.avicnkvonteam@gmail.com">help.avicnkvonteam@gmail.com</a></strong></p>
-            <p style="font-size: 0.9em; color: #777;">We aim to reply to all queries promptly at this address.</p>
+        <div class="policy-container">
+            <input type="checkbox" id="reg-policy-check">
+            <label for="reg-policy-check">
+                I confirm I am creating this account voluntarily and agree to the 
+                <a href="policy.html" target="_blank">Policy</a>, 
+                <a href="service.html" target="_blank">Service</a>, and 
+                <a href="community.html" target="_blank">Community Guideline</a>.
+            </label>
         </div>
+        <button onclick="register()">Register</button>
+      </div>
 
-    </div>
-
-    <div class="ai-chat-box" id="aiChatBox">
-        <div class="chat-header">
-            <span>AI Support Assistant</span>
-            <div class="language-toggle">
-                <button onclick="setLanguage('en')" style="background-color: #fff; color: #007bff; border-radius: 4px; padding: 2px 6px;">EN</button>
-                <button onclick="setLanguage('hi')" style="background-color: #fff; color: #007bff; border-radius: 4px; padding: 2px 6px;">HI</button>
-            </div>
-            <span class="timer" id="chatTimer">5:00</span>
-            <button class="back-btn" onclick="toggleChatBox()">X</button>
-        </div>
-        <div class="chat-messages" id="chatMessages">
-            <div class="message ai-message">Hello! I'm your AI Support Assistant. Please select your preferred language above.</div>
-        </div>
-        <div class="chat-input">
-            <input type="text" id="chatInput" placeholder="Type your message..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
-            <button onclick="sendChatMessage()">Send</button>
-        </div>
-    </div>
-
-    <div id="successModal" class="modal">
-        <div class="modal-content">
-            <h3>&#9989; Report Submitted Successfully!</h3>
-            <p id="successMessage"></p>
-        </div>
+      <div id="forgot" class="form">
+        <input type="email" id="forgot-email" placeholder="Registered Gmail">
+        <button onclick="resetPassword()">Send Reset Link</button>
+      </div>
     </div>
     
-    <div id="errorModal" class="modal">
-        <div class="modal-content">
-            <h3 style="color: #dc3545;">&#10060; Submission Failed!</h3>
-            <p id="errorMessage">There was an error submitting your report. Please check your connection or try again later.</p>
-        </div>
-    </div>
+    <a href="support.html" class="support-link">
+        <span class="support-icon">❓</span>
+    </a>
 
     <script>
-        // --- Global Variables (Supabase Connection) ---
-        const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+      // Supabase Credentials (Saved Information)
+      const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+      const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      function showForm(formId) {
+        const forms = document.querySelectorAll('.form');
+        const buttons = document.querySelectorAll('.menu button');
+        forms.forEach(f => f.classList.remove('active'));
+        buttons.forEach(b => b.classList.remove('active'));
         
-        const SUPABASE_TABLE = 'user-support-problems';
-        const SUPABASE_BUCKET = 'user-support-s&v';
+        document.getElementById(formId).classList.add('active');
+        
+        const menuButton = document.getElementById(`btn-${formId}`);
+        if (menuButton) {
+            menuButton.classList.add('active');
+        } else if (formId === 'forgot') {
+            document.getElementById('btn-login').classList.add('active');
+        }
+      }
 
-        // 🟢 Supabase Client Initialization (Client को शुरू करना)
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      async function login() {
+        const email = document.getElementById('login-email').value;
+        const pass = document.getElementById('login-pass').value;
+        if (!email || !pass) return alert("Fill all fields");
+        let { error } = await sb.auth.signInWithPassword({ email, password: pass });
+        if (error) alert("❌ " + error.message);
+        else window.location.href = "main.html";
+      }
 
-        /**
-         * Shows the success modal with a custom message.
-         * @param {string} message - The message to display.
-         */
-        function showSuccess(message) {
-            const successModal = document.getElementById('successModal');
-            const successMessage = document.getElementById('successMessage');
-            successMessage.innerHTML = message;
-            successModal.style.display = 'block';
-            setTimeout(() => { successModal.style.display = 'none'; }, 5000);
+      // 🛑 संशोधित register() फ़ंक्शन: अब डेटाबेस इंसर्ट केवल वेरिफिकेशन के बाद ट्रिगर द्वारा होगा।
+      async function register() {
+        // Get all fields
+        const name = document.getElementById('reg-name').value;
+        const username = document.getElementById('reg-username').value;
+        const country = document.getElementById('reg-country').value;
+        const gender = document.getElementById('reg-gender').value; 
+        const dob = document.getElementById('reg-dob').value;
+        const email = document.getElementById('reg-email').value;
+        const pass = document.getElementById('reg-pass').value;
+        const policyChecked = document.getElementById('reg-policy-check').checked; 
+
+        // Validation 
+        if (!name || !username || !country || !gender || !dob || !email || !pass) {
+            return alert("Fill all fields");
         }
         
-        /**
-         * Shows the error modal with a custom message.
-         * @param {string} message - The error message to display.
-         */
-        function showError(message) {
-            const errorModal = document.getElementById('errorModal');
-            const errorMessage = document.getElementById('errorMessage');
-            errorMessage.textContent = message;
-            errorModal.style.display = 'block';
-            setTimeout(() => { errorModal.style.display = 'none'; }, 5000);
+        if (pass.length < 8 || pass.length > 16) {
+            return alert("Password must be between 8 and 16 characters.");
+        }
+        
+        if (!policyChecked) {
+            return alert("You must agree to the Policy, Service, and Community Guidelines.");
         }
 
-        // --- Core Functions (No changes needed here) ---
+        const age = new Date().getFullYear() - new Date(dob).getFullYear();
+        if (age < 17 || age > 110) return alert("Age must be between 17 and 110");
 
-        function toggleContactField(type) {
-            document.getElementById('contactEmail').style.display = type === 'email' ? 'block' : 'none';
-            document.getElementById('contactEmail').required = type === 'email';
-
-            document.getElementById('contactPhone').style.display = type === 'phone' ? 'block' : 'none';
-            document.getElementById('contactPhone').required = type === 'phone';
-        }
-
-        function toggleFileUpload(fileType, selection) {
-            const fileInput = document.getElementById(fileType + 'File');
-            fileInput.style.display = selection === 'yes' ? 'block' : 'none';
-            fileInput.required = selection === 'yes';
-        }
-
-        function showDynamicForm(problemType) {
-            const dynamicSection = document.getElementById('dynamicFormSection');
-            const placeholder = document.createElement('div');
-            placeholder.id = 'dynamicFields';
-
-            const oldFields = document.getElementById('dynamicFields');
-            if (oldFields) {
-                oldFields.remove();
-            }
-
-            document.getElementById('videoOptionGroup').style.display = 'none';
-            document.getElementById('screenshotOptionGroup').style.display = 'block';
-            document.querySelectorAll('input[name="submitVideo"]').forEach(radio => radio.checked = false);
-            document.querySelectorAll('input[name="submitScreenshot"]').forEach(radio => radio.checked = false);
-            toggleFileUpload('screenshot', 'no');
-            toggleFileUpload('video', 'no');
-
-
-            if (problemType) {
-                dynamicSection.style.display = 'block';
-            } else {
-                dynamicSection.style.display = 'none';
-                return;
-            }
-
-            let fieldsHTML = '';
-
-            switch (problemType) {
-                case 'login_problem':
-                    fieldsHTML = `
-                        <h3>Login Problem Details</h3>
-                        <div class="form-group">
-                            <label>Login ID Type <span style="color: red;">*</span></label>
-                            <div class="radio-group">
-                                <label>
-                                    <input type="radio" name="loginIDType" value="email" required onchange="toggleIDField('loginID', this.value)" checked>
-                                    Email
-                                </label>
-                                <label>
-                                    <input type="radio" name="loginIDType" value="phone" required onchange="toggleIDField('loginID', this.value)">
-                                    Phone Number
-                                </label>
-                            </div>
-                            <input type="email" id="loginIDEmail" name="loginIDEmail" placeholder="Enter Login Email" required>
-                            <input type="tel" id="loginIDPhone" name="loginIDPhone" placeholder="Enter Login Phone Number" style="display: none;">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="password">Password (Optional for verification)</label>
-                            <input type="text" id="password" name="password" placeholder="Enter your current or last-used password">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="uid">Your User ID (UID)</label>
-                            <input type="text" id="uid" name="uid" placeholder="Enter your UID">
-                            <div class="checkbox-group" style="margin-top: 5px;">
-                                <label>
-                                    <input type="checkbox" id="uidUnknown" name="uidUnknown" onchange="toggleUIDInput(this.checked)">
-                                    I don't know my UID.
-                                </label>
-                            </div>
-                        </div>
-                    `;
-                    break;
-                case 'create_account_problem':
-                    fieldsHTML = `
-                        <h3>Create Account Problem Details</h3>
-                        <div class="form-group">
-                            <label for="name">Your Name <span style="color: red;">*</span></label>
-                            <input type="text" id="name" name="name" placeholder="Enter your Full Name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="username">Desired Username (or last attempted) <span style="color: red;">*</span></label>
-                            <input type="text" id="username" name="username" placeholder="Enter Username" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Account Creation Type <span style="color: red;">*</span></label>
-                            <div class="radio-group">
-                                <label>
-                                    <input type="radio" name="creationType" value="email" required onchange="toggleIDField('creationID', this.value)" checked>
-                                    Email (for account)
-                                </label>
-                                <label>
-                                    <input type="radio" name="creationType" value="phone" required onchange="toggleIDField('creationID', this.value)">
-                                    Phone Number (for account)
-                                </label>
-                            </div>
-                            <input type="email" id="creationIDEmail" name="creationIDEmail" placeholder="Enter Email for account" required>
-                            <input type="tel" id="creationIDPhone" name="creationIDPhone" placeholder="Enter Phone Number for account" style="display: none;">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="country">Country <span style="color: red;">*</span></label>
-                            <input type="text" id="country" name="country" placeholder="Enter your Country" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="dob">Date of Birth <span style="color: red;">*</span></label>
-                            <input type="date" id="dob" name="dob" required>
-                        </div>
-                    `;
-                    break;
-                case 'forgot_password_problem':
-                    fieldsHTML = `
-                        <h3>Forgot Password Problem Details</h3>
-                        <div class="form-group">
-                            <label>Account ID Type <span style="color: red;">*</span></label>
-                            <div class="radio-group">
-                                <label>
-                                    <input type="radio" name="forgotIDType" value="email" required onchange="toggleIDField('forgotID', this.value)" checked>
-                                    Email
-                                </label>
-                                <label>
-                                    <input type="radio" name="forgotIDType" value="phone" required onchange="toggleIDField('forgotID', this.value)">
-                                    Phone Number
-                                </label>
-                            </div>
-                            <input type="email" id="forgotIDEmail" name="forgotIDEmail" placeholder="Enter Account Email" required>
-                            <input type="tel" id="forgotIDPhone" name="forgotIDPhone" placeholder="Enter Account Phone Number" style="display: none;">
-                        </div>
-                    `;
-                    break;
-                case 'other_problem':
-                    fieldsHTML = `
-                        <h3>Other Problem Details</h3>
-                        <p>Please use the description box below to explain your issue.</p>
-                    `;
-                    document.getElementById('videoOptionGroup').style.display = 'block';
-                    break;
-            }
-
-            placeholder.innerHTML = fieldsHTML;
-            dynamicSection.insertBefore(placeholder, dynamicSection.children[1]); 
-            
-            if (problemType === 'login_problem') {
-                toggleIDField('loginID', 'email'); 
-            } else if (problemType === 'create_account_problem') {
-                toggleIDField('creationID', 'email'); 
-            } else if (problemType === 'forgot_password_problem') {
-                toggleIDField('forgotID', 'email'); 
-            }
-            toggleContactField('email'); 
-        }
-
-        function toggleIDField(baseID, type) {
-            const emailInput = document.getElementById(baseID + 'Email');
-            const phoneInput = document.getElementById(baseID + 'Phone');
-
-            if (emailInput) {
-                emailInput.style.display = type === 'email' ? 'block' : 'none';
-                emailInput.required = type === 'email';
-            }
-
-            if (phoneInput) {
-                phoneInput.style.display = type === 'phone' ? 'block' : 'none';
-                phoneInput.required = type === 'phone';
-            }
-        }
-
-        function toggleUIDInput(isChecked) {
-            const uidInput = document.getElementById('uid');
-            if (uidInput) {
-                uidInput.disabled = isChecked;
-                uidInput.placeholder = isChecked ? 'UID not required' : 'Enter your UID';
-                uidInput.value = isChecked ? 'N/A' : '';
-            }
-        }
-
-        /**
-         * 🟢 Handles the form submission (REAL Supabase Integration)
-         * @param {Event} event
-         */
-        document.getElementById('supportForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            
-            // Collect Form Data
-            const formData = new FormData(event.target);
-            const reportType = formData.get('problemType');
-            const contactType = formData.get('contactType');
-            const contactInfo = contactType === 'email' ? formData.get('contactEmail') : formData.get('contactPhone');
-            const timestamp = Date.now();
-            let filePaths = []; // Storage to save paths for table insertion
-
-            const reportData = {
-                report_type: reportType,
-                contact_type: contactType,
-                contact_info: contactInfo,
-                description: formData.get('description'),
-                wants_screenshot: formData.get('submitScreenshot') || 'no',
-                wants_video: formData.get('submitVideo') || 'no',
-                
-                // Detailed data for the table (null if not used by the form section)
-                report_details: {
-                    login_id_type: formData.get('loginIDType') || null,
-                    login_id: (formData.get('loginIDType') === 'email' ? formData.get('loginIDEmail') : formData.get('loginIDPhone')) || null,
-                    password: formData.get('password') || null,
-                    uid: formData.get('uid') || null,
-                    uid_unknown: formData.get('uidUnknown') === 'on' ? true : false,
-                    name: formData.get('name') || null,
-                    username: formData.get('username') || null,
-                    creation_type: formData.get('creationType') || null,
-                    creation_id: (formData.get('creationType') === 'email' ? formData.get('creationIDEmail') : formData.get('creationIDPhone')) || null,
-                    country: formData.get('country') || null,
-                    dob: formData.get('dob') || null,
-                    forgot_id_type: formData.get('forgotIDType') || null,
-                    forgot_id: (formData.get('forgotIDType') === 'email' ? formData.get('forgotIDEmail') : formData.get('forgotIDPhone')) || null,
-                },
-                file_paths: null, // Will be updated after upload
-                submitted_at: new Date().toISOString()
-            };
-
-            try {
-                // 1. 📂 File Upload to Supabase Storage Bucket
-                if (formData.get('submitScreenshot') === 'yes' && formData.get('screenshotFile').size > 0) {
-                    const screenshotFile = formData.get('screenshotFile');
-                    const screenshotFileName = `${reportType}_screenshot_${timestamp}.${screenshotFile.name.split('.').pop()}`;
-                    
-                    const { data: ssData, error: ssError } = await supabase.storage
-                        .from(SUPABASE_BUCKET)
-                        .upload(screenshotFileName, screenshotFile, {
-                            cacheControl: '3600',
-                            upsert: false
-                        });
-
-                    if (ssError) throw ssError;
-                    filePaths.push(ssData.path);
-                }
-
-                if (formData.get('submitVideo') === 'yes' && formData.get('videoFile').size > 0) {
-                    const videoFile = formData.get('videoFile');
-                    const videoFileName = `${reportType}_video_${timestamp}.${videoFile.name.split('.').pop()}`;
-
-                    const { data: vidData, error: vidError } = await supabase.storage
-                        .from(SUPABASE_BUCKET)
-                        .upload(videoFileName, videoFile, {
-                            cacheControl: '3600',
-                            upsert: false
-                        });
-
-                    if (vidError) throw vidError;
-                    filePaths.push(vidData.path);
-                }
-                
-                // Update file paths in report data
-                reportData.file_paths = filePaths.length > 0 ? filePaths : null;
-
-
-                // 2. 📝 Insert Report Data into Supabase Table
-                const { error: insertError } = await supabase
-                    .from(SUPABASE_TABLE)
-                    .insert([reportData]); // Insert the structured data object
-
-                if (insertError) throw insertError;
-
-                
-                // --- Success Logic ---
-                const message = `We have received your report for the **${reportType.replace(/_/g, ' ').toUpperCase()}** problem. <br><br>We will contact you shortly at your provided ${contactType === 'email' ? 'email' : 'phone number'}: **${contactInfo}** to address your issue. Thank you for your patience!`;
-                showSuccess(message);
-
-                // Reset form after submission
-                event.target.reset(); 
-                showDynamicForm(''); 
-
-            } catch (error) {
-                console.error('Submission Error:', error);
-                showError(`Error: ${error.message}. Please try again.`);
-            }
+        // 1. Supabase Signup (Account Creation) - Password is HASHED internally.
+        let { error: authError } = await sb.auth.signUp({
+          email,
+          password: pass,
+          options: {
+            // Passing user details in 'data' for the Database Trigger to pick up later
+            data: { 
+                full_name: name, 
+                dob: dob, 
+                username: username, 
+                country: country, 
+                gender: gender 
+            }, 
+            emailRedirectTo: 'https://avicnknov.netlify.app/success.html'
+          }
         });
-        
-        // --- AI Chat Mock-up Functions (No changes needed here) ---
-        let chatTimerInterval;
-        let chatTime = 300; // 5 minutes in seconds
-        let currentLang = 'en'; 
-        let chatStage = 0; 
 
-        function toggleChatBox() {
-            const chatBox = document.getElementById('aiChatBox');
-            const isVisible = chatBox.style.display === 'flex';
-
-            if (isVisible) {
-                chatBox.style.display = 'none';
-                clearInterval(chatTimerInterval);
-                resetChat();
-            } else {
-                chatBox.style.display = 'flex';
-                chatTime = 300;
-                updateChatTimer();
-                chatTimerInterval = setInterval(() => {
-                    chatTime--;
-                    updateChatTimer();
-                    if (chatTime <= 0) {
-                        clearInterval(chatTimerInterval);
-                        addAiMessage("Your 5-minute chat session has ended. You will now be directed back to the support page.");
-                        setTimeout(() => toggleChatBox(), 2000);
-                    }
-                }, 1000);
-                
-                chatStage = 0;
-                setLanguage('en'); 
-            }
-        }
-
-        function updateChatTimer() {
-            const minutes = Math.floor(chatTime / 60);
-            const seconds = chatTime % 60;
-            document.getElementById('chatTimer').textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-        }
-
-        function resetChat() {
-            document.getElementById('chatMessages').innerHTML = '<div class="message ai-message">Hello! I\'m your AI Support Assistant. Please select your preferred language above.</div>';
-            chatStage = 0;
-            currentLang = 'en';
-            document.getElementById('chatInput').placeholder = "Type your message...";
-        }
-
-        function setLanguage(lang) {
-            currentLang = lang;
-            if (chatStage === 0) {
-                let welcomeMsg = lang === 'hi' 
-                    ? "नमस्ते! मैंने हिंदी भाषा चुन ली है। आपका नाम क्या है?"
-                    : "Hello! I have selected the English language. What is your name?";
-                document.getElementById('chatMessages').innerHTML += `<div class="message ai-message">${welcomeMsg}</div>`;
-                chatStage = 1;
-                document.getElementById('chatInput').placeholder = lang === 'hi' ? "अपना नाम दर्ज करें" : "Enter your name";
-            }
+        if (authError) {
+            return alert("❌ " + authError.message);
         }
         
-        function addAiMessage(text) {
-             const messagesDiv = document.getElementById('chatMessages');
-             messagesDiv.innerHTML += `<div class="message ai-message">${text}</div>`;
-             messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
+        // 2. Alert user about verification. The Database Trigger handles the profile insertion.
+        alert("✅ Registered! Check your Gmail to verify. Your profile data will be saved once verification is successful.");
+      }
 
-        function sendChatMessage() {
-            const input = document.getElementById('chatInput');
-            const messageText = input.value.trim();
-            if (messageText === "") return;
+      async function resetPassword() {
+        const email = document.getElementById('forgot-email').value;
+        if (!email) return alert("Enter your Gmail");
+        let { error } = await sb.auth.resetPasswordForEmail(email, {
+          redirectTo: 'https://avicnknov.netlify.app/reset-password.html'
+        });
+        if (error) alert("❌ " + error.message);
+        else alert("🔗 Reset link sent to " + email);
+      }
 
-            const messagesDiv = document.getElementById('chatMessages');
-            messagesDiv.innerHTML += `<div class="message user-message">${messageText}</div>`;
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            input.value = '';
+      // Helper function to populate the Country dropdown
+      const countries = [
+          "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo (Brazzaville)", "Congo (Kinshasa)", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czechia", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", "Palestine State", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
+      ];
+      function populateCountries() {
+          const select = document.getElementById('reg-country');
+          const defaultOption = document.createElement('option');
+          defaultOption.value = "";
+          defaultOption.textContent = "Select Country";
+          defaultOption.disabled = true;
+          defaultOption.selected = true;
+          select.appendChild(defaultOption);
 
-            switch (chatStage) {
-                case 1: 
-                    let nameMsg = currentLang === 'hi' 
-                        ? `धन्यवाद, ${messageText}! अब, कृपया मुझे अपनी समस्या के बारे में विस्तार से बताएं। क्या यह लॉग इन, खाता बनाने, पासवर्ड भूलने या कोई अन्य समस्या है?`
-                        : `Thank you, ${messageText}! Now, please tell me about your problem in detail. Is it a **Login**, **Create Account**, **Forgot Password**, or **Other** problem?`;
-                    addAiMessage(nameMsg);
-                    chatStage = 2;
-                    document.getElementById('chatInput').placeholder = currentLang === 'hi' ? "समस्या का प्रकार बताएं (जैसे: लॉग इन समस्या)" : "State the problem type (e.g., Login problem)";
-                    break;
+          countries.forEach(country => {
+              const option = document.createElement('option');
+              option.value = country;
+              option.textContent = country;
+              select.appendChild(option);
+          });
+      }
 
-                case 2: 
-                    const problem = messageText.toLowerCase();
-                    let redirectType = '';
-                    if (problem.includes('login') || problem.includes('लॉग इन')) {
-                        redirectType = 'login_problem';
-                    } else if (problem.includes('create') || problem.includes('खाता') || problem.includes('अकाउंट')) {
-                        redirectType = 'create_account_problem';
-                    } else if (problem.includes('forgot') || problem.includes('password') || problem.includes('पासवर्ड')) {
-                        redirectType = 'forgot_password_problem';
-                    } else {
-                        redirectType = 'other_problem';
-                    }
-
-                    let redirectMsg = currentLang === 'hi' 
-                        ? `समझ गया। इस समस्या को सबसे अच्छे तरीके से हल करने के लिए, मैं अब आपको "${redirectType.replace(/_/g, ' ').toUpperCase()}" रिपोर्टिंग फ़ॉर्म पर भेज रहा हूँ। कृपया वहां आवश्यक विवरण भरें। (आप फॉर्म में स्क्रीनशॉट भी संलग्न कर सकते हैं)`
-                        : `Understood. To best resolve this, I am now redirecting you to the "${redirectType.replace(/_/g, ' ').toUpperCase()}" reporting form. Please fill in the necessary details there. (You can attach a screenshot in the form)`;
-
-                    addAiMessage(redirectMsg);
-                    
-                    document.getElementById('problemType').value = redirectType;
-                    showDynamicForm(redirectType);
-                    clearInterval(chatTimerInterval);
-                    setTimeout(() => toggleChatBox(), 3000); 
-                    chatStage = 3; 
-                    break;
-                
-                case 3: 
-                    addAiMessage(currentLang === 'hi' ? "कृपया मुख्य सपोर्ट फॉर्म भरें। धन्यवाद।" : "Please fill out the main support form. Thank you.");
-                    break;
-            }
-        }
+      window.onload = () => {
+        const forms = document.querySelectorAll('.form');
+        forms.forEach(f => f.classList.remove('active'));
+        const buttons = document.querySelectorAll('.menu button');
+        buttons.forEach(b => b.classList.remove('active'));
+        
+        populateCountries(); 
+      };
     </script>
-
-</body>
+  </body>
 </html>
