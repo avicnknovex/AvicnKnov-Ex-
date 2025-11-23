@@ -257,7 +257,7 @@
                 country: country, 
                 gender: gender 
             }, 
-            emailRedirectTo: 'https://avicnknovex.netlify.app/success.html'
+            emailRedirectTo: 'https://avicnknov.netlify.app/success.html'
           }
         });
 
@@ -273,7 +273,7 @@
         const email = document.getElementById('forgot-email').value;
         if (!email) return alert("Enter your Gmail");
         let { error } = await sb.auth.resetPasswordForEmail(email, {
-          redirectTo: 'https://avicnknovex.netlify.app/reset-password.html'
+          redirectTo: 'https://avicnknov.netlify.app/reset-password.html'
         });
         if (error) alert("❌ " + error.message);
         else alert("🔗 Reset link sent to " + email);
