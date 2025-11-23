@@ -14,6 +14,7 @@
             color: #333;
             line-height: 1.6;
             perspective: 1500px; /* For 3D book effect */
+            overflow-x: hidden;
         }
 
         .container {
@@ -22,7 +23,7 @@
             padding: 0 20px;
         }
 
-        /* ------------------- BACK BUTTON (Modified for Help HTML) ------------------- */
+        /* ------------------- BACK BUTTON (Goes to index.html) ------------------- */
         .back-link {
             position: fixed;
             top: 20px;
@@ -36,7 +37,7 @@
             border-radius: 50%;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
             transition: all 0.3s ease;
-            z-index: 2000; /* High Z-index */
+            z-index: 2000;
             line-height: 1;
         }
 
@@ -60,11 +61,18 @@
             padding-bottom: 10px;
         }
 
-        /* ------------------- 3D BOOK EFFECT STYLING ------------------- */
+        /* ------------------- 3D BOOK EFFECT STYLING (Centered) ------------------- */
+        .book-area {
+            display: flex;
+            justify-content: center; /* Center the book horizontally */
+            align-items: center;
+            min-height: 600px; /* Ensure space for the book */
+            margin-bottom: 50px;
+        }
+        
         .book-wrapper {
             width: 700px;
             height: 500px;
-            margin: 0 auto;
             position: relative;
             transform-style: preserve-3d;
             cursor: pointer;
@@ -73,8 +81,11 @@
             background-color: #ddd; /* Closed book cover color */
         }
 
+        /* Book Open State */
         .book-wrapper.open {
-            transform: translateX(50%) rotateY(-180deg);
+            /* Opens the book flat and translates it left so the spine stays centered */
+            transform: translateX(-50%) rotateY(0deg); 
+            box-shadow: none; /* Remove shadow on open */
         }
 
         .page {
@@ -82,7 +93,6 @@
             top: 0;
             width: 50%;
             height: 100%;
-            transform-origin: left;
             transition: transform 0.8s ease-in-out;
             background-color: #fff;
             padding: 30px;
@@ -92,48 +102,46 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            text-align: center;
             overflow-y: auto;
         }
 
-        .left-page {
-            left: 0;
-            border-right: none;
-            transform: rotateY(0deg);
-            z-index: 10;
+        /* Pages are initially hidden behind the cover */
+        .page:not(#page-0) {
+            transform: rotateY(180deg);
         }
 
         .right-page {
             left: 50%;
-            transform: rotateY(180deg);
-            z-index: 10;
         }
 
-        .active-page {
-            z-index: 100 !important;
-        }
-
+        /* Page Flip Effect */
         .flipped {
-            transform: rotateY(-180deg);
+            transform: rotateY(-180deg) !important;
             z-index: 101 !important;
         }
+        .page-cover {
+            z-index: 102; /* Ensure cover is on top initially */
+        }
+        /* --------------------------------------------------------------- */
 
         /* Cover and Content Styling */
-        #page-0 .content h2 {
-            color: #dc3545;
-            font-size: 3em;
-            margin-bottom: 5px;
-        }
         #page-0 {
+            left: 50%;
+            transform-origin: left;
             background: linear-gradient(145deg, #007bff, #0056b3);
             color: white;
+            text-align: center;
+        }
+        #page-0 h2 {
+            font-size: 3.5em;
+            color: #ffc107;
         }
         
         .content {
             text-align: left;
             padding: 10px;
         }
-
+        
         .content h3 {
             color: #007bff;
             border-bottom: 2px dashed #eee;
@@ -141,26 +149,14 @@
             margin-top: 0;
         }
 
-        .content strong {
-            color: #dc3545;
-        }
-        
-        .content .ai-feature {
-            background-color: #e6ffed;
-            padding: 10px;
-            border-radius: 5px;
-            border-left: 5px solid #28a745;
-        }
-
-        /* Achievement Page (Page 9) */
+        /* Achievement Page (Page 10) */
         .achievement-icon {
             font-size: 5em;
             color: gold;
             text-shadow: 0 0 15px orange;
             margin-bottom: 10px;
         }
-        /* --------------------------------------------------------------- */
-        
+
         /* Community Chart */
         .community-chart {
             margin-top: 40px;
@@ -175,21 +171,7 @@
             list-style: none;
             padding: 0;
         }
-
-        .community-chart ul li {
-            padding: 10px 0;
-            border-bottom: 1px dotted #e0e0e0;
-            display: flex;
-            align-items: flex-start;
-        }
-
-        .community-chart ul li::before {
-            content: '🔗';
-            color: #007bff;
-            font-weight: bold;
-            margin-right: 10px;
-        }
-
+        
         /* Contact and Report Info */
         .contact-report {
             margin-top: 30px;
@@ -200,12 +182,6 @@
             border: 2px dashed #007bff;
         }
         
-        .contact-report a {
-            color: #dc3545;
-            font-weight: bold;
-            text-decoration: none;
-        }
-
         /* Verified Footer Info */
         .verified-info {
             text-align: center;
@@ -223,27 +199,22 @@
             text-align: center;
             margin-top: 20px;
         }
-
-        .social-links a {
-            display: inline-block;
-            margin: 0 10px;
-            text-decoration: none;
-            color: #007bff;
-            font-size: 1.1em;
-            font-weight: 500;
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .book-wrapper {
+                width: 90%;
+                height: 400px;
+            }
+            .book-area {
+                min-height: 450px;
+            }
         }
-
-        .social-links .logo {
-            font-size: 2em;
-            display: block;
-            margin-bottom: 5px;
-        }
-
     </style>
 </head>
 <body>
 
-    <a href="help.html" class="back-link" title="Back to Help Center">
+    <a href="index.html" class="back-link" title="Back to Login Page">
         ←
     </a>
     
@@ -251,115 +222,108 @@
         <h1>📖 AvicnKnov Community Guidelines 📖</h1>
         <p>Your Trust and Honesty Build Our Future.</p>
     </header>
-
-    <div class="container">
-
-        <div class="book-wrapper" id="book" onclick="nextPage()">
+    
+    <div class="book-area">
+        <div class="book-wrapper" id="book">
             
-            <div class="page right-page active-page" id="page-0" style="z-index: 102;">
+            <div class="page right-page page-cover" id="page-0" onmousedown="handleBookInteraction(event, 'cover')">
                 <div class="content" style="text-align: center;">
                     <p style="font-size: 5em; margin: 0;">📘</p>
                     <h2 style="color: white; font-size: 3.5em;">AvicnKnov</h2>
                     <h2 style="color: #ffc107; font-size: 2em;">Community Guidelines</h2>
-                    <p style="font-size: 1.2em; font-weight: 300; color: #eee;">Click to Open</p>
+                    <p style="font-size: 1.2em; font-weight: 300; color: #eee;">Double-Click to Open</p>
                 </div>
             </div>
 
-            <div class="page left-page" id="page-1">
+            <div class="page left-page" id="page-1" onclick="handleBookInteraction(event, 'prev')">
                 <div class="content">
-                    <h3>Guideline 1: Integrity & Strictness</h3>
+                    <h3 style="text-align: center;">Page 1: Integrity & Strictness</h3>
                     <p>We maintain the **best trading platform** by being highly **strict with our users**. Honesty is paramount.</p>
-                    <p>If any user attempts to **cheat or defraud** the system or other users, they will be **permanently banned**.</p>
-                    <p style="color: #dc3545;">**WARNING:** All assets held will be moved to a **restricted wallet** or liquidated and distributed among other honest users. **Trade Honestly!**</p>
+                    <p>If any user attempts to **cheat or defraud** the system, they will be **permanently banned**.</p>
+                    <p style="color: #dc3545;">**WARNING:** All assets held will be moved to a **restricted wallet** or liquidated. **Trade Honestly!**</p>
                 </div>
             </div>
 
-            <div class="page left-page" id="page-3">
+            <div class="page right-page" id="page-2" ondblclick="handleBookInteraction(event, 'next')" onclick="handleBookInteraction(event, 'prev')">
                 <div class="content">
-                    <h3>Guideline 3: Rewards & Best Traders</h3>
-                    <p>We value loyalty and skill! We offer a specialized **Reward System** for our **Best Traders** and active users.</p>
-                    <p>Future functions and technologies will be released on a **trial basis** exclusively to these top-tier traders.</p>
-                    <p>We aim to **recognize and uplift** those who contribute positively to the AvicnKnov ecosystem.</p>
-                </div>
-            </div>
-            
-            <div class="page left-page" id="page-5">
-                <div class="content">
-                    <h3>Guideline 5: Strong Team & 24/7 Availability</h3>
-                    <p>We are building a **strong, dedicated team** that is continuously working hard for you. </p>
-                    <p>Our team is available for you **0-24 hours** a day. We stand by our team to solve your problems.</p>
-                    <p>For team contact: Email us at <a href="mailto:help.avicnkvonteam@gmail.com">help.avicnkvonteam@gmail.com</a>.</p>
-                    <p style="font-style: italic;">We adopt new functions and technology day by day for the betterment of the exchange.</p>
-                </div>
-            </div>
-
-            <div class="page left-page" id="page-7">
-                <div class="content">
-                    <h3>Guideline 7: Zero Tolerance for Fake/Cheating</h3>
-                    <p>We maintain a **Strict Zone** against chat abuse, fake users, or any harmful activity. Such users are immediately **blocked**.</p>
-                    <p>Repeated offenses or problems caused to other users will lead to a **permanent ban**.</p>
-                    <p>Our systems make it **extremely difficult** for such bad actors to operate on AvicnKnov.</p>
-                </div>
-            </div>
-
-            <div class="page left-page" id="page-9">
-                <div class="content">
-                    <h3>Guideline 9: Our Vision & Commitment</h3>
-                    <p>AvicnKnov is committed to continuous innovation and providing a **seamless, secure, and profitable** trading experience.</p>
-                    <p>We prioritize transparency, user safety, and the adoption of futuristic technologies to keep you ahead in the market.</p>
-                    <p>Our exchange is built by traders, for traders.</p>
-                </div>
-            </div>
-
-            <div class="page right-page" id="page-2" style="transform: rotateY(-180deg);">
-                <div class="content" style="text-align: center;">
-                    <h3>Guideline 2: Always Innovating</h3>
+                    <h3 style="text-align: center;">Page 2: Always Innovating</h3>
                     <p>We are constantly adopting **new functions, technologies, and features** to make the exchange better every day.</p>
                     <p>Our **continuous development** ensures that your trading platform is always **cutting-edge** and secure.</p>
                     <p style="font-size: 1.1em; color: #007bff;">We are focused on setting new industry standards for speed and reliability.</p>
                 </div>
             </div>
 
-            <div class="page right-page" id="page-4" style="transform: rotateY(-180deg);">
+            <div class="page left-page" id="page-3" onclick="handleBookInteraction(event, 'prev')">
                 <div class="content">
-                    <h3>Guideline 4: Effective Moderators</h3>
+                    <h3 style="text-align: center;">Page 3: Rewards & Best Traders</h3>
+                    <p>We offer a specialized **Reward System** for our **Best Traders** and active users.</p>
+                    <p>Future functions and technologies will be released on a **trial basis** exclusively to these top-tier traders.</p>
+                    <p>We aim to **recognize and uplift** those who contribute positively.</p>
+                </div>
+            </div>
+
+            <div class="page right-page" id="page-4" ondblclick="handleBookInteraction(event, 'next')" onclick="handleBookInteraction(event, 'prev')">
+                <div class="content">
+                    <h3 style="text-align: center;">Page 4: Effective Moderators</h3>
                     <p>Our exchange features **highly effective Moderators** with delegated power to maintain order and help users.</p>
-                    <p>In the future, you will be able to **contact Moderators directly** for information and assistance regarding the exchange.</p>
+                    <p>You will be able to **contact Moderators directly** for information and assistance regarding the exchange in the future.</p>
                     <p style="color: #28a745; font-weight: bold;">They are your trusted resource for quick and reliable information.</p>
                 </div>
             </div>
 
-            <div class="page right-page" id="page-6" style="transform: rotateY(-180deg);">
+            <div class="page left-page" id="page-5" onclick="handleBookInteraction(event, 'prev')">
                 <div class="content">
-                    <h3>Guideline 6: Problem Solving Focus</h3>
+                    <h3 style="text-align: center;">Page 5: Strong Team & 0-24 Availability</h3>
+                    <p>We are building a **strong, dedicated team** that is continuously working hard for you. </p>
+                    <p>Our team is available for you **0-24 hours** a day. We stand by our team to solve your problems.</p>
+                    <p>For team contact: Email us at <a href="mailto:help.avicnkvonteam@gmail.com">help.avicnkvonteam@gmail.com</a>.</p>
+                </div>
+            </div>
+
+            <div class="page right-page" id="page-6" ondblclick="handleBookInteraction(event, 'next')" onclick="handleBookInteraction(event, 'prev')">
+                <div class="content">
+                    <h3 style="text-align: center;">Page 6: Problem Solving Focus</h3>
                     <p>We are here to **solve your problems**. Our team and systems are dedicated to ensuring a smooth trading experience.</p>
                     <p>If you encounter any **bug or issue**, please report it immediately.</p>
                     <p style="font-weight: bold;">We believe that solving user problems is key to our success and your satisfaction.</p>
                 </div>
             </div>
-            
-            <div class="page right-page" id="page-8" style="transform: rotateY(-180deg);">
+
+            <div class="page left-page" id="page-7" onclick="handleBookInteraction(event, 'prev')">
                 <div class="content">
-                    <h3>Guideline 8: AI for Maximum Profit</h3>
-                    <div class="ai-feature">
-                        <p style="font-size: 1.1em; font-weight: bold; color: #007bff;">Leveraging **AI (Artificial Intelligence)** for your benefit.</p>
-                        <p>AI will **improve your trading ability** and help you maximize your profit on AvicnKnov.</p>
-                        <p>Our intelligent tools are designed to guide you toward **better trading decisions**.</p>
-                    </div>
+                    <h3 style="text-align: center;">Page 7: Zero Tolerance for Fake/Cheating</h3>
+                    <p>We maintain a **Strict Zone** against chat abuse, fake users, or any harmful activity. Such users are immediately **blocked**.</p>
+                    <p>Repeated offenses or problems caused to other users will lead to a **permanent ban**.</p>
+                    <p>Our systems make it **extremely difficult** for such bad actors to operate on AvicnKnov.</p>
                 </div>
             </div>
 
-            <div class="page right-page" id="page-10" style="transform: rotateY(-180deg);">
+            <div class="page right-page" id="page-8" ondblclick="handleBookInteraction(event, 'next')" onclick="handleBookInteraction(event, 'prev')">
+                <div class="content">
+                    <h3 style="text-align: center;">Page 8: AI for Maximum Profit</h3>
+                    <p style="font-size: 1.1em; font-weight: bold; color: #007bff;">Leveraging **AI (Artificial Intelligence)** for your benefit.</p>
+                    <p>AI will **improve your trading ability** and help you maximize your profit on AvicnKnov.</p>
+                    <p>Our intelligent tools are designed to guide you toward **better trading decisions**.</p>
+                </div>
+            </div>
+
+            <div class="page left-page" id="page-9" onclick="handleBookInteraction(event, 'prev')">
+                <div class="content">
+                    <h3 style="text-align: center;">Page 9: Exchange Vision & Commitment</h3>
+                    <p>AvicnKnov is committed to continuous innovation and providing a **seamless, secure, and profitable** trading experience.</p>
+                    <p>We prioritize transparency, user safety, and the adoption of futuristic technologies to keep you ahead in the market.</p>
+                    <p>Our exchange is built by traders, for traders.</p>
+                </div>
+            </div>
+
+            <div class="page right-page" id="page-10" ondblclick="handleBookInteraction(event, 'next')" onclick="handleBookInteraction(event, 'prev')">
                 <div class="content">
                     <div style="text-align: center;">
                         <span class="achievement-icon">🏆</span>
                         <h3 style="color: gold; border-bottom: none;">The Ultimate Achievement: Best Trader</h3>
-                        <p>This prestigious title and achievement will be awarded in the future to one of our **Best Users**.</p>
-                        <p style="font-weight: bold;">Do not miss this opportunity! The achievement comes with a hefty **Bonus** and **Advanced Hugs/Perks**.</p>
+                        <p>This prestigious title and achievement will be awarded to one of our **Best Users**.</p>
+                        <p style="font-weight: bold;">Do not miss this opportunity! The achievement comes with a hefty **Bonus** and **Advanced Perks**.</p>
                     </div>
-                    
-                    <hr>
-                    
                     <div class="contact-report">
                         <p style="color: #007bff; font-weight: bold;">Found a Bug or Problem?</p>
                         <p>Report immediately by emailing us at: <a href="mailto:help.avicnkvonteam@gmail.com">help.avicnkvonteam@gmail.com</a>.</p>
@@ -369,6 +333,9 @@
             </div>
             
         </div>
+        </div>
+    
+    <div class="container">
         <center>
             <h2 style="color: #28a745; margin-top: 50px;">📚 End of Guidelines Book 📚</h2>
         </center>
@@ -415,100 +382,125 @@
 
     <script>
         const book = document.getElementById('book');
-        const pages = document.querySelectorAll('.page');
-        const totalPages = pages.length; // 11 pages (0 to 10)
-        let currentPageIndex = 0;
+        const totalPages = 10; // Pages 1 to 10
+        let currentPage = 0; // 0 for Cover, 1 to 10 for content
         let isFlipping = false;
         let autoFlipInterval;
 
-        function updatePages() {
+        function flipPage(direction) {
             if (isFlipping) return;
             isFlipping = true;
-
-            // Page 0 (Cover) is always the right page visually, acting as the cover.
-            // Pages are 0 to 10.
             
-            // 1. Handle Cover Open/Close
-            if (currentPageIndex === 0) {
-                // Open Book
+            // Calculate next page index
+            let nextPageIndex = direction === 'next' ? currentPage + 1 : currentPage - 1;
+
+            if (nextPageIndex < 1) { // Trying to go before page 1 (Close Book)
+                closeBook();
+                return;
+            }
+            if (nextPageIndex > totalPages) { // Trying to go after page 10 (Close Book)
+                closeBook();
+                return;
+            }
+
+            // Book Open/Initial Flip (from Cover)
+            if (currentPage === 0 && direction === 'next') {
                 book.classList.add('open');
-                // The cover (page 0) flips to reveal page 1 (which is the next left page).
-                pages[0].classList.add('flipped');
                 
-                // Show content pages 1 and 2
+                // Flip the cover page to reveal page 1
+                document.getElementById('page-0').classList.add('flipped');
+                
+                // Show page 1 and 2
                 document.getElementById('page-1').style.transform = 'rotateY(0deg)';
                 document.getElementById('page-2').style.transform = 'rotateY(-180deg)';
-                
-                // Advance to page 1 content visible
+
+                currentPage = 1;
                 setTimeout(() => {
-                    currentPageIndex = 1;
                     isFlipping = false;
-                    startAutoFlip();
                 }, 900);
                 return;
-            } 
-            
-            // 2. Handle Normal Page Flip (From left page content to next left page content)
-            const nextIndex = currentPageIndex + 2;
-            
-            if (nextIndex <= totalPages - 1) { // Normal flip forward
-                
-                // Current left page is always the odd number (1, 3, 5, 7, 9)
-                const currentLeftPageIndex = currentPageIndex; 
-                
-                // Current left page (e.g., page 1) needs to flip to become the next right page (e.g., page 2)
-                document.getElementById(`page-${currentLeftPageIndex}`).classList.add('flipped');
-                
-                // The new pages (e.g., page 3 and 4) become visible
-                document.getElementById(`page-${nextIndex}`).style.transform = 'rotateY(0deg)'; // New Left
-                document.getElementById(`page-${nextIndex + 1}`).style.transform = 'rotateY(-180deg)'; // New Right
-                
-                // Advance to the new left page index
-                setTimeout(() => {
-                    currentPageIndex = nextIndex;
-                    isFlipping = false;
-                }, 900);
-                
-            } else { 
-                // 3. Handle Book Close (After last page - Page 10)
-                
-                // Flip the last two active pages (9 and 10) back
-                document.getElementById('page-9').classList.remove('flipped');
-                document.getElementById('page-10').style.transform = 'rotateY(180deg)';
-                
-                // Page 0 flips back to cover
-                setTimeout(() => {
-                    pages[0].classList.remove('flipped'); // Cover flips back
-                    book.classList.remove('open');
-                    currentPageIndex = 0; // Reset to cover
-                    isFlipping = false;
-                    stopAutoFlip();
-                    
-                    // Allow restart click
-                    book.onclick = nextPage; 
-                }, 900);
             }
+
+            // Normal Page Flip
+            const pageToFlip = direction === 'next' ? currentPage : nextPageIndex;
+            const targetLeftPage = pageToFlip % 2 !== 0 ? pageToFlip : pageToFlip - 1; // Left page index
+            const targetRightPage = targetLeftPage + 1; // Right page index
+
+            if (direction === 'next') {
+                // Flip the current left page to the next position (becomes a 'right' page visually)
+                document.getElementById(`page-${pageToFlip}`).classList.add('flipped');
+                
+                // Set the new pair of pages (current + 2, current + 3) to un-flipped state if they exist
+                if (targetLeftPage + 2 <= totalPages) {
+                    document.getElementById(`page-${targetLeftPage + 2}`).style.transform = 'rotateY(0deg)';
+                }
+                if (targetLeftPage + 3 <= totalPages) {
+                    document.getElementById(`page-${targetLeftPage + 3}`).style.transform = 'rotateY(-180deg)';
+                }
+
+                currentPage = nextPageIndex;
+            } else { // Previous Page
+                // Un-flip the previous left page (which is currently flipped)
+                document.getElementById(`page-${pageToFlip + 1}`).classList.remove('flipped');
+                
+                // Reset the visibility of the current pair of pages (hide them)
+                document.getElementById(`page-${targetLeftPage}`).style.transform = 'rotateY(180deg)';
+                if (targetRightPage <= totalPages) {
+                    document.getElementById(`page-${targetRightPage}`).style.transform = 'rotateY(180deg)';
+                }
+
+                currentPage = nextPageIndex;
+            }
+
+            setTimeout(() => {
+                isFlipping = false;
+            }, 900);
         }
 
-        // Click handler
-        function nextPage() {
+        function closeBook() {
             stopAutoFlip();
-            updatePages();
-            startAutoFlip(); // Restart timer after manual flip
+            // Flip back the last visible page to reveal the cover
+            if (currentPage >= 1) {
+                document.getElementById('page-1').style.transform = 'rotateY(180deg)';
+                document.getElementById('page-0').classList.remove('flipped');
+            }
+            
+            setTimeout(() => {
+                book.classList.remove('open');
+                currentPage = 0; // Reset to cover
+                isFlipping = false;
+            }, 900);
         }
-        
+
+        // Handle interaction based on requested logic
+        function handleBookInteraction(event, action) {
+            stopAutoFlip(); // Stop auto-flip on any user interaction
+            
+            if (action === 'cover') {
+                if (event.detail === 2) { // Double click to open
+                    flipPage('next');
+                }
+            } else if (action === 'next') {
+                if (event.detail === 2) { // Double click to next page
+                    flipPage('next');
+                }
+            } else if (action === 'prev') {
+                // Single click to previous page, double click should be ignored if it's a prev action
+                if (event.detail === 1) { 
+                    flipPage('prev');
+                }
+            }
+            startAutoFlip(); // Restart auto-flip timer
+        }
+
         // Automatic Flip Logic (Every 10 seconds)
         function startAutoFlip() {
             stopAutoFlip(); // Clear any existing timer
             autoFlipInterval = setInterval(() => {
-                if (currentPageIndex !== 0 && currentPageIndex < 9) { // Only flip if book is open and not on the last page
-                    updatePages();
-                } else if (currentPageIndex === 9) {
-                     // If on the last content page (9/10), close the book
-                     updatePages(); // This will trigger the book closing sequence
-                } else if (currentPageIndex === 0) {
-                     // If on cover, open it
-                     updatePages();
+                if (currentPage >= 0 && currentPage < totalPages) {
+                    flipPage('next');
+                } else {
+                    closeBook();
                 }
             }, 10000); // 10 seconds
         }
