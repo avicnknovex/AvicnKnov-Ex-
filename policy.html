@@ -22,6 +22,38 @@
             padding: 0 20px;
         }
 
+        /* ------------------- NEW BACK BUTTON STYLING ------------------- */
+        .back-link {
+            position: fixed; /* Screen पर हमेशा फिक्स रहेगा */
+            top: 20px;
+            left: 20px;
+            text-decoration: none;
+            color: #007bff;
+            font-size: 1.2em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            z-index: 1000; /* सुनिश्चित करता है कि यह सबसे ऊपर दिखाई दे */
+        }
+
+        .back-link:hover {
+            background-color: #e9ecef;
+            color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .back-link span {
+            font-size: 1.5em; /* Icon size */
+            margin-right: 5px;
+            line-height: 1;
+        }
+        /* --------------------------------------------------------------- */
+
         /* Header Section Styling */
         header {
             background-color: #007bff; /* Primary Blue */
@@ -230,11 +262,20 @@
                 padding: 15px;
                 font-size: 0.9em;
             }
+            .back-link {
+                top: 10px;
+                left: 10px;
+                padding: 8px 12px;
+                font-size: 1em;
+            }
         }
     </style>
 </head>
 <body>
 
+    <a href="index.html" class="back-link">
+        <span>&#x2190;</span> Back to Login
+    </a>
     <header>
         <h1><span style="color: #ffc107;">A</span>vicn<span style="color: #ffc107;">K</span>nov Exchange 🚀</h1>
         <h2>The Future of Crypto Trading: Secure, Compliant, Innovative</h2>
@@ -369,7 +410,7 @@
     </div>
 
     <footer>
-        &copy; 2025 AvicnKnov Exchange. All Rights Reserved. Read Policy Before Trading.
+        © 2025 AvicnKnov Exchange. All Rights Reserved. Read Policy Before Trading.
     </footer>
 
 </body>
