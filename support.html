@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support & Help Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS for a modern, attractive look */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Header and Back Button */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            color: #007bff;
+            margin: 0;
+        }
+
+        .back-button {
+            text-decoration: none;
+            color: #555;
+            font-size: 1.5em;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+
+        .back-button:hover {
+            background-color: #eee;
+        }
+
+        /* Form Styling */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="date"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Radio/Checkbox Group */
+        .radio-group, .checkbox-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 5px;
+        }
+
+        .radio-group label, .checkbox-group label {
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .radio-group input[type="radio"], .checkbox-group input[type="checkbox"] {
+            margin-right: 8px;
+            width: auto;
+        }
+
+        /* Dynamic Sections */
+        .dynamic-form-section {
+            border: 1px solid #dcdcdc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            background-color: #fafafa;
+        }
+
+        /* Submit Button */
+        .submit-button {
+            background-color: #28a745;
+            color: white;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .submit-button:hover {
+            background-color: #218838;
+        }
+
+        /* AI Chat Button */
+        .chat-button {
+            background-color: #ffc107;
+            color: #333;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            width: 100%;
+            margin-top: 30px;
+        }
+
+        .chat-button:hover {
+            background-color: #e0a800;
+        }
+
+        /* Pop-up Modal (Success Message) */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4); 
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto; 
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; 
+            max-width: 400px;
+            text-align: center;
+            border-radius: 10px;
+            animation: fadeIn 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        @keyframes fadeIn {
+            from {opacity: 0;}
+            to {opacity: 1;}
+        }
+
+        .modal-content h3 {
+            color: #28a745;
+        }
+
+        /* Email Contact */
+        .email-contact {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px dashed #ccc;
+        }
+
+        .email-contact a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .email-contact a:hover {
+            text-decoration: underline;
+        }
+
+        /* AI Chat Box */
+        .ai-chat-box {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            right: 20px;
+            width: 350px;
+            height: 500px;
+            background-color: #fff;
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            z-index: 900;
+            flex-direction: column;
+        }
+        
+        .chat-header {
+            background-color: #007bff;
+            color: white;
+            padding: 15px;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header .back-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2em;
+            cursor: pointer;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background-color: #f0f4f9;
+        }
+
+        .chat-input {
+            padding: 15px;
+            border-top: 1px solid #eee;
+            display: flex;
+        }
+
+        .chat-input input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            margin-right: 10px;
+        }
+        
+        .chat-input button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 15px;
+            max-width: 80%;
+        }
+
+        .user-message {
+            background-color: #dcf8c6;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        .ai-message {
+            background-color: #fff;
+            align-self: flex-start;
+        }
+
+        .language-toggle {
+            display: flex;
+            gap: 10px;
+        }
+
+        .timer {
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-button" title="Go Back">
+                &#9664; </a>
+            <h1>Support Center: Report a Problem</h1>
+        </div>
+
+        <form id="supportForm">
+            <div class="form-group">
+                <label for="problemType">Select Problem Type <span style="color: red;">*</span></label>
+                <select id="problemType" name="problemType" required onchange="showDynamicForm(this.value)">
+                    <option value="">-- Choose an Option --</option>
+                    <option value="login_problem">Login Problem</option>
+                    <option value="create_account_problem">Create Account Problem</option>
+                    <option value="forgot_password_problem">Forgot Password Problem</option>
+                    <option value="other_problem">Other Problem</option>
+                </select>
+            </div>
+            
+            <div id="dynamicFormSection" class="dynamic-form-section" style="display: none;">
+                <div class="form-group">
+                    <label>Your Contact Information (We will use this to reach you) <span style="color: red;">*</span></label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="contactType" value="email" required onchange="toggleContactField(this.value)" checked>
+                            Contact Email
+                        </label>
+                        <label>
+                            <input type="radio" name="contactType" value="phone" required onchange="toggleContactField(this.value)">
+                            Contact Phone Number
+                        </label>
+                    </div>
+                    <input type="email" id="contactEmail" name="contactEmail" placeholder="Enter your Contact Email" required>
+                    <input type="tel" id="contactPhone" name="contactPhone" placeholder="Enter your Contact Phone Number" style="display: none;">
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Detailed Description of Your Problem <span style="color: red;">*</span></label>
+                    <textarea id="description" name="description" rows="5" placeholder="Please describe the issue in detail..." required></textarea>
+                </div>
+
+                <div class="form-group" id="screenshotOptionGroup">
+                    <label>Do you want to submit a Screenshot (Image)? <span style="color: red;">*</span></label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="submitScreenshot" value="yes" required onchange="toggleFileUpload('screenshot', this.value)">
+                            Yes
+                        </label>
+                        <label>
+                            <input type="radio" name="submitScreenshot" value="no" required onchange="toggleFileUpload('screenshot', this.value)">
+                            No
+                        </label>
+                    </div>
+                    <input type="file" id="screenshotFile" name="screenshotFile" accept="image/*" style="display: none; margin-top: 10px;">
+                </div>
+                
+                <div class="form-group" id="videoOptionGroup" style="display: none;">
+                    <label>Do you want to submit a Video? <span style="color: red;">*</span></label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="submitVideo" value="yes" required onchange="toggleFileUpload('video', this.value)">
+                            Yes
+                        </label>
+                        <label>
+                            <input type="radio" name="submitVideo" value="no" required onchange="toggleFileUpload('video', this.value)">
+                            No
+                        </label>
+                    </div>
+                    <input type="file" id="videoFile" name="videoFile" accept="video/*" style="display: none; margin-top: 10px;">
+                </div>
+
+                <button type="submit" class="submit-button">Submit Report</button>
+
+            </div>
+        </form>
+        
+        <hr style="margin-top: 40px; border: 0; border-top: 1px solid #ddd;">
+        
+        <button class="chat-button" onclick="toggleChatBox()">
+            &#128172; Live Chat with AI Assistant
+        </button>
+        
+        <div class="email-contact">
+            <p>Alternatively, you can contact us via email:</p>
+            <p><strong><a href="mailto:help.avicnkvonteam@gmail.com">help.avicnkvonteam@gmail.com</a></strong></p>
+            <p style="font-size: 0.9em; color: #777;">We aim to reply to all queries promptly at this address.</p>
+        </div>
+
+    </div>
+
+    <div class="ai-chat-box" id="aiChatBox">
+        <div class="chat-header">
+            <span>AI Support Assistant</span>
+            <div class="language-toggle">
+                <button onclick="setLanguage('en')" style="background-color: #fff; color: #007bff; border-radius: 4px; padding: 2px 6px;">EN</button>
+                <button onclick="setLanguage('hi')" style="background-color: #fff; color: #007bff; border-radius: 4px; padding: 2px 6px;">HI</button>
+            </div>
+            <span class="timer" id="chatTimer">5:00</span>
+            <button class="back-btn" onclick="toggleChatBox()">X</button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="message ai-message">Hello! I'm your AI Support Assistant. Please select your preferred language above.</div>
+        </div>
+        <div class="chat-input">
+            <input type="text" id="chatInput" placeholder="Type your message..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
+            <button onclick="sendChatMessage()">Send</button>
+        </div>
+    </div>
+
+    <div id="successModal" class="modal">
+        <div class="modal-content">
+            <h3>&#9989; Report Submitted Successfully!</h3>
+            <p id="successMessage"></p>
+        </div>
+    </div>
+
+    <script>
+        // --- Global Variables (For Supabase Integration - Mock Data) ---
+        // Your Supabase Credentials (Saved Information)
+        const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+        
+        // Mock Table and Bucket Names
+        const SUPABASE_TABLE = 'user-support-problems';
+        const SUPABASE_BUCKET = 'user-support-s&v';
+
+        // --- Core Functions ---
+
+        /**
+         * Toggles between Contact Email and Contact Phone input fields.
+         * @param {string} type - 'email' or 'phone'
+         */
+        function toggleContactField(type) {
+            document.getElementById('contactEmail').style.display = type === 'email' ? 'block' : 'none';
+            document.getElementById('contactEmail').required = type === 'email';
+
+            document.getElementById('contactPhone').style.display = type === 'phone' ? 'block' : 'none';
+            document.getElementById('contactPhone').required = type === 'phone';
+        }
+
+        /**
+         * Toggles the file input field based on Yes/No selection.
+         * @param {string} fileType - 'screenshot' or 'video'
+         * @param {string} selection - 'yes' or 'no'
+         */
+        function toggleFileUpload(fileType, selection) {
+            const fileInput = document.getElementById(fileType + 'File');
+            fileInput.style.display = selection === 'yes' ? 'block' : 'none';
+            fileInput.required = selection === 'yes';
+        }
+
+        /**
+         * Displays the dynamic form section and populates it based on the problem type.
+         * @param {string} problemType - The selected problem type value.
+         */
+        function showDynamicForm(problemType) {
+            const dynamicSection = document.getElementById('dynamicFormSection');
+            const placeholder = document.createElement('div');
+            placeholder.id = 'dynamicFields';
+
+            // Clear previous dynamic fields
+            const oldFields = document.getElementById('dynamicFields');
+            if (oldFields) {
+                oldFields.remove();
+            }
+
+            // Hide/Reset conditional groups
+            document.getElementById('videoOptionGroup').style.display = 'none';
+            document.getElementById('screenshotOptionGroup').style.display = 'block';
+            document.querySelectorAll('input[name="submitVideo"]').forEach(radio => radio.checked = false);
+            document.querySelectorAll('input[name="submitScreenshot"]').forEach(radio => radio.checked = false);
+            toggleFileUpload('screenshot', 'no');
+            toggleFileUpload('video', 'no');
+
+
+            if (problemType) {
+                dynamicSection.style.display = 'block';
+            } else {
+                dynamicSection.style.display = 'none';
+                return;
+            }
+
+            let fieldsHTML = '';
+
+            switch (problemType) {
+                case 'login_problem':
+                    fieldsHTML = `
+                        <h3>Login Problem Details</h3>
+                        <div class="form-group">
+                            <label>Login ID Type <span style="color: red;">*</span></label>
+                            <div class="radio-group">
+                                <label>
+                                    <input type="radio" name="loginIDType" value="email" required onchange="toggleIDField('loginID', this.value)" checked>
+                                    Email
+                                </label>
+                                <label>
+                                    <input type="radio" name="loginIDType" value="phone" required onchange="toggleIDField('loginID', this.value)">
+                                    Phone Number
+                                </label>
+                            </div>
+                            <input type="email" id="loginIDEmail" name="loginIDEmail" placeholder="Enter Login Email" required>
+                            <input type="tel" id="loginIDPhone" name="loginIDPhone" placeholder="Enter Login Phone Number" style="display: none;">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password">Password (Optional for verification)</label>
+                            <input type="text" id="password" name="password" placeholder="Enter your current or last-used password">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="uid">Your User ID (UID)</label>
+                            <input type="text" id="uid" name="uid" placeholder="Enter your UID">
+                            <div class="checkbox-group" style="margin-top: 5px;">
+                                <label>
+                                    <input type="checkbox" id="uidUnknown" name="uidUnknown" onchange="toggleUIDInput(this.checked)">
+                                    I don't know my UID.
+                                </label>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'create_account_problem':
+                    fieldsHTML = `
+                        <h3>Create Account Problem Details</h3>
+                        <div class="form-group">
+                            <label for="name">Your Name <span style="color: red;">*</span></label>
+                            <input type="text" id="name" name="name" placeholder="Enter your Full Name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="username">Desired Username (or last attempted) <span style="color: red;">*</span></label>
+                            <input type="text" id="username" name="username" placeholder="Enter Username" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Account Creation Type <span style="color: red;">*</span></label>
+                            <div class="radio-group">
+                                <label>
+                                    <input type="radio" name="creationType" value="email" required onchange="toggleIDField('creationID', this.value)" checked>
+                                    Email (for account)
+                                </label>
+                                <label>
+                                    <input type="radio" name="creationType" value="phone" required onchange="toggleIDField('creationID', this.value)">
+                                    Phone Number (for account)
+                                </label>
+                            </div>
+                            <input type="email" id="creationIDEmail" name="creationIDEmail" placeholder="Enter Email for account" required>
+                            <input type="tel" id="creationIDPhone" name="creationIDPhone" placeholder="Enter Phone Number for account" style="display: none;">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="country">Country <span style="color: red;">*</span></label>
+                            <input type="text" id="country" name="country" placeholder="Enter your Country" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="dob">Date of Birth <span style="color: red;">*</span></label>
+                            <input type="date" id="dob" name="dob" required>
+                        </div>
+                    `;
+                    break;
+                case 'forgot_password_problem':
+                    fieldsHTML = `
+                        <h3>Forgot Password Problem Details</h3>
+                        <div class="form-group">
+                            <label>Account ID Type <span style="color: red;">*</span></label>
+                            <div class="radio-group">
+                                <label>
+                                    <input type="radio" name="forgotIDType" value="email" required onchange="toggleIDField('forgotID', this.value)" checked>
+                                    Email
+                                </label>
+                                <label>
+                                    <input type="radio" name="forgotIDType" value="phone" required onchange="toggleIDField('forgotID', this.value)">
+                                    Phone Number
+                                </label>
+                            </div>
+                            <input type="email" id="forgotIDEmail" name="forgotIDEmail" placeholder="Enter Account Email" required>
+                            <input type="tel" id="forgotIDPhone" name="forgotIDPhone" placeholder="Enter Account Phone Number" style="display: none;">
+                        </div>
+                    `;
+                    break;
+                case 'other_problem':
+                    fieldsHTML = `
+                        <h3>Other Problem Details</h3>
+                        <p>Please use the description box below to explain your issue.</p>
+                    `;
+                    // Show video upload option for 'other'
+                    document.getElementById('videoOptionGroup').style.display = 'block';
+                    break;
+            }
+
+            placeholder.innerHTML = fieldsHTML;
+            dynamicSection.insertBefore(placeholder, dynamicSection.children[1]); // Insert before the contact info
+            
+            // Re-initialize dynamic input toggles after injecting HTML
+            if (problemType === 'login_problem') {
+                toggleIDField('loginID', 'email'); // Default to email
+            } else if (problemType === 'create_account_problem') {
+                toggleIDField('creationID', 'email'); // Default to email
+            } else if (problemType === 'forgot_password_problem') {
+                toggleIDField('forgotID', 'email'); // Default to email
+            }
+            toggleContactField('email'); // Reset contact field default
+        }
+
+        /**
+         * Toggles the display of ID fields (Email/Phone) for dynamic sections.
+         * @param {string} baseID - The base ID of the input groups (e.g., 'loginID', 'forgotID').
+         * @param {string} type - 'email' or 'phone'.
+         */
+        function toggleIDField(baseID, type) {
+            const emailInput = document.getElementById(baseID + 'Email');
+            const phoneInput = document.getElementById(baseID + 'Phone');
+
+            if (emailInput) {
+                emailInput.style.display = type === 'email' ? 'block' : 'none';
+                emailInput.required = type === 'email';
+            }
+
+            if (phoneInput) {
+                phoneInput.style.display = type === 'phone' ? 'block' : 'none';
+                phoneInput.required = type === 'phone';
+            }
+        }
+
+        /**
+         * Toggles the UID input field based on the 'I don't know my UID' checkbox.
+         * @param {boolean} isChecked
+         */
+        function toggleUIDInput(isChecked) {
+            const uidInput = document.getElementById('uid');
+            if (uidInput) {
+                uidInput.disabled = isChecked;
+                uidInput.placeholder = isChecked ? 'UID not required' : 'Enter your UID';
+                uidInput.value = isChecked ? 'N/A' : '';
+            }
+        }
+
+        /**
+         * Handles the form submission (Mock-up for Supabase)
+         * @param {Event} event
+         */
+        document.getElementById('supportForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            // Collect Form Data
+            const formData = new FormData(event.target);
+            const reportData = {
+                report_type: formData.get('problemType'),
+                contact_type: formData.get('contactType'),
+                contact_info: formData.get('contactType') === 'email' ? formData.get('contactEmail') : formData.get('contactPhone'),
+                description: formData.get('description'),
+                wants_screenshot: formData.get('submitScreenshot'),
+                wants_video: formData.get('submitVideo') || 'no', // Default to no if not present (only for 'other')
+                // Specific fields (will be null/undefined if not present in the form)
+                login_id_type: formData.get('loginIDType'),
+                login_id: formData.get('loginIDType') === 'email' ? formData.get('loginIDEmail') : formData.get('loginIDPhone'),
+                password: formData.get('password'),
+                uid: formData.get('uid'),
+                uid_unknown: formData.get('uidUnknown') === 'on',
+                name: formData.get('name'),
+                username: formData.get('username'),
+                creation_type: formData.get('creationType'),
+                creation_id: formData.get('creationType') === 'email' ? formData.get('creationIDEmail') : formData.get('creationIDPhone'),
+                country: formData.get('country'),
+                dob: formData.get('dob'),
+                forgot_id_type: formData.get('forgotIDType'),
+                forgot_id: formData.get('forgotIDType') === 'email' ? formData.get('forgotIDEmail') : formData.get('forgotIDPhone'),
+                submitted_at: new Date().toISOString()
+            };
+
+            // ** MOCK: Supabase Table Insertion **
+            console.log("--- MOCK: Supabase Table Insertion ---");
+            console.log(`Table: ${SUPABASE_TABLE}`);
+            console.log("Data to insert:", reportData);
+            
+            // ** MOCK: Supabase Bucket Upload **
+            let filesToUpload = [];
+            if (formData.get('submitScreenshot') === 'yes' && formData.get('screenshotFile').size > 0) {
+                filesToUpload.push({ type: 'Screenshot', file: formData.get('screenshotFile') });
+            }
+            if (formData.get('submitVideo') === 'yes' && formData.get('videoFile').size > 0) {
+                filesToUpload.push({ type: 'Video', file: formData.get('videoFile') });
+            }
+
+            if (filesToUpload.length > 0) {
+                console.log(`Bucket: ${SUPABASE_BUCKET}`);
+                filesToUpload.forEach(item => {
+                    console.log(`MOCK Uploading ${item.type}: ${item.file.name}`);
+                });
+            }
+
+
+            // --- Success Pop-up Logic ---
+            const contactDetail = reportData.contact_info;
+            const successModal = document.getElementById('successModal');
+            const successMessage = document.getElementById('successMessage');
+
+            successMessage.innerHTML = `We have received your report for the **${reportData.report_type.replace(/_/g, ' ').toUpperCase()}** problem. <br><br>We will contact you shortly at your provided ${reportData.contact_type === 'email' ? 'email' : 'phone number'}: **${contactDetail}** to address your issue. Thank you for your patience!`;
+            
+            successModal.style.display = 'block';
+
+            // Reset form after submission (optional, but good practice)
+            event.target.reset(); 
+            showDynamicForm(''); // Clear dynamic fields
+
+            // Automatically hide the modal after 3 seconds
+            setTimeout(() => {
+                successModal.style.display = 'none';
+            }, 3000);
+        });
+        
+        // --- AI Chat Mock-up Functions ---
+        let chatTimerInterval;
+        let chatTime = 300; // 5 minutes in seconds
+        let currentLang = 'en'; // Default language
+        let chatStage = 0; // 0: Lang Select, 1: Ask Name, 2: Ask Problem, 3: Redirect
+
+        function toggleChatBox() {
+            const chatBox = document.getElementById('aiChatBox');
+            const isVisible = chatBox.style.display === 'flex';
+
+            if (isVisible) {
+                chatBox.style.display = 'none';
+                clearInterval(chatTimerInterval);
+                resetChat();
+            } else {
+                chatBox.style.display = 'flex';
+                // Start timer
+                chatTime = 300;
+                updateChatTimer();
+                chatTimerInterval = setInterval(() => {
+                    chatTime--;
+                    updateChatTimer();
+                    if (chatTime <= 0) {
+                        clearInterval(chatTimerInterval);
+                        addAiMessage("Your 5-minute chat session has ended. You will now be directed back to the support page.");
+                        setTimeout(() => toggleChatBox(), 2000);
+                    }
+                }, 1000);
+                
+                // Initial welcome
+                chatStage = 0;
+                setLanguage('en'); // Start with EN welcome
+            }
+        }
+
+        function updateChatTimer() {
+            const minutes = Math.floor(chatTime / 60);
+            const seconds = chatTime % 60;
+            document.getElementById('chatTimer').textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        function resetChat() {
+            document.getElementById('chatMessages').innerHTML = '<div class="message ai-message">Hello! I\'m your AI Support Assistant. Please select your preferred language above.</div>';
+            chatStage = 0;
+            currentLang = 'en';
+            document.getElementById('chatInput').placeholder = "Type your message...";
+        }
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            if (chatStage === 0) {
+                let welcomeMsg = lang === 'hi' 
+                    ? "नमस्ते! मैंने हिंदी भाषा चुन ली है। आपका नाम क्या है?"
+                    : "Hello! I have selected the English language. What is your name?";
+                document.getElementById('chatMessages').innerHTML += `<div class="message ai-message">${welcomeMsg}</div>`;
+                chatStage = 1;
+                document.getElementById('chatInput').placeholder = lang === 'hi' ? "अपना नाम दर्ज करें" : "Enter your name";
+            }
+        }
+        
+        function addAiMessage(text) {
+             const messagesDiv = document.getElementById('chatMessages');
+             messagesDiv.innerHTML += `<div class="message ai-message">${text}</div>`;
+             messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const messageText = input.value.trim();
+            if (messageText === "") return;
+
+            const messagesDiv = document.getElementById('chatMessages');
+            messagesDiv.innerHTML += `<div class="message user-message">${messageText}</div>`;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            input.value = '';
+
+            let response = '';
+
+            switch (chatStage) {
+                case 1: // Asked Name
+                    let nameMsg = currentLang === 'hi' 
+                        ? `धन्यवाद, ${messageText}! अब, कृपया मुझे अपनी समस्या के बारे में विस्तार से बताएं। क्या यह लॉग इन, खाता बनाने, पासवर्ड भूलने या कोई अन्य समस्या है?`
+                        : `Thank you, ${messageText}! Now, please tell me about your problem in detail. Is it a **Login**, **Create Account**, **Forgot Password**, or **Other** problem?`;
+                    addAiMessage(nameMsg);
+                    chatStage = 2;
+                    document.getElementById('chatInput').placeholder = currentLang === 'hi' ? "समस्या का प्रकार बताएं (जैसे: लॉग इन समस्या)" : "State the problem type (e.g., Login problem)";
+                    break;
+
+                case 2: // Asked Problem
+                    const problem = messageText.toLowerCase();
+                    let redirectType = '';
+                    if (problem.includes('login') || problem.includes('लॉग इन')) {
+                        redirectType = 'login_problem';
+                    } else if (problem.includes('create') || problem.includes('खाता') || problem.includes('अकाउंट')) {
+                        redirectType = 'create_account_problem';
+                    } else if (problem.includes('forgot') || problem.includes('password') || problem.includes('पासवर्ड')) {
+                        redirectType = 'forgot_password_problem';
+                    } else {
+                        redirectType = 'other_problem';
+                    }
+
+                    let redirectMsg = currentLang === 'hi' 
+                        ? `समझ गया। इस समस्या को सबसे अच्छे तरीके से हल करने के लिए, मैं अब आपको "${redirectType.replace(/_/g, ' ').toUpperCase()}" रिपोर्टिंग फ़ॉर्म पर भेज रहा हूँ। कृपया वहां आवश्यक विवरण भरें। (आप फॉर्म में स्क्रीनशॉट भी संलग्न कर सकते हैं)`
+                        : `Understood. To best resolve this, I am now redirecting you to the "${redirectType.replace(/_/g, ' ').toUpperCase()}" reporting form. Please fill in the necessary details there. (You can attach a screenshot in the form)`;
+
+                    addAiMessage(redirectMsg);
+                    
+                    // MOCK: Set problem type in the main form and close chat
+                    document.getElementById('problemType').value = redirectType;
+                    showDynamicForm(redirectType);
+                    clearInterval(chatTimerInterval);
+                    setTimeout(() => toggleChatBox(), 3000); // Close chat after 3s
+                    chatStage = 3; 
+                    break;
+                
+                case 3: // Redirected
+                    addAiMessage(currentLang === 'hi' ? "कृपया मुख्य सपोर्ट फॉर्म भरें। धन्यवाद।" : "Please fill out the main support form. Thank you.");
+                    break;
+            }
+        }
+    </script>
+
+</body>
+</html>
