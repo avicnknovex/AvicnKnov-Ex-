@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Support & Help Center</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* CSS for a modern, attractive look */
         body {
@@ -418,23 +419,51 @@
             <p id="successMessage"></p>
         </div>
     </div>
+    
+    <div id="errorModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: #dc3545;">&#10060; Submission Failed!</h3>
+            <p id="errorMessage">There was an error submitting your report. Please check your connection or try again later.</p>
+        </div>
+    </div>
 
     <script>
-        // --- Global Variables (For Supabase Integration - Mock Data) ---
-        // Your Supabase Credentials (Saved Information)
+        // --- Global Variables (Supabase Connection) ---
         const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
         
-        // Mock Table and Bucket Names
         const SUPABASE_TABLE = 'user-support-problems';
         const SUPABASE_BUCKET = 'user-support-s&v';
 
-        // --- Core Functions ---
+        // 🟢 Supabase Client Initialization (Client को शुरू करना)
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         /**
-         * Toggles between Contact Email and Contact Phone input fields.
-         * @param {string} type - 'email' or 'phone'
+         * Shows the success modal with a custom message.
+         * @param {string} message - The message to display.
          */
+        function showSuccess(message) {
+            const successModal = document.getElementById('successModal');
+            const successMessage = document.getElementById('successMessage');
+            successMessage.innerHTML = message;
+            successModal.style.display = 'block';
+            setTimeout(() => { successModal.style.display = 'none'; }, 5000);
+        }
+        
+        /**
+         * Shows the error modal with a custom message.
+         * @param {string} message - The error message to display.
+         */
+        function showError(message) {
+            const errorModal = document.getElementById('errorModal');
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorModal.style.display = 'block';
+            setTimeout(() => { errorModal.style.display = 'none'; }, 5000);
+        }
+
+        // --- Core Functions (No changes needed here) ---
+
         function toggleContactField(type) {
             document.getElementById('contactEmail').style.display = type === 'email' ? 'block' : 'none';
             document.getElementById('contactEmail').required = type === 'email';
@@ -443,33 +472,22 @@
             document.getElementById('contactPhone').required = type === 'phone';
         }
 
-        /**
-         * Toggles the file input field based on Yes/No selection.
-         * @param {string} fileType - 'screenshot' or 'video'
-         * @param {string} selection - 'yes' or 'no'
-         */
         function toggleFileUpload(fileType, selection) {
             const fileInput = document.getElementById(fileType + 'File');
             fileInput.style.display = selection === 'yes' ? 'block' : 'none';
             fileInput.required = selection === 'yes';
         }
 
-        /**
-         * Displays the dynamic form section and populates it based on the problem type.
-         * @param {string} problemType - The selected problem type value.
-         */
         function showDynamicForm(problemType) {
             const dynamicSection = document.getElementById('dynamicFormSection');
             const placeholder = document.createElement('div');
             placeholder.id = 'dynamicFields';
 
-            // Clear previous dynamic fields
             const oldFields = document.getElementById('dynamicFields');
             if (oldFields) {
                 oldFields.remove();
             }
 
-            // Hide/Reset conditional groups
             document.getElementById('videoOptionGroup').style.display = 'none';
             document.getElementById('screenshotOptionGroup').style.display = 'block';
             document.querySelectorAll('input[name="submitVideo"]').forEach(radio => radio.checked = false);
@@ -588,30 +606,23 @@
                         <h3>Other Problem Details</h3>
                         <p>Please use the description box below to explain your issue.</p>
                     `;
-                    // Show video upload option for 'other'
                     document.getElementById('videoOptionGroup').style.display = 'block';
                     break;
             }
 
             placeholder.innerHTML = fieldsHTML;
-            dynamicSection.insertBefore(placeholder, dynamicSection.children[1]); // Insert before the contact info
+            dynamicSection.insertBefore(placeholder, dynamicSection.children[1]); 
             
-            // Re-initialize dynamic input toggles after injecting HTML
             if (problemType === 'login_problem') {
-                toggleIDField('loginID', 'email'); // Default to email
+                toggleIDField('loginID', 'email'); 
             } else if (problemType === 'create_account_problem') {
-                toggleIDField('creationID', 'email'); // Default to email
+                toggleIDField('creationID', 'email'); 
             } else if (problemType === 'forgot_password_problem') {
-                toggleIDField('forgotID', 'email'); // Default to email
+                toggleIDField('forgotID', 'email'); 
             }
-            toggleContactField('email'); // Reset contact field default
+            toggleContactField('email'); 
         }
 
-        /**
-         * Toggles the display of ID fields (Email/Phone) for dynamic sections.
-         * @param {string} baseID - The base ID of the input groups (e.g., 'loginID', 'forgotID').
-         * @param {string} type - 'email' or 'phone'.
-         */
         function toggleIDField(baseID, type) {
             const emailInput = document.getElementById(baseID + 'Email');
             const phoneInput = document.getElementById(baseID + 'Phone');
@@ -627,10 +638,6 @@
             }
         }
 
-        /**
-         * Toggles the UID input field based on the 'I don't know my UID' checkbox.
-         * @param {boolean} isChecked
-         */
         function toggleUIDInput(isChecked) {
             const uidInput = document.getElementById('uid');
             if (uidInput) {
@@ -641,84 +648,111 @@
         }
 
         /**
-         * Handles the form submission (Mock-up for Supabase)
+         * 🟢 Handles the form submission (REAL Supabase Integration)
          * @param {Event} event
          */
-        document.getElementById('supportForm').addEventListener('submit', function(event) {
+        document.getElementById('supportForm').addEventListener('submit', async function(event) {
             event.preventDefault();
             
             // Collect Form Data
             const formData = new FormData(event.target);
+            const reportType = formData.get('problemType');
+            const contactType = formData.get('contactType');
+            const contactInfo = contactType === 'email' ? formData.get('contactEmail') : formData.get('contactPhone');
+            const timestamp = Date.now();
+            let filePaths = []; // Storage to save paths for table insertion
+
             const reportData = {
-                report_type: formData.get('problemType'),
-                contact_type: formData.get('contactType'),
-                contact_info: formData.get('contactType') === 'email' ? formData.get('contactEmail') : formData.get('contactPhone'),
+                report_type: reportType,
+                contact_type: contactType,
+                contact_info: contactInfo,
                 description: formData.get('description'),
-                wants_screenshot: formData.get('submitScreenshot'),
-                wants_video: formData.get('submitVideo') || 'no', // Default to no if not present (only for 'other')
-                // Specific fields (will be null/undefined if not present in the form)
-                login_id_type: formData.get('loginIDType'),
-                login_id: formData.get('loginIDType') === 'email' ? formData.get('loginIDEmail') : formData.get('loginIDPhone'),
-                password: formData.get('password'),
-                uid: formData.get('uid'),
-                uid_unknown: formData.get('uidUnknown') === 'on',
-                name: formData.get('name'),
-                username: formData.get('username'),
-                creation_type: formData.get('creationType'),
-                creation_id: formData.get('creationType') === 'email' ? formData.get('creationIDEmail') : formData.get('creationIDPhone'),
-                country: formData.get('country'),
-                dob: formData.get('dob'),
-                forgot_id_type: formData.get('forgotIDType'),
-                forgot_id: formData.get('forgotIDType') === 'email' ? formData.get('forgotIDEmail') : formData.get('forgotIDPhone'),
+                wants_screenshot: formData.get('submitScreenshot') || 'no',
+                wants_video: formData.get('submitVideo') || 'no',
+                
+                // Detailed data for the table (null if not used by the form section)
+                report_details: {
+                    login_id_type: formData.get('loginIDType') || null,
+                    login_id: (formData.get('loginIDType') === 'email' ? formData.get('loginIDEmail') : formData.get('loginIDPhone')) || null,
+                    password: formData.get('password') || null,
+                    uid: formData.get('uid') || null,
+                    uid_unknown: formData.get('uidUnknown') === 'on' ? true : false,
+                    name: formData.get('name') || null,
+                    username: formData.get('username') || null,
+                    creation_type: formData.get('creationType') || null,
+                    creation_id: (formData.get('creationType') === 'email' ? formData.get('creationIDEmail') : formData.get('creationIDPhone')) || null,
+                    country: formData.get('country') || null,
+                    dob: formData.get('dob') || null,
+                    forgot_id_type: formData.get('forgotIDType') || null,
+                    forgot_id: (formData.get('forgotIDType') === 'email' ? formData.get('forgotIDEmail') : formData.get('forgotIDPhone')) || null,
+                },
+                file_paths: null, // Will be updated after upload
                 submitted_at: new Date().toISOString()
             };
 
-            // ** MOCK: Supabase Table Insertion **
-            console.log("--- MOCK: Supabase Table Insertion ---");
-            console.log(`Table: ${SUPABASE_TABLE}`);
-            console.log("Data to insert:", reportData);
-            
-            // ** MOCK: Supabase Bucket Upload **
-            let filesToUpload = [];
-            if (formData.get('submitScreenshot') === 'yes' && formData.get('screenshotFile').size > 0) {
-                filesToUpload.push({ type: 'Screenshot', file: formData.get('screenshotFile') });
+            try {
+                // 1. 📂 File Upload to Supabase Storage Bucket
+                if (formData.get('submitScreenshot') === 'yes' && formData.get('screenshotFile').size > 0) {
+                    const screenshotFile = formData.get('screenshotFile');
+                    const screenshotFileName = `${reportType}_screenshot_${timestamp}.${screenshotFile.name.split('.').pop()}`;
+                    
+                    const { data: ssData, error: ssError } = await supabase.storage
+                        .from(SUPABASE_BUCKET)
+                        .upload(screenshotFileName, screenshotFile, {
+                            cacheControl: '3600',
+                            upsert: false
+                        });
+
+                    if (ssError) throw ssError;
+                    filePaths.push(ssData.path);
+                }
+
+                if (formData.get('submitVideo') === 'yes' && formData.get('videoFile').size > 0) {
+                    const videoFile = formData.get('videoFile');
+                    const videoFileName = `${reportType}_video_${timestamp}.${videoFile.name.split('.').pop()}`;
+
+                    const { data: vidData, error: vidError } = await supabase.storage
+                        .from(SUPABASE_BUCKET)
+                        .upload(videoFileName, videoFile, {
+                            cacheControl: '3600',
+                            upsert: false
+                        });
+
+                    if (vidError) throw vidError;
+                    filePaths.push(vidData.path);
+                }
+                
+                // Update file paths in report data
+                reportData.file_paths = filePaths.length > 0 ? filePaths : null;
+
+
+                // 2. 📝 Insert Report Data into Supabase Table
+                const { error: insertError } = await supabase
+                    .from(SUPABASE_TABLE)
+                    .insert([reportData]); // Insert the structured data object
+
+                if (insertError) throw insertError;
+
+                
+                // --- Success Logic ---
+                const message = `We have received your report for the **${reportType.replace(/_/g, ' ').toUpperCase()}** problem. <br><br>We will contact you shortly at your provided ${contactType === 'email' ? 'email' : 'phone number'}: **${contactInfo}** to address your issue. Thank you for your patience!`;
+                showSuccess(message);
+
+                // Reset form after submission
+                event.target.reset(); 
+                showDynamicForm(''); 
+
+            } catch (error) {
+                console.error('Submission Error:', error);
+                showError(`Error: ${error.message}. Please try again.`);
             }
-            if (formData.get('submitVideo') === 'yes' && formData.get('videoFile').size > 0) {
-                filesToUpload.push({ type: 'Video', file: formData.get('videoFile') });
-            }
-
-            if (filesToUpload.length > 0) {
-                console.log(`Bucket: ${SUPABASE_BUCKET}`);
-                filesToUpload.forEach(item => {
-                    console.log(`MOCK Uploading ${item.type}: ${item.file.name}`);
-                });
-            }
-
-
-            // --- Success Pop-up Logic ---
-            const contactDetail = reportData.contact_info;
-            const successModal = document.getElementById('successModal');
-            const successMessage = document.getElementById('successMessage');
-
-            successMessage.innerHTML = `We have received your report for the **${reportData.report_type.replace(/_/g, ' ').toUpperCase()}** problem. <br><br>We will contact you shortly at your provided ${reportData.contact_type === 'email' ? 'email' : 'phone number'}: **${contactDetail}** to address your issue. Thank you for your patience!`;
-            
-            successModal.style.display = 'block';
-
-            // Reset form after submission (optional, but good practice)
-            event.target.reset(); 
-            showDynamicForm(''); // Clear dynamic fields
-
-            // Automatically hide the modal after 3 seconds
-            setTimeout(() => {
-                successModal.style.display = 'none';
-            }, 3000);
         });
         
-        // --- AI Chat Mock-up Functions ---
+        // --- AI Chat Mock-up Functions (No changes needed here) ---
         let chatTimerInterval;
         let chatTime = 300; // 5 minutes in seconds
-        let currentLang = 'en'; // Default language
-        let chatStage = 0; // 0: Lang Select, 1: Ask Name, 2: Ask Problem, 3: Redirect
+        let currentLang = 'en'; 
+        let chatStage = 0; 
 
         function toggleChatBox() {
             const chatBox = document.getElementById('aiChatBox');
@@ -730,7 +764,6 @@
                 resetChat();
             } else {
                 chatBox.style.display = 'flex';
-                // Start timer
                 chatTime = 300;
                 updateChatTimer();
                 chatTimerInterval = setInterval(() => {
@@ -743,9 +776,8 @@
                     }
                 }, 1000);
                 
-                // Initial welcome
                 chatStage = 0;
-                setLanguage('en'); // Start with EN welcome
+                setLanguage('en'); 
             }
         }
 
@@ -790,10 +822,8 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
             input.value = '';
 
-            let response = '';
-
             switch (chatStage) {
-                case 1: // Asked Name
+                case 1: 
                     let nameMsg = currentLang === 'hi' 
                         ? `धन्यवाद, ${messageText}! अब, कृपया मुझे अपनी समस्या के बारे में विस्तार से बताएं। क्या यह लॉग इन, खाता बनाने, पासवर्ड भूलने या कोई अन्य समस्या है?`
                         : `Thank you, ${messageText}! Now, please tell me about your problem in detail. Is it a **Login**, **Create Account**, **Forgot Password**, or **Other** problem?`;
@@ -802,7 +832,7 @@
                     document.getElementById('chatInput').placeholder = currentLang === 'hi' ? "समस्या का प्रकार बताएं (जैसे: लॉग इन समस्या)" : "State the problem type (e.g., Login problem)";
                     break;
 
-                case 2: // Asked Problem
+                case 2: 
                     const problem = messageText.toLowerCase();
                     let redirectType = '';
                     if (problem.includes('login') || problem.includes('लॉग इन')) {
@@ -821,15 +851,14 @@
 
                     addAiMessage(redirectMsg);
                     
-                    // MOCK: Set problem type in the main form and close chat
                     document.getElementById('problemType').value = redirectType;
                     showDynamicForm(redirectType);
                     clearInterval(chatTimerInterval);
-                    setTimeout(() => toggleChatBox(), 3000); // Close chat after 3s
+                    setTimeout(() => toggleChatBox(), 3000); 
                     chatStage = 3; 
                     break;
                 
-                case 3: // Redirected
+                case 3: 
                     addAiMessage(currentLang === 'hi' ? "कृपया मुख्य सपोर्ट फॉर्म भरें। धन्यवाद।" : "Please fill out the main support form. Thank you.");
                     break;
             }
