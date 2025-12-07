@@ -354,42 +354,33 @@
         
         if (isEmail) {
             // --- GMAIL LOGIN ---
-            let { error, data: authData } = await sb.auth.signInWithPassword({ email: identifier, password: pass });
-            
-            if (error) {
-                 return alert("❌ Login Failed (Gmail): " + error.message);
-            } 
-            
-            // ----------------------------------------------------
-            // 🚨 MODIFICATION 4: Check verification status in user-verify-gmail table
-            const { data: verificationData, error: verifyError } = await sb
-                .from('user-verify-gmail')
-                .select('status')
-                .eq('email', identifier)
-                .single();
-
-            if (verifyError || !verificationData || verificationData.status !== 'verified') {
-                // If verification is pending, log out the user from Supabase Auth
-                await sb.auth.signOut();
-                return alert("❌ Account not verified. Check your Gmail for the verification link.");
-            }
-            // ----------------------------------------------------
-            
-            window.location.href = "main.html";
+            let { error } = await sb.auth.signInWithPassword({ email: identifier, password: pass });
+            if (error) alert("❌ Login Failed (Gmail): " + error.message);
+            else window.location.href = "main.html";
             
         } else {
             // --- PHONE NUMBER LOGIN ---
             // 1. Check in verified user-details table
             // ----------------------------------------------------
-            // 🚨 MODIFICATION 1 & 3: Check for password AND status='active'
+            // 🚨 MODIFICATION 1: We assume the password field is now correctly populated in user-details
+            // by the agent.html logic (which you must update separately). 
+            // The select statement here is correct for checking that password field.
             const { data, error } = await sb
                 .from('user-details')
-                .select('password, status')
+                .select('password')
                 .eq('phone_number', identifier)
                 .single();
             // ----------------------------------------------------
 
-            if (error) {
+            if (data) {
+                // **WARNING**: Assuming client-side comparison for demonstration. 
+                // In production, use Supabase RLS/RPC for secure HASH comparison.
+                if (data.password === pass) { 
+                     window.location.href = "main.html";
+                } else {
+                    alert("❌ Login Failed: Incorrect phone number or password.");
+                }
+            } else {
                 // Not found in verified table, check in user-verify table (unverified)
                 const { data: unverifiedData } = await sb
                     .from('user-verify')
@@ -401,21 +392,6 @@
                     alert("❌ Account not verified. Please use the 'Create Account' section with the same number or go to the 'Agent' to verify.");
                 } else {
                     alert("❌ Login Failed: Account not found or credentials incorrect.");
-                }
-                return;
-            }
-            
-            if (data) {
-                if (data.status !== 'active') {
-                    return alert("❌ Login Failed: Your account is currently inactive or blocked.");
-                }
-                
-                // **WARNING**: Assuming client-side comparison for demonstration. 
-                // In production, use Supabase RLS/RPC for secure HASH comparison.
-                if (data.password === pass) { 
-                     window.location.href = "main.html";
-                } else {
-                    alert("❌ Login Failed: Incorrect phone number or password.");
                 }
             }
         }
@@ -454,6 +430,7 @@
             // --- GMAIL REGISTRATION ---
             
             // 1. **FIRST: Insert all form data into the new user-verify-gmail table.**
+            // This ensures all profile fields are saved before verification starts.
             const { error: verifyInsertError } = await sb
                 .from('user-verify-gmail')
                 .insert([
@@ -465,8 +442,7 @@
                         country: country, 
                         gender: gender, 
                         dob: dob,
-                        phone_number: phone, 
-                        status: 'pending' // Add status field for verification check
+                        phone_number: phone // Including phone number here as well
                     }
                 ]);
 
@@ -485,6 +461,7 @@
                 email,
                 password: pass,
                 options: {
+                    // Supabase metadata is minimal, the actual profile data is in user-verify-gmail
                     emailRedirectTo: 'https://avicnknov.netlify.app/success.html'
                 }
             });
@@ -538,10 +515,9 @@
                 .from('user-verify')
                 .insert({
                     phone_number: phoneNumber,
-                    password: pass, // Changed password_hash to password for simplicity/consistency
+                    password_hash: pass, // **REMINDER: Use Hashed Password in production!**
                     wtq_id: newWTQID,
-                    full_name: name, username: username, country: country, gender: gender, dob: dob,
-                    status: 'pending' // Add status field 
+                    full_name: name, username: username, country: country, gender: gender, dob: dob
                 });
 
             regButton.disabled = false;
@@ -580,7 +556,6 @@
                 .from('user-details')
                 .select('wtq_id')
                 .eq('phone_number', phone)
-                .eq('status', 'active') // Ensure only active accounts can initiate forgot agent
                 .maybeSingle();
 
             if (error || !data) {
