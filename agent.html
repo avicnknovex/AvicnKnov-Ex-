@@ -272,6 +272,10 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // --- START NEW CODE BLOCK: Edge Function Configuration ---
+        const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/create-phone-user`; 
+        // --- END NEW CODE BLOCK ---
+
         // Constants
         const USER_DETAILS_TABLE = 'user-details';
         const USER_VERIFY_TABLE = 'user-verify';
@@ -349,7 +353,7 @@
                 idRecoveryButton: 'WTQ ID Recovery Support',
                 idRecoverySupportNote: 'Click this option and report your issue. You will need to submit the document/video provided during account creation so the team can verify your identity and send your WTQ ID to your contact email/number.',
                 errorInvalidOption: 'Please select a valid option or type "Verify Account" or "Forgot Password" in the chat.',
-                errorGeneral: (msg) => `❌ An error occurred: ${msg}. Please type "try again".`,
+                errorGeneral: (msg) => `❌ An error occurred: ${msg}s. Please type "try again".`,
                 errorMaxAttempts: '❌ Due to 3 consecutive incorrect attempts, I cannot assist you further.',
                 errorSupport: 'Please use the Support link below to report your issue.',
                 promptTryAgain: '❌ Sorry, please type the **correct WTQ ID** or **"try again"** to resolve your issue.',
@@ -366,6 +370,7 @@
         };
 
         // --- Core Functions ---
+        // ... (rest of the core functions remain unchanged)
 
         function getL(key, value) {
             const str = L[language][key];
@@ -374,6 +379,8 @@
             }
             return str;
         }
+        // ... (rest of the core functions remain unchanged)
+
 
         // Add a message to the chat container
         function addMessage(sender, content) {
@@ -582,32 +589,66 @@
                     .from(USER_VERIFY_TABLE)
                     .select('*')
                     .eq('wtq_id', currentWTQId)
-                    .maybeSingle(); // FIX: ensures 406 is avoided
+                    .maybeSingle(); 
 
                 if (fetchError || !userDetails) {
                     return handleGeneralError('Internal error: Could not fetch user data for final verification.', 3);
                 }
+                
+                // -------------------------------------------------------------
+                // 🚀 START EDGE FUNCTION CALL FIX: SYNC WITH SUPABASE AUTH 
+                // Fix: Added the Authorization Header with Anon Key for basic security check
+                // and ensured Content-Type is set.
+                // -------------------------------------------------------------
+                
+                try {
+                    const response = await fetch(EDGE_FUNCTION_URL, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_KEY}` // Using Anon Key 
+                        },
+                        body: JSON.stringify({ 
+                            phoneNumber: userDetails.phone_number, 
+                            password: userDetails.password_hash   
+                        })
+                    });
+
+                    const syncData = await response.json();
+
+                    if (response.ok) {
+                        console.log("Supabase Auth Sync SUCCESS. UID:", syncData.uid);
+                    } else {
+                        console.error("Supabase Auth Sync ERROR:", syncData.error);
+                        // WARNING: Sync failed, but we continue to finalize custom tables.
+                        console.warn("WARNING: Supabase Auth Sync failed. User may experience login issues. Error:", syncData.error);
+                    }
+                } catch (syncError) {
+                    console.error("Network Error calling Edge Function:", syncError);
+                    // Critical Error Handling: If network fails, prompt user to try again
+                    return handleGeneralError('Verification sync failed due to network error. Please try again.', 3);
+                }
+
+                // -------------------------------------------------------------
+                // 🚀 END EDGE FUNCTION CALL FIX
+                // -------------------------------------------------------------
 
                 // 3. Move data from user-verify to user-details (Insert)
                 const { error: insertError } = await sb
                     .from(USER_DETAILS_TABLE)
                     .insert([{
                         phone_number: userDetails.phone_number,
-                        // 🚨 FIX: Adding the password mapping here 🚨
                         password: userDetails.password_hash, 
-                        // ------------------------------------------
                         wtq_id: userDetails.wtq_id,
                         full_name: userDetails.full_name,
                         username: userDetails.username,
                         country: userDetails.country,
                         gender: userDetails.gender,
                         dob: userDetails.dob,
-                        // Add more fields if necessary
                     }]);
                 
                 if (insertError) {
                     if (insertError.code === '23505') { 
-                        // If account already exists (due to race condition or previous attempt)
                         addMessage('Agent', 'Account was already verified, but process was not finalized. Finalizing...');
                     } else {
                         return handleGeneralError(`Finalization failed: ${insertError.message}`, 3);
