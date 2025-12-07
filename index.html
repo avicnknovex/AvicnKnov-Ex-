@@ -420,24 +420,54 @@
 
         if (registrationType === 'email') {
             // --- GMAIL REGISTRATION ---
+            
+            // 1. **FIRST: Insert all form data into the new user-verify-gmail table.**
+            // This ensures all profile fields are saved before verification starts.
+            const { error: verifyInsertError } = await sb
+                .from('user-verify-gmail')
+                .insert([
+                    { 
+                        email: email, 
+                        password: pass, 
+                        full_name: name, 
+                        username: username, 
+                        country: country, 
+                        gender: gender, 
+                        dob: dob,
+                        phone_number: phone // Including phone number here as well
+                    }
+                ]);
+
+            if (verifyInsertError) {
+                regButton.disabled = false;
+                regButton.textContent = 'Register';
+                // Check if error is due to duplicate username/email
+                if (verifyInsertError.code === '23505') { 
+                    return alert("❌ Registration Failed: Username or Email already exists.");
+                }
+                return alert("❌ Registration Failed during initial save: " + verifyInsertError.message);
+            }
+            
+            // 2. **SECOND: Start Supabase Auth email verification process.**
             let { error: authError } = await sb.auth.signUp({
                 email,
                 password: pass,
                 options: {
-                    // Password included for the Database Trigger to save it in user-details
-                    data: { full_name: name, dob: dob, username: username, country: country, gender: gender, password: pass }, 
+                    // Supabase metadata is minimal, the actual profile data is in user-verify-gmail
                     emailRedirectTo: 'https://avicnknov.netlify.app/success.html'
                 }
             });
 
             regButton.disabled = false;
             regButton.textContent = 'Register';
-
+            
             if (authError) {
-                return alert("❌ Registration Failed: " + authError.message);
+                // Failsafe: If Auth fails, delete the record from user-verify-gmail
+                await sb.from('user-verify-gmail').delete().eq('email', email);
+                return alert("❌ Registration Failed (Auth): " + authError.message);
             }
             
-            alert("✅ Registered! Check your Gmail to verify. Your profile data will be saved once verification is successful.");
+            alert("✅ Registered! Check your Gmail to verify. Your complete profile data will be saved to user-details once verification is successful.");
             
         } else {
             // --- PHONE NUMBER REGISTRATION ---
