@@ -23,14 +23,12 @@
 
     .tab-section.active {
       display: block;
-      /* Iframe ko viewport minus nav height ki jagah poori screen leni chahiye, 
-         uske baad hi JS uski height adjust karega. */
       height: 100%; 
     }
 
     .tab-section iframe {
       width: 100%;
-      height: 100%; /* Default 100% height, will be overwritten by JS */
+      height: 100%;
       border: none;
       display: block;
     }
@@ -130,8 +128,6 @@
             const navHeight = bottomNav.offsetHeight;
             const viewHeight = window.innerHeight;
 
-            // Sirf active iframe ki height adjust karna kaafi hai, lekin sabko update karna better hai
-            // jab window resize ho.
             document.querySelectorAll('.tab-section.active iframe').forEach(iframe => {
                 iframe.style.height = (viewHeight - navHeight) + "px";
             });
@@ -146,7 +142,6 @@
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             element.classList.add('active');
             
-            // ✅ FIX: Tab switch ke baad height adjust karen.
             adjustIframeHeights(); 
         }
     </script>
@@ -158,15 +153,30 @@
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM'
         );
 
-        async function checkUserSession() {
-            const { data: { session } } = await client.auth.getSession();
-            if (!session) {
-                alert("❌ आप लॉगिन नहीं हैं। Login Page पर भेजा जा रहा है...");
-                window.location.href = "index.html";
-            }
+        // ✅ FIX: onAuthStateChange listener ka upyog karen
+        // Yeh session status badalne par hi chalta hai.
+        client.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT' || !session) {
+                // Agar SIGNED_OUT event hua hai ya session null hai, to logout karein
+                if (window.location.pathname.split('/').pop() !== 'index.html') {
+                    alert("❌ आपका सत्र (session) समाप्त हो गया है। Login Page पर भेजा जा रहा है...");
+                    window.location.href = "index.html";
+                }
+            } 
+            // SIGNED_IN ya TOKEN_REFRESH event par koi action nahi lenge, user ko tab login rahne denge.
+        });
+        
+        // Load hone par bhi session check karna
+        async function checkInitialSession() {
+             const { data: { session } } = await client.auth.getSession();
+             if (!session) {
+                 if (window.location.pathname.split('/').pop() !== 'index.html') {
+                     alert("❌ आप लॉगिन नहीं हैं। Login Page पर भेजा जा रहा है...");
+                     window.location.href = "index.html";
+                 }
+             }
         }
-
-        checkUserSession();
+        checkInitialSession();
     </script>
 
     <script>
@@ -203,25 +213,20 @@
 
             allIframes.forEach((iframe) => {
                 iframe.onload = function () {
-                    // Jab iframe load ho, to height adjust karna dobara zaruri hai.
                     adjustIframeHeights(); 
                     
                     try {
-                        // Is step ke liye, iframe content aur main page ka same origin hona zaruri hai.
                         const url = iframe.contentWindow.location.href;
                         const filename = url.split("/").pop();
 
                         if (hiddenPages.includes(filename)) {
                             bottomNav.style.display = "none";
-                            // Nav hide hone ke baad height phir se adjust karein (puri screen ke liye)
                             document.querySelector('.tab-section.active iframe').style.height = window.innerHeight + "px";
                         } else {
                             bottomNav.style.display = "flex";
-                            // Nav show hone ke baad height phir se adjust karein
                             adjustIframeHeights();
                         }
                     } catch (e) {
-                        // Agar cross-origin error aaye (security issue), to default behaviour rakhein
                         bottomNav.style.display = "flex";
                         adjustIframeHeights();
                     }
