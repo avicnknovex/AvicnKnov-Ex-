@@ -234,6 +234,10 @@
       const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
       const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+      // --- START NEW CONSTANT: Domain used for dummy email creation ---
+      const PHONE_LOGIN_DOMAIN = '@crypto-temp.com';
+      // --- END NEW CONSTANT ---
+
       // Global Variables to track active authentication type
       let registrationType = 'email'; 
       let forgotType = 'email'; 
@@ -354,46 +358,62 @@
         
         if (isEmail) {
             // --- GMAIL LOGIN ---
-            let { error } = await sb.auth.signInWithPassword({ email: identifier, password: pass });
-            if (error) alert("❌ Login Failed (Gmail): " + error.message);
-            else window.location.href = "main.html";
+            let { data, error } = await sb.auth.signInWithPassword({ email: identifier, password: pass });
+            if (error) {
+                // Check if error is due to unverified email
+                if (error.message.includes('Email not confirmed')) {
+                    alert("❌ Login Failed: Email not verified. Check your Gmail.");
+                } else {
+                    alert("❌ Login Failed (Gmail): " + error.message);
+                }
+            } else if (data.session) {
+                window.location.href = "dashboard.html";
+            }
             
         } else {
-            // --- PHONE NUMBER LOGIN ---
-            // 1. Check in verified user-details table
-            // ----------------------------------------------------
-            // 🚨 MODIFICATION 1: We assume the password field is now correctly populated in user-details
-            // by the agent.html logic (which you must update separately). 
-            // The select statement here is correct for checking that password field.
-            const { data, error } = await sb
-                .from('user-details')
-                .select('password')
-                .eq('phone_number', identifier)
-                .single();
-            // ----------------------------------------------------
+            // --- START NEW PHONE NUMBER LOGIN LOGIC ---
+            
+            // 1. Phone number को साफ करें और डमी ईमेल बनाएँ
+            const cleanNumber = identifier.replace(/[^0-9+]/g, ''); // + और 0-9 रखें
+            const dummyEmail = cleanNumber + PHONE_LOGIN_DOMAIN;
+            
+            console.log(`Attempting Supabase Auth login for dummy email: ${dummyEmail}`);
+            
+            // 2. Supabase Auth के साथ सीधे लॉगिन करने का प्रयास करें
+            let { data, error } = await sb.auth.signInWithPassword({ 
+                email: dummyEmail, 
+                password: pass 
+            });
 
-            if (data) {
-                // **WARNING**: Assuming client-side comparison for demonstration. 
-                // In production, use Supabase RLS/RPC for secure HASH comparison.
-                if (data.password === pass) { 
-                     window.location.href = "main.html";
-                } else {
-                    alert("❌ Login Failed: Incorrect phone number or password.");
-                }
-            } else {
-                // Not found in verified table, check in user-verify table (unverified)
-                const { data: unverifiedData } = await sb
-                    .from('user-verify')
-                    .select('wtq_id')
-                    .eq('phone_number', identifier)
-                    .maybeSingle();
+            if (error) {
+                if (error.message.includes('Invalid login credentials')) {
+                    // यदि Supabase Auth में लॉगिन विफल होता है, तो आगे की जांच करें (unverified है या नहीं)
+                    
+                    // Fallback: Check in unverified table (user might need to verify via agent)
+                    const { data: unverifiedData } = await sb
+                        .from('user-verify')
+                        .select('wtq_id, is_verified')
+                        .eq('phone_number', cleanNumber)
+                        .maybeSingle();
 
-                if (unverifiedData) {
-                    alert("❌ Account not verified. Please use the 'Create Account' section with the same number or go to the 'Agent' to verify.");
+                    if (unverifiedData && unverifiedData.is_verified === false) {
+                        alert("❌ Account not verified. Please use the 'Verify Agent' button on the registration page to complete verification.");
+                    } else if (unverifiedData && unverifiedData.is_verified === true) {
+                        // This case should ideally not happen if password is correct, 
+                        // as the Edge Function creates the Supabase Auth user.
+                        alert("❌ Login Failed: Credentials incorrect or internal sync issue. Please try again or contact support.");
+                    } else {
+                        // Account not found anywhere or credentials completely incorrect.
+                        alert("❌ Login Failed: Account not found or credentials incorrect.");
+                    }
                 } else {
-                    alert("❌ Login Failed: Account not found or credentials incorrect.");
+                    alert("❌ Login Failed: " + error.message);
                 }
+            } else if (data.session) {
+                // Success: Supabase session is established.
+                window.location.href = "dashboard.html";
             }
+            // --- END NEW PHONE NUMBER LOGIN LOGIC ---
         }
       }
 
@@ -430,7 +450,6 @@
             // --- GMAIL REGISTRATION ---
             
             // 1. **FIRST: Insert all form data into the new user-verify-gmail table.**
-            // This ensures all profile fields are saved before verification starts.
             const { error: verifyInsertError } = await sb
                 .from('user-verify-gmail')
                 .insert([
@@ -449,7 +468,6 @@
             if (verifyInsertError) {
                 regButton.disabled = false;
                 regButton.textContent = 'Register';
-                // Check if error is due to duplicate username/email
                 if (verifyInsertError.code === '23505') { 
                     return alert("❌ Registration Failed: Username or Email already exists.");
                 }
@@ -461,7 +479,6 @@
                 email,
                 password: pass,
                 options: {
-                    // Supabase metadata is minimal, the actual profile data is in user-verify-gmail
                     emailRedirectTo: 'https://avicnknov.netlify.app/success.html'
                 }
             });
