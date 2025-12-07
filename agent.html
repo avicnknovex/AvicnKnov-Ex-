@@ -285,12 +285,13 @@
         let selectedAction = null; // VERIFY or FORGOT
         let errorCount = 0;
         let lastErrorTime = 0;
+        let currentWTQId = null; // Stored WTQ ID for flow continuity
 
         // --- Localization Strings (L10N) ---
         const L = {
             Hindi: {
                 agentName: 'AvicnKnov Agent',
-                initialMsg: `नमस्ते मैं आपकी क्या मदद कर सकता हूँ? कृपया नीचे दिए गए विकल्पों में से चुनें या चैट में लिखें।`,
+                initialMsg: (name) => `नमस्ते, ${name}! मैं आपकी क्या मदद कर सकता हूँ? कृपया नीचे दिए गए विकल्पों में से चुनें या चैट में लिखें।`,
                 optionVerify: 'Verify Account Number',
                 optionForgot: 'Forgot Password',
                 promptIDVerify: 'कृपया अपनी 12-अक्षर की **WTQ ID** सबमिट करें जो आपको अकाउंट बनाते समय मिली थी।',
@@ -327,7 +328,7 @@
             },
             English: {
                 agentName: 'AvicnKnov Agent',
-                initialMsg: `Hello, ! How may I assist you? Please select an option below or type in the chat.`,
+                initialMsg: (name) => `Hello, ${name}! How may I assist you? Please select an option below or type in the chat.`,
                 optionVerify: 'Verify Account Number',
                 optionForgot: 'Forgot Password',
                 promptIDVerify: 'Please submit your 12-character **WTQ ID** that you received during account creation.',
@@ -366,8 +367,12 @@
 
         // --- Core Functions ---
 
-        function getL(key) {
-            return L[language][key];
+        function getL(key, value) {
+            const str = L[language][key];
+            if (typeof str === 'function') {
+                return str(value);
+            }
+            return str;
         }
 
         // Add a message to the chat container
@@ -412,7 +417,6 @@
 
         // Handles selection from buttons or chat input
         function handleActionSelection(action) {
-            // Check if user clicked a button or typed a command
             const command = action === 'VERIFY' ? getL('optionVerify') : getL('optionForgot');
             addMessage('User', command);
 
@@ -432,7 +436,7 @@
         // Displays support button and max error message
         function showSupportOption(messageKey) {
             const optionsDiv = document.getElementById('initial-options');
-            optionsDiv.innerHTML = ''; // Clear previous options
+            optionsDiv.innerHTML = ''; 
             
             addMessage('Agent', getL(messageKey));
             
@@ -460,10 +464,10 @@
             
             // Handle Language/Error commands
             if (lowerInput === 'try again' || lowerInput === getL('promptTryAgainRecover').toLowerCase()) {
-                startChat(); // Restart the session
+                startChat(); 
                 return;
             } 
-            if (lowerInput.includes('wtq id') || lowerInput.includes('id bhul gaya')) {
+            if (lowerInput.includes('wtq id') || lowerInput.includes('id bhul gaya') || lowerInput.includes('recover id')) {
                  addWTQRecoveryOption();
                  return;
             }
@@ -504,14 +508,18 @@
                 
                 addMessage('Agent', getL('wait'));
                 
-                // 1. Check ID in user-verify table
+                // 1. Check ID in user-verify table (FIXED: using maybeSingle() to prevent 406 error)
                 const { data: user, error: verifyError } = await sb
                     .from(USER_VERIFY_TABLE)
                     .select('*')
                     .eq('wtq_id', wtqId)
-                    .single();
+                    .maybeSingle();
 
-                if (verifyError || !user) {
+                if (verifyError) {
+                    return handleGeneralError(getL('errorGeneral', verifyError.message), 1);
+                }
+
+                if (!user) {
                     return handleGeneralError(getL('idNotFound'), 1);
                 }
 
@@ -521,6 +529,7 @@
                 }
                 
                 // ID Found - Move to File Upload
+                currentWTQId = wtqId; // Store WTQ ID
                 currentStep = 'AWAITING_FILE';
                 addMessage('Agent', getL('promptFileUpload'));
                 document.getElementById('file-upload-section').style.display = 'flex';
@@ -540,6 +549,10 @@
             
             if (!file) {
                 uploadStatus.textContent = 'Please select a file first.';
+                return;
+            }
+            if (!currentWTQId) {
+                uploadStatus.textContent = 'WTQ ID missing. Please type "try again" to restart.';
                 return;
             }
 
@@ -565,47 +578,50 @@
                 document.getElementById('file-upload-section').style.display = 'none';
 
                 // Get user details from user-verify table
-                const { data: userDetails } = await sb
+                const { data: userDetails, error: fetchError } = await sb
                     .from(USER_VERIFY_TABLE)
                     .select('*')
                     .eq('wtq_id', currentWTQId)
-                    .single();
+                    .maybeSingle(); // FIX: ensures 406 is avoided
 
-                if (!userDetails) {
+                if (fetchError || !userDetails) {
                     return handleGeneralError('Internal error: Could not fetch user data for final verification.', 3);
                 }
 
-                // 3. Move data from user-verify to user-details and mark as verified
+                // 3. Move data from user-verify to user-details (Insert)
                 const { error: insertError } = await sb
                     .from(USER_DETAILS_TABLE)
                     .insert([{
-                        // Add all fields from the user-verify table
                         phone_number: userDetails.phone_number,
-                        password: userDetails.password, // IMPORTANT: Should be hashed!
+                        password: userDetails.password, // Should be hashed!
                         wtq_id: userDetails.wtq_id,
                         full_name: userDetails.full_name,
                         username: userDetails.username,
                         country: userDetails.country,
                         gender: userDetails.gender,
                         dob: userDetails.dob,
-                        // Assuming other fields (like email) are null for phone accounts
+                        // Add more fields if necessary
                     }]);
                 
                 if (insertError) {
-                    // Check if duplicate (already inserted) - this is a good check
-                    if (insertError.code === '23505') { // Duplicate key violation
-                        addMessage('Agent', 'Account was already verified, but process was not finalized.');
+                    if (insertError.code === '23505') { 
+                        // If account already exists (due to race condition or previous attempt)
+                        addMessage('Agent', 'Account was already verified, but process was not finalized. Finalizing...');
                     } else {
                         return handleGeneralError(`Finalization failed: ${insertError.message}`, 3);
                     }
                 }
                 
-                // 4. Update the user-verify table to mark it verified (optional but good practice)
-                await sb
+                // 4. Update the user-verify table to mark it verified
+                const { error: updateError } = await sb
                     .from(USER_VERIFY_TABLE)
                     .update({ is_verified: true })
                     .eq('wtq_id', currentWTQId);
                 
+                if (updateError) {
+                    console.warn("Could not update user-verify table:", updateError.message);
+                }
+
                 // 5. Final Message and Redirect
                 addMessage('Agent', getL('verifyWarning'));
                 addMessage('Agent', getL('verifySuccess', 7));
@@ -614,7 +630,7 @@
                     window.location.href = "index.html";
                 }, 7000);
 
-            }, 5000); // 5 second simulation wait
+            }, 5000); 
         }
 
         // --- Forgot Password Flow ---
@@ -627,21 +643,25 @@
                 
                 addMessage('Agent', getL('wait'));
                 
-                // 1. Check ID in user-details table (must be verified to change password)
+                // 1. Check ID in user-details table (must be verified to change password) (FIXED: using maybeSingle())
                 const { data: user, error: detailsError } = await sb
                     .from(USER_DETAILS_TABLE)
                     .select('wtq_id, password')
                     .eq('wtq_id', wtqId)
-                    .single();
+                    .maybeSingle();
 
-                if (detailsError || !user) {
+                if (detailsError) {
+                    return handleGeneralError(getL('errorGeneral', detailsError.message), 1);
+                }
+
+                if (!user) {
                     return handleGeneralError(getL('idNotFound'), 1);
                 }
 
                 currentWTQId = wtqId; // Store ID for next step
                 currentStep = 'AWAITING_NEW_PASS';
                 addMessage('Agent', getL('forgotPromptNewPass'));
-                errorCount = 0; // Reset error count
+                errorCount = 0; 
 
             } else if (currentStep === 'AWAITING_NEW_PASS') {
                 const newPass = input;
@@ -679,9 +699,8 @@
         // --- Utility Functions ---
 
         function handleGeneralError(message, countToAdd) {
-            // Check if last error was too recent to prevent spamming
             const now = Date.now();
-            if (now - lastErrorTime < 1000) return; // Ignore rapid fire errors
+            if (now - lastErrorTime < 1000) return; 
             lastErrorTime = now;
 
             errorCount += countToAdd;
@@ -713,7 +732,6 @@
         function toggleLanguage() {
             language = (language === 'Hindi' ? 'English' : 'Hindi');
             document.getElementById('lang-btn').textContent = getL('langBtnText');
-            // Reset chat to apply new language strings
             startChat(true); 
         }
 
@@ -741,32 +759,25 @@
                 document.getElementById('chat-container').innerHTML = '';
             }
             
-            // Reset state
             currentStep = 'START';
             selectedAction = null;
             errorCount = 0;
-            currentWTQId = null; // Important to reset ID storage
 
-            // Ensure file upload section is hidden
             document.getElementById('file-upload-section').style.display = 'none';
 
-            // Show initial greeting and options
             addMessage('Agent', getL('initialMsg', userName));
             toggleInitialOptions(true);
         }
 
         window.onload = () => {
-            // Read optional action parameter from URL (if coming from forgot password in index.html)
             const urlParams = new URLSearchParams(window.location.search);
             const initialAction = urlParams.get('action');
             
-            // Set initial language button text
             document.getElementById('lang-btn').textContent = getL('langBtnText');
 
             startChat();
 
             if (initialAction === 'forgot') {
-                // If user came via forgot password link, directly start the FORGOT flow
                 handleActionSelection('FORGOT');
             }
         };
