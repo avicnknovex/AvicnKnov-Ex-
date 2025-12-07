@@ -102,42 +102,26 @@
         color: white;
       }
       
-      /* --- Dynamic Options (FIXED STYLING) --- */
+      /* --- Dynamic Options --- */
       .chat-options {
         display: flex;
-        flex-direction: column; /* Options now stack vertically */
+        flex-wrap: wrap;
         gap: 10px;
         margin-top: 10px;
-        padding-top: 10px;
-        border-top: 1px solid rgba(0, 0, 0, 0.1); 
       }
       .chat-options button {
         background: rgba(0, 255, 225, 0.2);
         color: #00ffe1;
         border: 1px solid #00ffe1;
-        padding: 10px 15px; 
-        border-radius: 8px; 
+        padding: 8px 15px;
+        border-radius: 20px;
         cursor: pointer;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         transition: background 0.3s;
-        text-align: left;
-        width: 100%; /* Ensure full width visibility */
       }
       .chat-options button:hover {
         background: #00ffe1;
         color: black;
-      }
-      /* Support Button Styling */
-      .support-link-button {
-          margin-top: 10px;
-          background: #ff5722 !important; 
-          color: white !important;
-          border: none !important;
-          font-weight: bold;
-      }
-      
-      .hidden-options {
-          display: none !important;
       }
 
       /* --- Input Area --- */
@@ -182,6 +166,7 @@
           border-radius: 5px;
           background: #333;
       }
+      /* Custom file input styling */
       .file-upload-box input[type="file"]::file-selector-button {
           background: #00ffe1;
           color: black;
@@ -200,6 +185,8 @@
         border: none;
         cursor: pointer;
       }
+
+      /* --- Utility --- */
       .hidden { display: none !important; }
       .loading-animation {
           color: #00ffe1;
@@ -209,6 +196,7 @@
           0% { opacity: 0.5; }
           100% { opacity: 1; }
       }
+
     </style>
   </head>
   <body>
@@ -225,33 +213,33 @@
         </div>
 
       <div class="chat-input">
-        <input type="text" id="chat-input-text" placeholder="Type your message or select an option...">
+        <input type="text" id="chat-input-text" placeholder="Type your message here...">
         <button id="chat-send-btn" onclick="handleUserInput()">Send</button>
       </div>
     </div>
     
+    <input type="file" id="document-file-input" class="hidden" accept="image/*, video/mp4, application/pdf">
+
     <script>
-      // Supabase Credentials (Ensure these are correct)
+      // Supabase Credentials
       const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
-      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnxIXEY5aOh3gl6XqPdEveodFZM';
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
       const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
       // --- Global State ---
       let currentLanguage = 'Hindi'; 
-      let chatState = 'AWAITING_ACTION'; 
-      let userName = 'User'; 
+      let chatState = 'INITIAL'; // States: INITIAL, AWAITING_ID, AWAITING_DOCS, AWAITING_PASSWORD, COMPLETE
+      let userName = 'User';
       let wtqId = null;
-      let action = null; 
-      let errorCounter = 0; 
-      // The ID of the message container that holds the initial options.
-      const INITIAL_OPTIONS_MESSAGE_ID = 'initial-greeting-message'; 
+      let action = null; // 'verify' or 'forgot'
 
       // --- Localization Data (Hindi and English) ---
       const lang = {
         Hindi: {
           agent_name: "AvicnKnov Agent",
-          greeting: `नमस्ते! मैं **AvicnKnov Agent** हूँ, मैं आपकी क्या मदद कर सकता हूँ? कृपया नीचे दिए गए विकल्पों में से किसी एक को चुनें।`,
+          greeting: (name) => `नमस्ते ${name}, मैं आपकी क्या मदद कर सकता हूँ? कृपया अपना नाम (या "User") बताएँ।`,
           initial_options: ["Verify Account Number", "Forgot Password"],
+          q_name: "नाम",
           q_id: "कृपया अपनी 12-अक्षर की WTQ ID सबमिट करें।",
           waiting: "कृपया 5 सेकंड का इंतज़ार करें, मैं आपकी ID की जाँच कर रहा हूँ...",
           id_found: "आपकी ID सही है! मैंने इसे ढूंढ लिया है।",
@@ -259,19 +247,20 @@
           q_docs: "भविष्य की रिकवरी के लिए, कृपया अपना 7 सेकंड का कोई लाइव वीडियो या कोई ID कार्ड/डॉक्यूमेंट (जैसे आधार, ड्राइविंग लाइसेंस) अपलोड करें।",
           q_forgot_check: "कृपया अपनी WTQ ID सबमिट करें। मैं चेक कर रहा हूँ कि क्या आपका अकाउंट सत्यापित है।",
           forgot_verified: "मैंने आपकी ID को चेक कर लिया है। अब कृपया 8 से 16 अंकों के बीच एक नया मज़बूत (strong) पासवर्ड टाइप करके भेजें।",
+          forgot_unverified: "❌ यह अकाउंट सत्यापित नहीं है। कृपया पहले 'Verify Account Number' विकल्प चुनें।",
           forgot_not_found: "❌ इस ID से कोई सत्यापित (Verified) अकाउंट नहीं मिला।",
           password_updated: (pass) => `✅ आपका पासवर्ड सफलतापूर्वक बदल दिया गया है। आपका नया पासवर्ड है: ${pass}. आप अब लॉग इन कर सकते हैं।`,
           docs_received: "✅ डॉक्यूमेंट मिल गया है। कृपया 5 सेकंड प्रतीक्षा करें, मैं सत्यापन प्रक्रिया पूरी कर रहा हूँ...",
           verification_complete: "✅ आपका अकाउंट सत्यापित हो गया है! आपको 72 घंटे के लिए हमारी टीम की निगरानी (surveillance) में रखा जाएगा। यदि कोई अनियमितता पाई जाती है, तो अकाउंट स्थायी रूप से बंद किया जा सकता है।",
-          wrong_option: "कृपया विकल्पों में से सही चुनें, या 'Verify Account'/'Forgot Password' टाइप करें।",
-          support_message: "⚠️ आपको बार-बार समस्या आ रही है या आपने समस्या की रिपोर्ट की है। कृपया नीचे दिए गए बटन पर क्लिक करके **Support सेक्शन** में जाएँ और अपनी समस्या दर्ज करें।",
-          support_button: "Support सेक्शन में जाएँ",
-          try_again: "✅ ओके। मैं सिस्टम को **रीस्टार्ट** कर रहा हूँ। कृपया फिर से **विकल्प** चुनें या अपनी **WTQ ID** सबमिट करें।"
+          wrong_option: "कृपया 'Verify Account Number' या 'Forgot Password' में से सही विकल्प चुनें, या केवल अपनी ID/पासवर्ड टाइप करें।",
+          id_forgot_solution: "यदि आप अपनी WTQ ID भूल गए हैं, तो <a href='support.html' target='_blank' style='color:#00ffe1;'>Support</a> सेक्शन पर जाएँ और 'WTQ ID Recovery' विकल्प चुनकर अपनी रिपोर्ट सबमिट करें। टीम आपके दिए गए डॉक्यूमेंट से सत्यापन करेगी।",
+          unknown_error: "माफ़ करें, मैं इस काम के लिए नहीं बना हूँ। आप Support सेक्शन पर जाकर अपनी समस्या बता सकते हैं।"
         },
         English: {
           agent_name: "AvicnKnov Agent",
-          greeting: `Hello! I am the **AvicnKnov Agent**. How may I help you? Please select one of the options below.`,
+          greeting: (name) => `Hello ${name}, how may I help you? Please state your name (or "User").`,
           initial_options: ["Verify Account Number", "Forgot Password"],
+          q_name: "Name",
           q_id: "Please submit your 12-character WTQ ID.",
           waiting: "Please wait 5 seconds, I am checking your ID...",
           id_found: "Your ID is correct! I have found it.",
@@ -279,14 +268,14 @@
           q_docs: "For future recovery, please upload a 7-second live video or any ID card/document (e.g., Aadhar, Driving License).",
           q_forgot_check: "Please submit your WTQ ID. I am checking if your account is verified.",
           forgot_verified: "I have checked your ID. Now please type and send a new strong password between 8 and 16 digits.",
+          forgot_unverified: "❌ This account is not verified. Please choose the 'Verify Account Number' option first.",
           forgot_not_found: "❌ No verified account found with this ID.",
           password_updated: (pass) => `✅ Your password has been successfully changed. Your new password is: ${pass}. You can now log in.`,
           docs_received: "✅ Document received. Please wait 5 seconds while I complete the verification process...",
           verification_complete: "✅ Your account has been verified! You will be under our team's surveillance for 72 hours. If any irregularity is found, the account may be permanently banned.",
-          wrong_option: "Please select the correct option, or type 'Verify Account'/'Forgot Password'.",
-          support_message: "⚠️ You are facing repeated issues or have reported a problem. Please click the button below to go to the **Support Section** and submit your report.",
-          support_button: "Go to Support Section",
-          try_again: "✅ OK. I am **restarting** the system. Please choose an **option** again or submit your **WTQ ID**."
+          wrong_option: "Please select the correct option from 'Verify Account Number' or 'Forgot Password', or type only your ID/Password.",
+          id_forgot_solution: "If you forgot your WTQ ID, please go to the <a href='support.html' target='_blank' style='color:#00ffe1;'>Support</a> section and submit your report using the 'WTQ ID Recovery' option. The team will verify using the documents you provided.",
+          unknown_error: "Sorry, I am not programmed for this task. You can report your problem in the Support section."
         }
       };
 
@@ -294,27 +283,25 @@
 
       function changeLanguage(langCode) {
         currentLanguage = langCode;
+        // Re-display the latest message to update language if necessary
         document.getElementById('chat-messages').innerHTML = '';
-        initChatFlow(); // Restart chat flow in new language
+        postAgentMessage(lang[currentLanguage].greeting(userName), lang[currentLanguage].initial_options);
       }
 
-      function addMessage(sender, text, options = [], messageId = null) {
+      function addMessage(sender, text, options = []) {
         const chatBox = document.getElementById('chat-messages');
         const msgDiv = document.createElement('div');
         msgDiv.classList.add('message', sender === 'Agent' ? 'agent-message' : 'user-message');
-        if (messageId) {
-            msgDiv.id = messageId;
-        }
         
         const contentBox = document.createElement('div');
         contentBox.classList.add('message-box');
 
         const header = document.createElement('div');
         header.classList.add('message-header');
-        header.textContent = sender === 'Agent' ? lang[currentLanguage].agent_name : userName; 
+        header.textContent = sender === 'Agent' ? lang[currentLanguage].agent_name : userName;
         
         const textContent = document.createElement('p');
-        textContent.innerHTML = text; 
+        textContent.innerHTML = text; // Use innerHTML to allow links
 
         contentBox.appendChild(header);
         contentBox.appendChild(textContent);
@@ -322,20 +309,10 @@
         if (options.length > 0) {
             const optionDiv = document.createElement('div');
             optionDiv.classList.add('chat-options');
-            optionDiv.id = 'initial-options-container'; 
-            
             options.forEach(opt => {
                 const btn = document.createElement('button');
                 btn.textContent = opt;
-                btn.setAttribute('data-action', opt); 
-                // Use a single click handler to process input
-                btn.onclick = () => handleOptionSelection(opt); 
-                
-                if (opt === lang[currentLanguage].support_button) {
-                    btn.classList.add('support-link-button');
-                    btn.onclick = () => window.open('support.html', '_blank');
-                }
-                
+                btn.onclick = () => handleUserInput(opt);
                 optionDiv.appendChild(btn);
             });
             contentBox.appendChild(optionDiv);
@@ -343,134 +320,74 @@
         
         msgDiv.appendChild(contentBox);
         chatBox.appendChild(msgDiv);
-        chatBox.scrollTop = chatBox.scrollHeight; 
-        return msgDiv; 
-      }
-      
-      // Function to hide the initial options container
-      function hideInitialOptions() {
-          const container = document.getElementById('initial-options-container');
-          if (container) {
-              container.classList.add('hidden-options');
-          }
+        chatBox.scrollTop = chatBox.scrollHeight; // Scroll to bottom
       }
 
-      // New function to handle button clicks/text selection
-      function handleOptionSelection(optionText) {
-          // 1. Hide the options immediately
-          hideInitialOptions();
-          
-          // 2. Post the user's selected action as a message
-          postUserMessage(optionText);
-
-          // 3. Process the input
-          handleUserInput(optionText);
-      }
-
-
-      function postAgentMessage(text, options = [], messageId = null) {
-        addMessage('Agent', text, options, messageId);
+      function postAgentMessage(text, options = []) {
+        addMessage('Agent', text, options);
       }
 
       function postUserMessage(text) {
         addMessage('User', text);
       }
       
-      function showSupportOptionIfRequired(force = false) {
-          if (force || errorCounter >= 3) {
-              postAgentMessage(lang[currentLanguage].support_message, [lang[currentLanguage].support_button]);
-          }
-      }
-
       // --- STATE HANDLER ---
 
       async function handleUserInput(input = null) {
         const chatInput = document.getElementById('chat-input-text');
         const text = input || chatInput.value.trim();
         
-        if (!text && !input) return;
+        if (!text) return;
         
-        const lowerText = text.toLowerCase();
-        
-        // --- Global Commands ---
-        if (lowerText.includes('please try again') || lowerText === 'restart') {
-            if(input === null) postUserMessage(text);
-            
-            document.getElementById('chat-messages').innerHTML = ''; 
-            
-            postAgentMessage(lang[currentLanguage].try_again, lang[currentLanguage].initial_options);
-            chatState = 'AWAITING_ACTION';
-            errorCounter = 0; 
-            chatInput.value = '';
-            chatInput.placeholder = 'Select an option or type...';
-            return;
-        }
-        
-        if (lowerText.includes('problem') || lowerText.includes('issue') || lowerText.includes('support') || lowerText.includes('bhul gaya')) {
-            if(input === null) postUserMessage(text);
-            showSupportOptionIfRequired(true); 
-            chatInput.value = '';
-            return;
-        }
+        // Post user message immediately
+        postUserMessage(text);
+        chatInput.value = ''; // Clear input
 
-        // Post user message immediately only if it was NOT an option button click
-        if (input === null) {
-            postUserMessage(text);
-            chatInput.value = ''; 
+        if (chatState === 'INITIAL') {
+            // First message: Set name
+            if (text.toLowerCase() !== 'user') {
+                userName = text.trim();
+            }
+            // Proceed to action selection
+            postAgentMessage(lang[currentLanguage].greeting(userName), lang[currentLanguage].initial_options);
+            chatState = 'AWAITING_ACTION';
+            return;
         }
-        
-        // --- State Logic ---
 
         if (chatState === 'AWAITING_ACTION') {
-            let selectedAction = null;
-            
-            // Check if the user typed or clicked one of the main options
-            if (lowerText.includes('verify account') || lowerText.includes('verification') || lowerText === 'verify') {
-                selectedAction = 'verify';
-            } else if (lowerText.includes('forgot password') || lowerText.includes('forgot')) {
-                selectedAction = 'forgot';
-            }
-
-            if (selectedAction) {
-                // IMPORTANT: If the user typed the action, we manually post the message and hide buttons
-                if (input === null) {
-                    // postUserMessage(text); // Already posted above if input === null
-                    hideInitialOptions(); // Hide the options container
-                }
-                
-                action = selectedAction;
+            const lowerText = text.toLowerCase();
+            if (lowerText.includes('verify')) {
+                action = 'verify';
                 chatState = 'AWAITING_ID';
-                
-                if (action === 'verify') {
-                    postAgentMessage(lang[currentLanguage].q_id);
-                } else if (action === 'forgot') {
-                    postAgentMessage(lang[currentLanguage].q_forgot_check);
-                }
-            } else if (input === null) {
-                // Only respond with wrong option if the user manually typed something wrong
-                postAgentMessage(lang[currentLanguage].wrong_option, lang[currentLanguage].initial_options);
+                postAgentMessage(lang[currentLanguage].q_id);
+            } else if (lowerText.includes('forgot')) {
+                action = 'forgot';
+                chatState = 'AWAITING_ID';
+                postAgentMessage(lang[currentLanguage].q_forgot_check);
+            } else if (lowerText.includes('id bhul') || lowerText.includes('forgot id') || lowerText.includes('wtq id')) {
+                postAgentMessage(lang[currentLanguage].id_forgot_solution);
+            } else {
+                postAgentMessage(lang[currentLanguage].wrong_option);
             }
             return;
         }
-
-        // --- Subsequent States (AWAITING_ID, AWAITING_PASSWORD, AWAITING_DOCS) remain the same ---
 
         if (chatState === 'AWAITING_ID') {
             const idPattern = /^[A-Z0-9]{12}$/;
             if (!idPattern.test(text)) {
-                postAgentMessage("❌ Invalid WTQ ID format. It must be 12 characters (uppercase letters and numbers). Please try again or type 'restart'.");
-                errorCounter++;
-                showSupportOptionIfRequired();
+                if (text.toLowerCase().includes('id bhul') || text.toLowerCase().includes('forgot id')) {
+                     postAgentMessage(lang[currentLanguage].id_forgot_solution);
+                     return;
+                }
+                postAgentMessage("❌ Invalid WTQ ID format. It must be 12 characters (uppercase letters and numbers).");
                 return;
             }
 
             wtqId = text.toUpperCase();
             postAgentMessage(lang[currentLanguage].waiting + `<span id="loading-id" class="loading-animation">...</span>`);
-            
-            await new Promise(resolve => setTimeout(resolve, 5000)); 
+            await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second wait
 
-            const loader = document.getElementById('loading-id');
-            if (loader) loader.remove();
+            document.getElementById('loading-id').remove();
 
             if (action === 'verify') {
                 await checkVerificationId(wtqId);
@@ -484,22 +401,31 @@
             if (text.length >= 8 && text.length <= 16) {
                 await updatePassword(text);
             } else {
-                postAgentMessage("❌ Password must be between 8 and 16 characters. Please try again or type 'restart'.");
-                errorCounter++;
-                showSupportOptionIfRequired();
+                postAgentMessage("❌ Password must be between 8 and 16 characters.");
             }
             return;
         }
 
         if (chatState === 'AWAITING_DOCS') {
-            postAgentMessage("Please use the file upload box provided above to upload your document, or type 'restart'.");
+            // Check if input is a known command (e.g., ID forgotten)
+            if (text.toLowerCase().includes('id bhul') || text.toLowerCase().includes('forgot id')) {
+                 postAgentMessage(lang[currentLanguage].id_forgot_solution);
+                 return;
+            }
+            
+            // Assume user is typing the ID again or trying to upload
+            postAgentMessage("Please use the file upload option below (or type your WTQ ID if you think you typed it wrong).");
             return;
         }
+        
+        // Default catch-all
+        postAgentMessage(lang[currentLanguage].unknown_error);
       }
       
-      // --- SUPABASE & VERIFICATION LOGIC (Unchanged) ---
+      // --- SUPABASE & VERIFICATION LOGIC ---
       
       async function checkVerificationId(id) {
+          // Check if WTQ ID exists in the unverified table
           const { data, error } = await sb
               .from('user-verify')
               .select('id')
@@ -508,21 +434,20 @@
 
           if (error || !data) {
               postAgentMessage(lang[currentLanguage].id_not_found);
-              postAgentMessage("Please try again with the correct ID or type 'restart'.");
-              errorCounter++;
-              showSupportOptionIfRequired();
+              chatState = 'AWAITING_ID'; // Stay here
               return;
           }
-          
-          errorCounter = 0; 
+
           postAgentMessage(lang[currentLanguage].id_found);
           postAgentMessage(lang[currentLanguage].q_docs);
           
+          // Inject file upload UI
           injectFileUploadUI();
           chatState = 'AWAITING_DOCS';
       }
       
       async function checkForgotId(id) {
+          // Check if WTQ ID exists in the verified table (user-details)
           const { data, error } = await sb
               .from('user-details')
               .select('id, phone_number')
@@ -531,14 +456,12 @@
 
           if (error || !data) {
               postAgentMessage(lang[currentLanguage].forgot_not_found);
-              postAgentMessage("Please try again or type 'restart'.");
-              errorCounter++;
-              showSupportOptionIfRequired();
-              chatState = 'AWAITING_ACTION'; 
+              chatState = 'AWAITING_ACTION'; // Go back to initial choice
               return;
           }
-          
-          errorCounter = 0; 
+
+          // In a real system, we must confirm the account is verified, 
+          // which is implied by being in user-details.
           postAgentMessage(lang[currentLanguage].forgot_verified);
           chatState = 'AWAITING_PASSWORD';
       }
@@ -547,32 +470,30 @@
           const loadingMsg = "🔄 " + lang[currentLanguage].waiting.replace('ID', 'Password');
           postAgentMessage(loadingMsg);
           
-          await new Promise(resolve => setTimeout(resolve, 5000)); 
+          await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second wait
 
+          // **IMPORTANT:** In production, this password MUST be HASHED before saving.
           const { error } = await sb
               .from('user-details')
-              .update({ password: newPassword }) 
-              .eq('wtq_id', wtqId); 
+              .update({ password: newPassword })
+              .eq('wtq_id', wtqId); // Use WTQ ID for targetting
 
           if (error) {
               postAgentMessage("❌ Password update failed: " + error.message);
-              errorCounter++;
-              showSupportOptionIfRequired();
-              postAgentMessage("Please try again or type 'restart'.");
               chatState = 'AWAITING_PASSWORD'; 
               return;
           }
-          
-          errorCounter = 0; 
+
           postAgentMessage(lang[currentLanguage].password_updated(newPassword));
           chatState = 'COMPLETE';
           
+          // Redirect after 7 seconds
           setTimeout(() => {
               window.location.href = 'index.html';
           }, 7000);
       }
       
-      // --- FILE UPLOAD AND VERIFICATION (Unchanged) ---
+      // --- FILE UPLOAD AND VERIFICATION ---
       
       function injectFileUploadUI() {
           const chatBox = document.getElementById('chat-messages');
@@ -603,8 +524,9 @@
           uploadBtn.disabled = true;
           uploadBtn.textContent = 'Uploading...';
           
+          // Upload file to the designated bucket: user-verify-number
           const fileExtension = file.name.split('.').pop();
-          const filePath = `${wtqId}/verification.${fileExtension}`; 
+          const filePath = `${wtqId}/verification.${fileExtension}`; // Unique path based on WTQ ID
           
           const { error: uploadError } = await sb.storage
               .from('user-verify-number')
@@ -615,34 +537,58 @@
 
           if (uploadError) {
               alert(`❌ Upload Failed: ${uploadError.message}`);
-              errorCounter++;
-              showSupportOptionIfRequired();
               return;
           }
 
+          // Remove upload UI and show success message
           document.getElementById('file-upload-box').remove();
           postUserMessage(`File uploaded: ${file.name}`);
           postAgentMessage(lang[currentLanguage].docs_received);
           
-          await new Promise(resolve => setTimeout(resolve, 5000)); 
+          await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second wait for 'check'
           
-          const { data: rpcData, error: rpcError } = await sb.rpc('transfer_verified_user', {
-              input_wtq_id: wtqId 
-          });
+          // Final Verification Step: Update user-verify and move data to user-details
           
-          if (rpcError || rpcData.startsWith('Error')) {
-              postAgentMessage(`❌ Critical Error: Verification failed at final step. Please contact support immediately. RPC Error: ${rpcError ? rpcError.message : rpcData}`);
-              errorCounter++;
-              showSupportOptionIfRequired();
+          // 1. Update user-verify status
+          const { error: updateError, data: userData } = await sb
+              .from('user-verify')
+              .update({ is_verified: true })
+              .eq('wtq_id', wtqId)
+              .select('*')
+              .single();
+
+          if (updateError || !userData) {
+              postAgentMessage("❌ Verification failed at final step. Please contact support immediately.");
               chatState = 'COMPLETE'; 
               return;
           }
           
-          errorCounter = 0; 
+          // 2. Insert verified data into user-details
+          const { error: insertError } = await sb
+              .from('user-details')
+              .insert({
+                  phone_number: userData.phone_number,
+                  password: userData.password_hash,
+                  wtq_id: userData.wtq_id,
+                  full_name: userData.full_name,
+                  username: userData.username,
+                  country: userData.country,
+                  gender: userData.gender,
+                  dob: userData.dob
+              });
+              
+          if (insertError) {
+              // Handle case where insertion fails but verify table is updated (critical error)
+               postAgentMessage(`⚠️ Critical Error: Verification status updated, but final details insert failed (${insertError.message}). Please contact support with your WTQ ID.`);
+               chatState = 'COMPLETE'; 
+               return;
+          }
+
 
           postAgentMessage(lang[currentLanguage].verification_complete);
           chatState = 'COMPLETE';
           
+          // Redirect after 7 seconds
           setTimeout(() => {
               window.location.href = 'index.html';
           }, 7000);
@@ -655,37 +601,41 @@
           const confirmExit = confirm(msg);
           
           if (confirmExit) {
-              window.location.href = 'index.html'; 
+              window.location.href = 'index.html'; // Confirm
           }
+          // Cancel: Do nothing
       }
       
-      function initChatFlow() {
-          // 1. Initial Greeting with options
-          postAgentMessage(lang[currentLanguage].greeting, lang[currentLanguage].initial_options, INITIAL_OPTIONS_MESSAGE_ID);
-          chatState = 'AWAITING_ACTION';
-
-          // 2. Event listener for Enter key
+      function init() {
+          // Read URL parameters
+          const params = new URLSearchParams(window.location.search);
+          action = params.get('action');
+          wtqId = params.get('id');
+          
+          // Set initial chat message
+          postAgentMessage(lang[currentLanguage].greeting(userName));
+          
+          // Auto-select action based on URL
+          if (action === 'verify' && wtqId) {
+              postUserMessage(`Verify Account (WTQ ID: ${wtqId})`);
+              handleUserInput(wtqId); // Start verification immediately
+          } else if (action === 'forgot' && wtqId) {
+              postUserMessage(`Forgot Password (WTQ ID: ${wtqId})`);
+              handleUserInput(wtqId); // Start forgot flow immediately
+          } else {
+              // If no action is set, await name input
+              chatState = 'INITIAL';
+          }
+          
+          // Event listener for Enter key in input field
           document.getElementById('chat-input-text').addEventListener('keypress', function(e) {
               if (e.key === 'Enter') {
                   handleUserInput();
               }
           });
-          
-          // 3. Check URL parameters for immediate action (and hide options if action is taken)
-          const params = new URLSearchParams(window.location.search);
-          const urlAction = params.get('action');
-          const urlWtqId = params.get('id');
-
-          if (urlAction) {
-              wtqId = urlWtqId;
-              // Delay to ensure buttons are loaded before trying to select an action
-              setTimeout(() => {
-                  handleOptionSelection(urlAction); 
-              }, 100);
-          }
       }
 
-      window.onload = initChatFlow;
+      window.onload = init;
     </script>
   </body>
 </html>
