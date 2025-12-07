@@ -593,7 +593,9 @@
                     .from(USER_DETAILS_TABLE)
                     .insert([{
                         phone_number: userDetails.phone_number,
-                        password: userDetails.password, // Should be hashed!
+                        // 🚨 FIX: Adding the password mapping here 🚨
+                        password: userDetails.password_hash, 
+                        // ------------------------------------------
                         wtq_id: userDetails.wtq_id,
                         full_name: userDetails.full_name,
                         username: userDetails.username,
