@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AvicnKnov Agent - Verification & Support</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+      /* --- Base and Layout --- */
+      * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+      body {
+        height: 100vh;
+        background: url('https://imgpx.com/mbRZiaEdwWxL.png') no-repeat center center fixed;
+        background-size: cover;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+      }
+      .chat-container {
+        width: 100%;
+        max-width: 600px;
+        height: 90%;
+        max-height: 800px;
+        background: rgba(0, 0, 0, 0.75);
+        border-radius: 15px;
+        box-shadow: 0 0 25px #00ffe1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      /* --- Header (Back Button) --- */
+      .chat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        background: rgba(0, 255, 225, 0.1);
+        border-bottom: 1px solid #00ffe1;
+      }
+      .back-btn {
+        background: none;
+        border: none;
+        color: #00ffe1;
+        font-size: 1rem;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      .language-selector {
+        padding: 5px 10px;
+        border-radius: 5px;
+        background: #00ffe1;
+        color: black;
+        border: none;
+        font-weight: bold;
+      }
+
+      /* --- Chat Area --- */
+      #chat-messages {
+        flex-grow: 1;
+        padding: 20px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+      .message {
+        display: flex;
+        max-width: 85%;
+      }
+      .agent-message {
+        justify-content: flex-start;
+      }
+      .user-message {
+        justify-content: flex-end;
+        align-self: flex-end;
+      }
+      .message-box {
+        padding: 12px;
+        border-radius: 15px;
+        font-size: 0.95rem;
+        line-height: 1.4;
+      }
+      .agent-message .message-box {
+        background: #00ffe1;
+        color: black;
+        border-bottom-left-radius: 5px;
+      }
+      .user-message .message-box {
+        background: #333;
+        color: white;
+        border-bottom-right-radius: 5px;
+      }
+      .message-header {
+        font-weight: bold;
+        margin-bottom: 5px;
+        font-size: 0.8rem;
+        color: #00ffe1;
+      }
+      .user-message .message-header {
+        color: white;
+      }
+      
+      /* --- Dynamic Options (FIXED STYLING) --- */
+      .chat-options {
+        display: flex;
+        flex-direction: column; /* Options now stack vertically */
+        gap: 10px;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid rgba(0, 0, 0, 0.1); 
+      }
+      .chat-options button {
+        background: rgba(0, 255, 225, 0.2);
+        color: #00ffe1;
+        border: 1px solid #00ffe1;
+        padding: 10px 15px; 
+        border-radius: 8px; 
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: background 0.3s;
+        text-align: left;
+        width: 100%; /* Ensure full width visibility */
+      }
+      .chat-options button:hover {
+        background: #00ffe1;
+        color: black;
+      }
+      /* Support Button Styling */
+      .support-link-button {
+          margin-top: 10px;
+          background: #ff5722 !important; 
+          color: white !important;
+          border: none !important;
+          font-weight: bold;
+      }
+      
+      .hidden-options {
+          display: none !important;
+      }
+
+      /* --- Input Area --- */
+      .chat-input {
+        display: flex;
+        padding: 10px;
+        gap: 10px;
+        background: rgba(0, 0, 0, 0.85);
+        border-top: 1px solid #00ffe1;
+      }
+      #chat-input-text {
+        flex-grow: 1;
+        padding: 12px;
+        border-radius: 20px;
+        border: 1px solid #00ffe1;
+        background: #1a1a1a;
+        color: white;
+        outline: none;
+      }
+      #chat-send-btn {
+        width: 50px;
+        padding: 10px;
+        border-radius: 50%;
+        background: #00ffe1;
+        color: black;
+        border: none;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      /* --- File Upload Specific Styles --- */
+      .file-upload-box {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 15px;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .file-upload-box input[type="file"] {
+          border: 1px solid #00ffe1;
+          padding: 10px;
+          border-radius: 5px;
+          background: #333;
+      }
+      .file-upload-box input[type="file"]::file-selector-button {
+          background: #00ffe1;
+          color: black;
+          border: none;
+          padding: 5px 10px;
+          margin-right: 10px;
+          border-radius: 3px;
+          cursor: pointer;
+      }
+      #file-upload-btn {
+        background: #00ffe1;
+        color: black;
+        font-weight: bold;
+        padding: 10px;
+        border-radius: 5px;
+        border: none;
+        cursor: pointer;
+      }
+      .hidden { display: none !important; }
+      .loading-animation {
+          color: #00ffe1;
+          animation: pulse 1s infinite alternate;
+      }
+      @keyframes pulse {
+          0% { opacity: 0.5; }
+          100% { opacity: 1; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chat-container">
+      <div class="chat-header">
+        <button class="back-btn" onclick="showExitConfirmation()">← Back to Exchange</button>
+        <select id="language-select" class="language-selector" onchange="changeLanguage(this.value)">
+          <option value="Hindi">हिन्दी</option>
+          <option value="English">English</option>
+        </select>
+      </div>
+
+      <div id="chat-messages">
+        </div>
+
+      <div class="chat-input">
+        <input type="text" id="chat-input-text" placeholder="Type your message or select an option...">
+        <button id="chat-send-btn" onclick="handleUserInput()">Send</button>
+      </div>
+    </div>
+    
+    <script>
+      // Supabase Credentials (Ensure these are correct)
+      const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnxIXEY5aOh3gl6XqPdEveodFZM';
+      const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      // --- Global State ---
+      let currentLanguage = 'Hindi'; 
+      let chatState = 'AWAITING_ACTION'; 
+      let userName = 'User'; 
+      let wtqId = null;
+      let action = null; 
+      let errorCounter = 0; 
+      // The ID of the message container that holds the initial options.
+      const INITIAL_OPTIONS_MESSAGE_ID = 'initial-greeting-message'; 
+
+      // --- Localization Data (Hindi and English) ---
+      const lang = {
+        Hindi: {
+          agent_name: "AvicnKnov Agent",
+          greeting: `नमस्ते! मैं **AvicnKnov Agent** हूँ, मैं आपकी क्या मदद कर सकता हूँ? कृपया नीचे दिए गए विकल्पों में से किसी एक को चुनें।`,
+          initial_options: ["Verify Account Number", "Forgot Password"],
+          q_id: "कृपया अपनी 12-अक्षर की WTQ ID सबमिट करें।",
+          waiting: "कृपया 5 सेकंड का इंतज़ार करें, मैं आपकी ID की जाँच कर रहा हूँ...",
+          id_found: "आपकी ID सही है! मैंने इसे ढूंढ लिया है।",
+          id_not_found: "❌ यह ID ग़लत है या इस ID से कोई अपुष्ट (unverified) अकाउंट नहीं बना है। कृपया सही ID सबमिट करें।",
+          q_docs: "भविष्य की रिकवरी के लिए, कृपया अपना 7 सेकंड का कोई लाइव वीडियो या कोई ID कार्ड/डॉक्यूमेंट (जैसे आधार, ड्राइविंग लाइसेंस) अपलोड करें।",
+          q_forgot_check: "कृपया अपनी WTQ ID सबमिट करें। मैं चेक कर रहा हूँ कि क्या आपका अकाउंट सत्यापित है।",
+          forgot_verified: "मैंने आपकी ID को चेक कर लिया है। अब कृपया 8 से 16 अंकों के बीच एक नया मज़बूत (strong) पासवर्ड टाइप करके भेजें।",
+          forgot_not_found: "❌ इस ID से कोई सत्यापित (Verified) अकाउंट नहीं मिला।",
+          password_updated: (pass) => `✅ आपका पासवर्ड सफलतापूर्वक बदल दिया गया है। आपका नया पासवर्ड है: ${pass}. आप अब लॉग इन कर सकते हैं।`,
+          docs_received: "✅ डॉक्यूमेंट मिल गया है। कृपया 5 सेकंड प्रतीक्षा करें, मैं सत्यापन प्रक्रिया पूरी कर रहा हूँ...",
+          verification_complete: "✅ आपका अकाउंट सत्यापित हो गया है! आपको 72 घंटे के लिए हमारी टीम की निगरानी (surveillance) में रखा जाएगा। यदि कोई अनियमितता पाई जाती है, तो अकाउंट स्थायी रूप से बंद किया जा सकता है।",
+          wrong_option: "कृपया विकल्पों में से सही चुनें, या 'Verify Account'/'Forgot Password' टाइप करें।",
+          support_message: "⚠️ आपको बार-बार समस्या आ रही है या आपने समस्या की रिपोर्ट की है। कृपया नीचे दिए गए बटन पर क्लिक करके **Support सेक्शन** में जाएँ और अपनी समस्या दर्ज करें।",
+          support_button: "Support सेक्शन में जाएँ",
+          try_again: "✅ ओके। मैं सिस्टम को **रीस्टार्ट** कर रहा हूँ। कृपया फिर से **विकल्प** चुनें या अपनी **WTQ ID** सबमिट करें।"
+        },
+        English: {
+          agent_name: "AvicnKnov Agent",
+          greeting: `Hello! I am the **AvicnKnov Agent**. How may I help you? Please select one of the options below.`,
+          initial_options: ["Verify Account Number", "Forgot Password"],
+          q_id: "Please submit your 12-character WTQ ID.",
+          waiting: "Please wait 5 seconds, I am checking your ID...",
+          id_found: "Your ID is correct! I have found it.",
+          id_not_found: "❌ This ID is incorrect or no unverified account exists with this ID. Please submit the correct ID.",
+          q_docs: "For future recovery, please upload a 7-second live video or any ID card/document (e.g., Aadhar, Driving License).",
+          q_forgot_check: "Please submit your WTQ ID. I am checking if your account is verified.",
+          forgot_verified: "I have checked your ID. Now please type and send a new strong password between 8 and 16 digits.",
+          forgot_not_found: "❌ No verified account found with this ID.",
+          password_updated: (pass) => `✅ Your password has been successfully changed. Your new password is: ${pass}. You can now log in.`,
+          docs_received: "✅ Document received. Please wait 5 seconds while I complete the verification process...",
+          verification_complete: "✅ Your account has been verified! You will be under our team's surveillance for 72 hours. If any irregularity is found, the account may be permanently banned.",
+          wrong_option: "Please select the correct option, or type 'Verify Account'/'Forgot Password'.",
+          support_message: "⚠️ You are facing repeated issues or have reported a problem. Please click the button below to go to the **Support Section** and submit your report.",
+          support_button: "Go to Support Section",
+          try_again: "✅ OK. I am **restarting** the system. Please choose an **option** again or submit your **WTQ ID**."
+        }
+      };
+
+      // --- CORE FUNCTIONS ---
+
+      function changeLanguage(langCode) {
+        currentLanguage = langCode;
+        document.getElementById('chat-messages').innerHTML = '';
+        initChatFlow(); // Restart chat flow in new language
+      }
+
+      function addMessage(sender, text, options = [], messageId = null) {
+        const chatBox = document.getElementById('chat-messages');
+        const msgDiv = document.createElement('div');
+        msgDiv.classList.add('message', sender === 'Agent' ? 'agent-message' : 'user-message');
+        if (messageId) {
+            msgDiv.id = messageId;
+        }
+        
+        const contentBox = document.createElement('div');
+        contentBox.classList.add('message-box');
+
+        const header = document.createElement('div');
+        header.classList.add('message-header');
+        header.textContent = sender === 'Agent' ? lang[currentLanguage].agent_name : userName; 
+        
+        const textContent = document.createElement('p');
+        textContent.innerHTML = text; 
+
+        contentBox.appendChild(header);
+        contentBox.appendChild(textContent);
+
+        if (options.length > 0) {
+            const optionDiv = document.createElement('div');
+            optionDiv.classList.add('chat-options');
+            optionDiv.id = 'initial-options-container'; 
+            
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.textContent = opt;
+                btn.setAttribute('data-action', opt); 
+                // Use a single click handler to process input
+                btn.onclick = () => handleOptionSelection(opt); 
+                
+                if (opt === lang[currentLanguage].support_button) {
+                    btn.classList.add('support-link-button');
+                    btn.onclick = () => window.open('support.html', '_blank');
+                }
+                
+                optionDiv.appendChild(btn);
+            });
+            contentBox.appendChild(optionDiv);
+        }
+        
+        msgDiv.appendChild(contentBox);
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight; 
+        return msgDiv; 
+      }
+      
+      // Function to hide the initial options container
+      function hideInitialOptions() {
+          const container = document.getElementById('initial-options-container');
+          if (container) {
+              container.classList.add('hidden-options');
+          }
+      }
+
+      // New function to handle button clicks/text selection
+      function handleOptionSelection(optionText) {
+          // 1. Hide the options immediately
+          hideInitialOptions();
+          
+          // 2. Post the user's selected action as a message
+          postUserMessage(optionText);
+
+          // 3. Process the input
+          handleUserInput(optionText);
+      }
+
+
+      function postAgentMessage(text, options = [], messageId = null) {
+        addMessage('Agent', text, options, messageId);
+      }
+
+      function postUserMessage(text) {
+        addMessage('User', text);
+      }
+      
+      function showSupportOptionIfRequired(force = false) {
+          if (force || errorCounter >= 3) {
+              postAgentMessage(lang[currentLanguage].support_message, [lang[currentLanguage].support_button]);
+          }
+      }
+
+      // --- STATE HANDLER ---
+
+      async function handleUserInput(input = null) {
+        const chatInput = document.getElementById('chat-input-text');
+        const text = input || chatInput.value.trim();
+        
+        if (!text && !input) return;
+        
+        const lowerText = text.toLowerCase();
+        
+        // --- Global Commands ---
+        if (lowerText.includes('please try again') || lowerText === 'restart') {
+            if(input === null) postUserMessage(text);
+            
+            document.getElementById('chat-messages').innerHTML = ''; 
+            
+            postAgentMessage(lang[currentLanguage].try_again, lang[currentLanguage].initial_options);
+            chatState = 'AWAITING_ACTION';
+            errorCounter = 0; 
+            chatInput.value = '';
+            chatInput.placeholder = 'Select an option or type...';
+            return;
+        }
+        
+        if (lowerText.includes('problem') || lowerText.includes('issue') || lowerText.includes('support') || lowerText.includes('bhul gaya')) {
+            if(input === null) postUserMessage(text);
+            showSupportOptionIfRequired(true); 
+            chatInput.value = '';
+            return;
+        }
+
+        // Post user message immediately only if it was NOT an option button click
+        if (input === null) {
+            postUserMessage(text);
+            chatInput.value = ''; 
+        }
+        
+        // --- State Logic ---
+
+        if (chatState === 'AWAITING_ACTION') {
+            let selectedAction = null;
+            
+            // Check if the user typed or clicked one of the main options
+            if (lowerText.includes('verify account') || lowerText.includes('verification') || lowerText === 'verify') {
+                selectedAction = 'verify';
+            } else if (lowerText.includes('forgot password') || lowerText.includes('forgot')) {
+                selectedAction = 'forgot';
+            }
+
+            if (selectedAction) {
+                // IMPORTANT: If the user typed the action, we manually post the message and hide buttons
+                if (input === null) {
+                    // postUserMessage(text); // Already posted above if input === null
+                    hideInitialOptions(); // Hide the options container
+                }
+                
+                action = selectedAction;
+                chatState = 'AWAITING_ID';
+                
+                if (action === 'verify') {
+                    postAgentMessage(lang[currentLanguage].q_id);
+                } else if (action === 'forgot') {
+                    postAgentMessage(lang[currentLanguage].q_forgot_check);
+                }
+            } else if (input === null) {
+                // Only respond with wrong option if the user manually typed something wrong
+                postAgentMessage(lang[currentLanguage].wrong_option, lang[currentLanguage].initial_options);
+            }
+            return;
+        }
+
+        // --- Subsequent States (AWAITING_ID, AWAITING_PASSWORD, AWAITING_DOCS) remain the same ---
+
+        if (chatState === 'AWAITING_ID') {
+            const idPattern = /^[A-Z0-9]{12}$/;
+            if (!idPattern.test(text)) {
+                postAgentMessage("❌ Invalid WTQ ID format. It must be 12 characters (uppercase letters and numbers). Please try again or type 'restart'.");
+                errorCounter++;
+                showSupportOptionIfRequired();
+                return;
+            }
+
+            wtqId = text.toUpperCase();
+            postAgentMessage(lang[currentLanguage].waiting + `<span id="loading-id" class="loading-animation">...</span>`);
+            
+            await new Promise(resolve => setTimeout(resolve, 5000)); 
+
+            const loader = document.getElementById('loading-id');
+            if (loader) loader.remove();
+
+            if (action === 'verify') {
+                await checkVerificationId(wtqId);
+            } else if (action === 'forgot') {
+                await checkForgotId(wtqId);
+            }
+            return;
+        }
+
+        if (chatState === 'AWAITING_PASSWORD') {
+            if (text.length >= 8 && text.length <= 16) {
+                await updatePassword(text);
+            } else {
+                postAgentMessage("❌ Password must be between 8 and 16 characters. Please try again or type 'restart'.");
+                errorCounter++;
+                showSupportOptionIfRequired();
+            }
+            return;
+        }
+
+        if (chatState === 'AWAITING_DOCS') {
+            postAgentMessage("Please use the file upload box provided above to upload your document, or type 'restart'.");
+            return;
+        }
+      }
+      
+      // --- SUPABASE & VERIFICATION LOGIC (Unchanged) ---
+      
+      async function checkVerificationId(id) {
+          const { data, error } = await sb
+              .from('user-verify')
+              .select('id')
+              .eq('wtq_id', id)
+              .maybeSingle();
+
+          if (error || !data) {
+              postAgentMessage(lang[currentLanguage].id_not_found);
+              postAgentMessage("Please try again with the correct ID or type 'restart'.");
+              errorCounter++;
+              showSupportOptionIfRequired();
+              return;
+          }
+          
+          errorCounter = 0; 
+          postAgentMessage(lang[currentLanguage].id_found);
+          postAgentMessage(lang[currentLanguage].q_docs);
+          
+          injectFileUploadUI();
+          chatState = 'AWAITING_DOCS';
+      }
+      
+      async function checkForgotId(id) {
+          const { data, error } = await sb
+              .from('user-details')
+              .select('id, phone_number')
+              .eq('wtq_id', id)
+              .maybeSingle();
+
+          if (error || !data) {
+              postAgentMessage(lang[currentLanguage].forgot_not_found);
+              postAgentMessage("Please try again or type 'restart'.");
+              errorCounter++;
+              showSupportOptionIfRequired();
+              chatState = 'AWAITING_ACTION'; 
+              return;
+          }
+          
+          errorCounter = 0; 
+          postAgentMessage(lang[currentLanguage].forgot_verified);
+          chatState = 'AWAITING_PASSWORD';
+      }
+      
+      async function updatePassword(newPassword) {
+          const loadingMsg = "🔄 " + lang[currentLanguage].waiting.replace('ID', 'Password');
+          postAgentMessage(loadingMsg);
+          
+          await new Promise(resolve => setTimeout(resolve, 5000)); 
+
+          const { error } = await sb
+              .from('user-details')
+              .update({ password: newPassword }) 
+              .eq('wtq_id', wtqId); 
+
+          if (error) {
+              postAgentMessage("❌ Password update failed: " + error.message);
+              errorCounter++;
+              showSupportOptionIfRequired();
+              postAgentMessage("Please try again or type 'restart'.");
+              chatState = 'AWAITING_PASSWORD'; 
+              return;
+          }
+          
+          errorCounter = 0; 
+          postAgentMessage(lang[currentLanguage].password_updated(newPassword));
+          chatState = 'COMPLETE';
+          
+          setTimeout(() => {
+              window.location.href = 'index.html';
+          }, 7000);
+      }
+      
+      // --- FILE UPLOAD AND VERIFICATION (Unchanged) ---
+      
+      function injectFileUploadUI() {
+          const chatBox = document.getElementById('chat-messages');
+          const fileDiv = document.createElement('div');
+          fileDiv.classList.add('agent-message');
+          fileDiv.innerHTML = `
+              <div class="message-box file-upload-box" id="file-upload-box">
+                  <div class="message-header">${lang[currentLanguage].agent_name}</div>
+                  <p>Choose File (Video/Document/ID):</p>
+                  <input type="file" id="verification-file" accept="image/*,video/mp4,application/pdf" />
+                  <button id="file-upload-btn" onclick="uploadVerificationFile()">Upload & Send</button>
+              </div>
+          `;
+          chatBox.appendChild(fileDiv);
+          chatBox.scrollTop = chatBox.scrollHeight;
+      }
+      
+      async function uploadVerificationFile() {
+          const fileInput = document.getElementById('verification-file');
+          const file = fileInput.files[0];
+          const uploadBtn = document.getElementById('file-upload-btn');
+          
+          if (!file || !wtqId) {
+              alert("Please select a file and ensure your WTQ ID is set.");
+              return;
+          }
+
+          uploadBtn.disabled = true;
+          uploadBtn.textContent = 'Uploading...';
+          
+          const fileExtension = file.name.split('.').pop();
+          const filePath = `${wtqId}/verification.${fileExtension}`; 
+          
+          const { error: uploadError } = await sb.storage
+              .from('user-verify-number')
+              .upload(filePath, file);
+
+          uploadBtn.disabled = false;
+          uploadBtn.textContent = 'Upload & Send';
+
+          if (uploadError) {
+              alert(`❌ Upload Failed: ${uploadError.message}`);
+              errorCounter++;
+              showSupportOptionIfRequired();
+              return;
+          }
+
+          document.getElementById('file-upload-box').remove();
+          postUserMessage(`File uploaded: ${file.name}`);
+          postAgentMessage(lang[currentLanguage].docs_received);
+          
+          await new Promise(resolve => setTimeout(resolve, 5000)); 
+          
+          const { data: rpcData, error: rpcError } = await sb.rpc('transfer_verified_user', {
+              input_wtq_id: wtqId 
+          });
+          
+          if (rpcError || rpcData.startsWith('Error')) {
+              postAgentMessage(`❌ Critical Error: Verification failed at final step. Please contact support immediately. RPC Error: ${rpcError ? rpcError.message : rpcData}`);
+              errorCounter++;
+              showSupportOptionIfRequired();
+              chatState = 'COMPLETE'; 
+              return;
+          }
+          
+          errorCounter = 0; 
+
+          postAgentMessage(lang[currentLanguage].verification_complete);
+          chatState = 'COMPLETE';
+          
+          setTimeout(() => {
+              window.location.href = 'index.html';
+          }, 7000);
+      }
+      
+      // --- NAVIGATION AND INIT ---
+      
+      function showExitConfirmation() {
+          const msg = currentLanguage === 'Hindi' ? "क्या आप सचमुच वापस जाना चाहते हैं?" : "Are you sure you want to go back?";
+          const confirmExit = confirm(msg);
+          
+          if (confirmExit) {
+              window.location.href = 'index.html'; 
+          }
+      }
+      
+      function initChatFlow() {
+          // 1. Initial Greeting with options
+          postAgentMessage(lang[currentLanguage].greeting, lang[currentLanguage].initial_options, INITIAL_OPTIONS_MESSAGE_ID);
+          chatState = 'AWAITING_ACTION';
+
+          // 2. Event listener for Enter key
+          document.getElementById('chat-input-text').addEventListener('keypress', function(e) {
+              if (e.key === 'Enter') {
+                  handleUserInput();
+              }
+          });
+          
+          // 3. Check URL parameters for immediate action (and hide options if action is taken)
+          const params = new URLSearchParams(window.location.search);
+          const urlAction = params.get('action');
+          const urlWtqId = params.get('id');
+
+          if (urlAction) {
+              wtqId = urlWtqId;
+              // Delay to ensure buttons are loaded before trying to select an action
+              setTimeout(() => {
+                  handleOptionSelection(urlAction); 
+              }, 100);
+          }
+      }
+
+      window.onload = initChatFlow;
+    </script>
+  </body>
+</html>
