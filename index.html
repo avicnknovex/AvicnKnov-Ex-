@@ -231,7 +231,7 @@
     <script>
       // Supabase Credentials
       const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
-      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzM2NzN9.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
       const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
       // Global Variables to track active authentication type
@@ -333,7 +333,10 @@
               phoneInput.style.display = 'block';
               btnPhone.classList.add('active');
               btnEmail.classList.remove('active');
+              // ----------------------------------------------------
+              // 🚨 MODIFICATION 2: Change button text for phone forgot password
               resetBtn.textContent = 'Forgot Agent'; 
+              // ----------------------------------------------------
           }
       }
 
@@ -341,84 +344,55 @@
       // --- MAIN AUTH LOGIC ---
 
       async function login() {
+        // This input takes either Email or Phone Number
         const identifier = document.getElementById('login-identifier').value.trim(); 
         const pass = document.getElementById('login-pass').value;
-        const loginButton = document.querySelector('#login button:first-child');
 
         if (!identifier || !pass) return alert("Fill all fields");
-        
-        loginButton.disabled = true;
-        loginButton.textContent = 'Logging in...';
 
         const isEmail = identifier.includes('@'); 
         
         if (isEmail) {
-            // --- GMAIL LOGIN (Old logic, kept as is) ---
+            // --- GMAIL LOGIN ---
             let { error } = await sb.auth.signInWithPassword({ email: identifier, password: pass });
-            
-            loginButton.disabled = false;
-            loginButton.textContent = 'Login';
-
             if (error) alert("❌ Login Failed (Gmail): " + error.message);
             else window.location.href = "main.html";
             
         } else {
-            // --- PHONE NUMBER LOGIN (FIXED LOGIC) ---
-            
-            try {
-                // 1. Call the secure RPC function to verify credentials and get a temporary JWT
-                const { data: rpcData, error: rpcError } = await sb.rpc('custom_phone_sign_in', {
-                    p_phone_number: identifier,
-                    p_password: pass 
-                });
+            // --- PHONE NUMBER LOGIN ---
+            // 1. Check in verified user-details table
+            // ----------------------------------------------------
+            // 🚨 MODIFICATION 1: We assume the password field is now correctly populated in user-details
+            // by the agent.html logic (which you must update separately). 
+            // The select statement here is correct for checking that password field.
+            const { data, error } = await sb
+                .from('user-details')
+                .select('password')
+                .eq('phone_number', identifier)
+                .single();
+            // ----------------------------------------------------
 
-                if (rpcError) {
-                    console.error('RPC Error:', rpcError);
-                    throw new Error('Verification failed. Check credentials or contact support.');
-                }
-                
-                // RPC should return NULL if credentials are wrong, or {token, user_id} if correct.
-                if (rpcData && rpcData.token) {
-                    // 2. Use the temporary JWT to establish a permanent Supabase session on the client
-                    const { error: sessionError } = await sb.auth.setSession({
-                        access_token: rpcData.token,
-                        // Note: Supabase will often refresh this token automatically after setting the session.
-                        // We assume the RPC returns a JWT valid for setSession.
-                    });
-
-                    loginButton.disabled = false;
-                    loginButton.textContent = 'Login';
-
-                    if (sessionError) {
-                        console.error('Session Setting Error:', sessionError);
-                        alert("❌ Login Failed (Session): Could not establish session. Please try again.");
-                    } else {
-                        // SUCCESS! Supabase now has a valid session token.
-                        window.location.href = "main.html";
-                    }
+            if (data) {
+                // **WARNING**: Assuming client-side comparison for demonstration. 
+                // In production, use Supabase RLS/RPC for secure HASH comparison.
+                if (data.password === pass) { 
+                     window.location.href = "main.html";
                 } else {
-                    // If RPC returns null, credentials are bad, or account unverified.
-                    
-                    // Check in user-verify table (unverified)
-                    const { data: unverifiedData } = await sb
-                        .from('user-verify')
-                        .select('wtq_id')
-                        .eq('phone_number', identifier)
-                        .maybeSingle();
-
-                    loginButton.disabled = false;
-                    loginButton.textContent = 'Login';
-                    
-                    if (unverifiedData) {
-                        alert("❌ Account not verified. Please use the 'Create Account' section with the same number or go to the 'Agent' to verify.");
-                    } else {
-                        alert("❌ Login Failed: Account not found or credentials incorrect.");
-                    }
+                    alert("❌ Login Failed: Incorrect phone number or password.");
                 }
-            } catch (e) {
-                loginButton.disabled = false;
-                loginButton.textContent = 'Login';
-                alert("❌ Login Failed (Phone): " + e.message);
+            } else {
+                // Not found in verified table, check in user-verify table (unverified)
+                const { data: unverifiedData } = await sb
+                    .from('user-verify')
+                    .select('wtq_id')
+                    .eq('phone_number', identifier)
+                    .maybeSingle();
+
+                if (unverifiedData) {
+                    alert("❌ Account not verified. Please use the 'Create Account' section with the same number or go to the 'Agent' to verify.");
+                } else {
+                    alert("❌ Login Failed: Account not found or credentials incorrect.");
+                }
             }
         }
       }
@@ -453,9 +427,10 @@
         regButton.textContent = 'Processing...';
 
         if (registrationType === 'email') {
-            // --- GMAIL REGISTRATION (Old logic, kept as is) ---
+            // --- GMAIL REGISTRATION ---
             
             // 1. **FIRST: Insert all form data into the new user-verify-gmail table.**
+            // This ensures all profile fields are saved before verification starts.
             const { error: verifyInsertError } = await sb
                 .from('user-verify-gmail')
                 .insert([
@@ -467,13 +442,14 @@
                         country: country, 
                         gender: gender, 
                         dob: dob,
-                        phone_number: phone 
+                        phone_number: phone // Including phone number here as well
                     }
                 ]);
 
             if (verifyInsertError) {
                 regButton.disabled = false;
                 regButton.textContent = 'Register';
+                // Check if error is due to duplicate username/email
                 if (verifyInsertError.code === '23505') { 
                     return alert("❌ Registration Failed: Username or Email already exists.");
                 }
@@ -485,6 +461,7 @@
                 email,
                 password: pass,
                 options: {
+                    // Supabase metadata is minimal, the actual profile data is in user-verify-gmail
                     emailRedirectTo: 'https://avicnknov.netlify.app/success.html'
                 }
             });
@@ -501,7 +478,7 @@
             alert("✅ Registered! Check your Gmail to verify. Your complete profile data will be saved to user-details once verification is successful.");
             
         } else {
-            // --- PHONE NUMBER REGISTRATION (Old logic, kept as is) ---
+            // --- PHONE NUMBER REGISTRATION ---
             const phoneNumber = phone.trim();
 
             // 1. Check for duplicates in verified and unverified tables
@@ -563,7 +540,7 @@
         const phone = document.getElementById('forgot-phone').value;
         
         if (forgotType === 'email') {
-            // --- GMAIL FORGOT PASSWORD (Old logic, kept as is) ---
+            // --- GMAIL FORGOT PASSWORD ---
             if (!email) return alert("Enter your Gmail");
             let { error } = await sb.auth.resetPasswordForEmail(email, {
                 redirectTo: 'https://avicnknov.netlify.app/reset-password.html'
@@ -571,7 +548,7 @@
             if (error) alert("❌ Forgot Password Failed: " + error.message);
             else alert("🔗 Reset link sent to " + email);
         } else {
-            // --- PHONE NUMBER FORGOT PASSWORD (Old logic, kept as is) ---
+            // --- PHONE NUMBER FORGOT PASSWORD (Redirect to Agent) ---
             if (!phone) return alert("Enter your Phone Number");
             
             // 1. Check if the phone number is verified (exists in user-details)
