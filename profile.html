@@ -1,119 +1,265 @@
-<!DOCTYPE html>  <html lang="en">  
-<head>  
-  <meta charset="UTF-8" />  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>  
-  <title>Profile</title>  
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">  
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>  
-  <style>  
-    .profile-box {  
-      background: #f8f9fa;  
-      border-radius: 12px;  
-      padding: 20px;  
-      margin-bottom: 20px;  
-    }  
-    .copy-btn, .toggle-email {  
-      cursor: pointer;  
-      border: none;  
-      background: none;  
-    }  
-    .logout-btn {  
-      width: 100%;  
-      background-color: #f1f1f1;  
-      border: none;  
-      padding: 10px;  
-      border-radius: 6px;  
-    }  
-    .icon-back {  
-      font-size: 24px;  
-      cursor: pointer;  
-      margin-right: 10px;  
-    }  
-    .profile-img {  
-      width: 80px;  
-      height: 80px;  
-      border-radius: 50%;  
-      object-fit: cover;  
-      border: 2px solid #ccc;  
-    }  
-  </style>  
-</head>  
-<body class="bg-white">    <!-- Back Button -->    <div class="d-flex align-items-center p-3">  
-    <span class="icon-back" onclick="window.location.href='dashboard.html'">🔙</span>  
-    <h4 class="mb-0">Account Center</h4>  
-  </div>    <div class="container mt-3">  
-    <div class="profile-box text-center">  <!-- Profile Image -->  
-  <img id="profile-image" class="profile-img mb-2" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Profile">  
-
-  <!-- Username -->  
-  <h5 class="mt-2"><strong>AvicnKnov Ex User</strong></h5>  
-
-  <!-- UID -->  
-  <div class="d-flex align-items-center justify-content-between mt-3">  
-    <label>ID</label>  
-    <div class="input-group">  
-      <input type="text" id="user-id" class="form-control" value="" readonly>  
-      <button class="btn btn-outline-secondary copy-btn" onclick="copyToClipboard('user-id')">📋</button>  
-    </div>  
-  </div>  
-
-  <!-- Email -->  
-  <div class="d-flex align-items-center justify-content-between mt-3">  
-    <label>Registration Info</label>  
-    <div class="input-group">  
-      <input type="password" id="user-email" class="form-control" readonly>  
-      <button class="btn btn-outline-secondary toggle-email" onclick="toggleEmail()">👁️</button>  
-    </div>  
-  </div>  
-
-</div>  
-
-<!-- Options -->  
-<ul class="list-group">  
-  <li class="list-group-item" onclick="location.href='edit-profile.html'">🧑 Edit Profile</li>  
-  <li class="list-group-item" onclick="location.href='kyc.html'">🪪 KYC Verification</li>  
-  <li class="list-group-item" onclick="location.href='security.html'">🛡️ Security</li>  
-</ul>  
-
-<!-- Logout Button -->  
-<div style="margin-top: 100px;" class="mb-4">  
-  <button class="logout-btn" onclick="handleLogout()">Log Out</button>  
-</div>
-
-  </div>    <!-- Supabase Init & User Info Load -->    <script>  
-    const supabase = window.supabase.createClient(  
-      'https://hwrvqyipozrsxyjdpqag.supabase.co',  
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM'  
-    );  
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Profile</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.com/npm/@supabase/supabase-js@2"></script>
+  <style>
+    .profile-box {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .copy-btn, .toggle-email {
+      cursor: pointer;
+      border: none;
+      background: none;
+    }
+    .logout-btn {
+      width: 100%;
+      background-color: #f1f1f1;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+    }
+    .icon-back {
+      font-size: 24px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    /* Updated Profile Image Container and Style */
+    .profile-img-container {
+      position: relative;
+      display: inline-block;
+      cursor: pointer; /* To indicate it's clickable */
+    }
+    .profile-img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #0d6efd; /* Added a distinct border */
+    }
+    .upload-status {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: #dc3545; /* Error color */
+    }
+  </style>
+</head>
+<body class="bg-white">
   
-    async function loadUserInfo() {  
-      const { data: { user } } = await supabase.auth.getUser();  
-      if (user) {  
-        document.getElementById('user-email').value = user.email;  
-      }  
-    }  
+  <input type="file" id="profile-file-input" style="display: none;" accept="image/*">
+
+  <div class="d-flex align-items-center p-3">
+    <span class="icon-back" onclick="window.location.href='dashboard.html'">🔙</span>
+    <h4 class="mb-0">Account Center</h4>
+  </div>
   
-    loadUserInfo();  
-  
-    function copyToClipboard(id) {  
-      const text = document.getElementById(id).value;  
-      navigator.clipboard.writeText(text).then(() => {  
-        alert("ID copied to clipboard");  
-      });  
-    }  
-  
-    function toggleEmail() {  
-      const emailInput = document.getElementById('user-email');  
-      emailInput.type = emailInput.type === "password" ? "text" : "password";  
-    }  
-  
-    async function handleLogout() {  
-      const { error } = await supabase.auth.signOut();  
-      if (error) {  
-        alert("Logout failed: " + error.message);  
-      } else {  
-        window.location.replace("index.html");  
-      }  
-    }  
-  </script>    <!-- Load UID JS -->    <script type="module" src="uid.js"></script>  </body>  
+  <div class="container mt-3">
+    <div class="profile-box text-center">
+      
+      <div class="profile-img-container" onclick="document.getElementById('profile-file-input').click()">
+        <img id="profile-image" class="profile-img mb-2" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Profile">
+      </div>
+      <p id="upload-status" class="upload-status"></p>
+
+      <h5 class="mt-2" id="user-display-name"><strong>Loading...</strong></h5>
+
+      <div class="d-flex align-items-center justify-content-between mt-3">
+        <label>ID</label>
+        <div class="input-group">
+          <input type="text" id="user-id" class="form-control" value="Loading..." readonly>
+          <button class="btn btn-outline-secondary copy-btn" onclick="copyToClipboard('user-id')">📋</button>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center justify-content-between mt-3">
+        <label id="reg-info-label">Registration Info</label>
+        <div class="input-group">
+          <input type="password" id="user-identifier" class="form-control" readonly>
+          <button class="btn btn-outline-secondary toggle-email" onclick="toggleIdentifier()">👁️</button>
+        </div>
+      </div>
+    </div>
+
+    <ul class="list-group">
+      <li class="list-group-item" onclick="location.href='edit-profile.html'">🧑 Edit Profile</li>
+      <li class="list-group-item" onclick="location.href='kyc.html'">🪪 KYC Verification</li>
+      <li class="list-group-item" onclick="location.href='security.html'">🛡️ Security</li>
+    </ul>
+
+    <div style="margin-top: 100px;" class="mb-4">
+      <button class="logout-btn" onclick="handleLogout()">Log Out</button>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    const PHONE_LOGIN_DOMAIN = '@crypto-temp.com';
+    const PROFILE_BUCKET = 'profile-image'; // New Bucket Name
+    const COOL_DOWN_HOURS = 24;
+
+    let currentUserId = null; // Supabase Auth User ID
+
+    // --- Core Functions ---
+
+    /**
+     * Supabase Auth और user-details से डेटा लोड करता है।
+     */
+    async function loadUserInfo() {
+      const { data: { user }, error: authError } = await sb.auth.getUser();
+
+      if (authError || !user) {
+        window.location.replace("index.html"); // If not logged in, redirect
+        return;
+      }
+      currentUserId = user.id;
+
+      // 1. Determine Account Type and Identifier
+      const rawEmail = user.email;
+      let displayIdentifier;
+      let isPhone = rawEmail.endsWith(PHONE_LOGIN_DOMAIN);
+
+      if (isPhone) {
+        // Phone number account: Remove the dummy domain
+        displayIdentifier = rawEmail.replace(PHONE_LOGIN_DOMAIN, '');
+        document.getElementById('reg-info-label').textContent = 'Phone Number';
+      } else {
+        // Gmail account: Show the full email
+        displayIdentifier = rawEmail;
+        document.getElementById('reg-info-label').textContent = 'Gmail';
+      }
+
+      // Display the identifier and user ID
+      document.getElementById('user-identifier').value = displayIdentifier;
+      document.getElementById('user-id').value = user.id; // UID is user.id from Auth
+
+      // 2. Fetch data from user-details table
+      const { data: profile, error: profileError } = await sb
+          .from('user-details')
+          .select('full_name, username, wtq_id') // wtq_id for future use if needed, username/name for display
+          .or(`email.eq.${rawEmail},phone_number.eq.${displayIdentifier}`)
+          .maybeSingle();
+
+      if (profile) {
+          document.getElementById('user-display-name').innerHTML = `<strong>${profile.full_name || profile.username || 'User'}</strong>`;
+          // If you decide to show WTQ ID instead of user.id:
+          // document.getElementById('user-id').value = profile.wtq_id || user.id;
+      }
+
+      // 3. Load Profile Image
+      loadProfileImage(user.id);
+    }
+
+    /**
+     * Supabase Storage से प्रोफ़ाइल इमेज लोड करता है।
+     */
+    async function loadProfileImage(userId) {
+        const profileImg = document.getElementById('profile-image');
+        
+        const { data } = sb.storage.from(PROFILE_BUCKET).getPublicUrl(`${userId}/avatar.jpg`);
+        
+        // Supabase returns a public URL. We check if the image actually exists by trying to load it.
+        const imageUrl = data.publicUrl;
+        
+        // Temporary image element to check if the file exists
+        const tempImg = new Image();
+        tempImg.onload = function() {
+            // If image loads successfully, set it as the profile source
+            profileImg.src = imageUrl;
+        };
+        tempImg.onerror = function() {
+            // If image fails to load (404), keep the default icon
+            profileImg.src = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+        };
+        tempImg.src = imageUrl;
+    }
+
+
+    /**
+     * प्रोफ़ाइल इमेज को अपलोड और अपडेट करता है, 24 घंटे के कूलडाउन के साथ।
+     */
+    async function handleImageUpload(event) {
+        const file = event.target.files[0];
+        const statusEl = document.getElementById('upload-status');
+        const userId = currentUserId;
+
+        if (!file || !userId) {
+            statusEl.textContent = 'Please select a file or login again.';
+            return;
+        }
+
+        // 1. Check Cool Down Time
+        const lastUploadTime = localStorage.getItem(`lastUpload_${userId}`);
+        const now = Date.now();
+        const twentyFourHours = COOL_DOWN_HOURS * 60 * 60 * 1000;
+
+        if (lastUploadTime && (now - lastUploadTime < twentyFourHours)) {
+            const timeLeft = Math.ceil((twentyFourHours - (now - lastUploadTime)) / (60 * 60 * 1000));
+            statusEl.textContent = `❌ You can change the image only once every ${COOL_DOWN_HOURS} hours. Time left: approx ${timeLeft} hours.`;
+            return;
+        }
+        
+        statusEl.textContent = 'Uploading... Please wait.';
+
+        // 2. Upload to Storage
+        // Filename: userId/avatar.jpg (Always overwrite the existing file)
+        const { error: uploadError } = await sb.storage
+            .from(PROFILE_BUCKET)
+            .upload(`${userId}/avatar.jpg`, file, {
+                cacheControl: '3600',
+                upsert: true // Allows overwriting the previous image
+            });
+
+        if (uploadError) {
+            statusEl.textContent = `❌ Upload failed: ${uploadError.message}`;
+            return;
+        }
+        
+        // 3. Update UI and Cool Down Time
+        localStorage.setItem(`lastUpload_${userId}`, now);
+        statusEl.textContent = '✅ Profile image updated successfully! (Next change in 24 hours)';
+        
+        // Reload the image to update the display
+        loadProfileImage(userId);
+    }
+
+    // --- Utility Functions ---
+    
+    function copyToClipboard(id) {
+      const text = document.getElementById(id).value;
+      navigator.clipboard.writeText(text).then(() => {
+        alert("ID copied to clipboard");
+      });
+    }
+
+    function toggleIdentifier() {
+      const input = document.getElementById('user-identifier');
+      input.type = input.type === "password" ? "text" : "password";
+    }
+
+    async function handleLogout() {
+      const { error } = await sb.auth.signOut();
+      if (error) {
+        alert("Logout failed: " + error.message);
+      } else {
+        window.location.replace("index.html");
+      }
+    }
+
+    // --- Initialization ---
+    document.addEventListener('DOMContentLoaded', () => {
+        loadUserInfo();
+        // Add listener for file input change
+        document.getElementById('profile-file-input').addEventListener('change', handleImageUpload);
+    });
+  </script>
+</body>
 </html>
