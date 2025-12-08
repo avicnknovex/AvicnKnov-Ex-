@@ -9,89 +9,185 @@
   <style>
     .container { max-width: 500px; margin-top: 40px; }
     .icon-back { font-size: 24px; cursor: pointer; margin-bottom: 20px; display: inline-block; }
+    /* Locked Field Styling */
+    .form-control:disabled, .form-select:disabled {
+        background-color: #e9ecef; /* Light gray background */
+        opacity: 1; /* Ensure it's not transparent */
+        cursor: not-allowed; /* Indicate it's locked */
+    }
+    .locked-indicator {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-left: 10px;
+    }
+    .account-type-display {
+        font-weight: bold;
+        color: #0d6efd; /* Blue for emphasis */
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- Back Button -->
     <span class="icon-back" onclick="window.location.href='profile.html'">🔙</span>
     <h3>Edit Profile</h3>
 
     <form id="edit-form">
       <div class="mb-3">
-        <label class="form-label">Name</label>
+        <label class="form-label">Full Name</label>
         <input type="text" id="name" class="form-control" required>
       </div>
       <div class="mb-3">
         <label class="form-label">Date of Birth</label>
-        <input type="date" id="dob" class="form-control" required>
+        <input type="date" id="dob" class="form-control" required disabled>
+        <span class="locked-indicator"> (Cannot be changed)</span>
       </div>
       <div class="mb-3">
         <label class="form-label">Username</label>
         <input type="text" id="username" class="form-control" required>
       </div>
+      
       <div class="mb-3">
-        <label class="form-label">Gmail</label>
-        <input type="email" id="email" class="form-control" disabled>
+        <label class="form-label" id="identifier-label">Account Identifier</label>
+        <input type="text" id="identifier" class="form-control" disabled>
+        <span class="account-type-display" id="account-type-text"></span>
+        <span class="locked-indicator"> (Cannot be changed)</span>
       </div>
+
+      <div class="mb-3">
+        <label class="form-label">Country</label>
+        <input type="text" id="country" class="form-control" disabled>
+        <span class="locked-indicator"> (Cannot be changed)</span>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Gender</label>
+        <select id="gender" class="form-select" required> 
+            <option value="" disabled selected>Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+        </select>
+      </div>
+
       <button type="submit" class="btn btn-primary w-100">Save Changes</button>
     </form>
   </div>
 
   <script>
-    const supabase = window.supabase.createClient(
-      'https://hwrvqyipozrsxyjdpqag.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM'
-    );
+    // Supabase Configuration
+    const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Constant used in Edge Function for phone number login
+    const PHONE_LOGIN_DOMAIN = '@crypto-temp.com';
 
+    /**
+     * मौजूदा यूज़र का डेटा user-details टेबल से लोड करता है और फ़ॉर्म भरता है।
+     */
     async function loadProfile() {
-      const { data: authData, error: authError } = await supabase.auth.getUser();
-      if (authError || !authData?.user) return;
+      // 1. Check Auth Status (Must be logged in)
+      const { data: authData, error: authError } = await sb.auth.getUser();
+      if (authError || !authData?.user) {
+        alert('You must be logged in to view this page.');
+        window.location.href = 'index.html'; // Redirect to login
+        return;
+      }
 
       const user = authData.user;
-      document.getElementById('email').value = user.email;
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('name, dob, username')
-        .eq('user_id', user.id)
-        .single();
-
-      if (data) {
-        document.getElementById('name').value = data.name || '';
-        document.getElementById('dob').value = data.dob || '';
-        document.getElementById('username').value = data.username || generateUsername(user.email);
+      
+      // 2. Determine Account Type (Email or Phone)
+      let identifierValue = user.email; // Supabase Auth's primary identifier is always in the email field
+      let accountType = 'Gmail';
+      
+      if (identifierValue && identifierValue.endsWith(PHONE_LOGIN_DOMAIN)) {
+          // It's a Phone Number account disguised as an email
+          accountType = 'Phone Number';
+          // Clean the number from the dummy email
+          identifierValue = identifierValue.replace(PHONE_LOGIN_DOMAIN, '').replace(/\+/g, ''); 
+          document.getElementById('identifier-label').textContent = 'Phone Number';
       } else {
-        document.getElementById('username').value = generateUsername(user.email);
+          document.getElementById('identifier-label').textContent = 'Gmail';
+      }
+
+      document.getElementById('identifier').value = identifierValue;
+      document.getElementById('account-type-text').textContent = `(${accountType} Account)`;
+
+
+      // 3. Fetch full user details from the custom table
+      // We search by the actual phone_number or the user's email if it's a standard email login.
+      // We will use the primary email from Supabase Auth for finding the row.
+      const { data: profileData, error: profileError } = await sb
+        .from('user-details')
+        .select('full_name, dob, username, country, gender, email, phone_number')
+        .or(`email.eq.${user.email},phone_number.eq.${user.email.replace(PHONE_LOGIN_DOMAIN, '')}`)
+        .maybeSingle(); // Use maybeSingle to handle cases where user might not have a profile yet (though they should)
+
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError.message);
+        alert('Failed to load profile data.');
+        return;
+      }
+
+      if (profileData) {
+        // 4. Populate Form Fields
+        document.getElementById('name').value = profileData.full_name || '';
+        document.getElementById('dob').value = profileData.dob || '';
+        document.getElementById('username').value = profileData.username || '';
+        document.getElementById('country').value = profileData.country || '';
+        document.getElementById('gender').value = profileData.gender || '';
+        
+        // Ensure editable fields are active and locked fields are disabled
+        document.getElementById('dob').disabled = true;
+        document.getElementById('identifier').disabled = true;
+        document.getElementById('country').disabled = true;
+        
+      } else {
+        alert('Profile not found in user-details table. Please contact support.');
       }
     }
 
-    function generateUsername(email) {
-      return email.split('@')[0] + Math.floor(Math.random() * 10000);
-    }
-
+    /**
+     * फ़ॉर्म सबमिट हैंडलर: केवल एडिटेबल फ़ील्ड्स को user-details टेबल में अपडेट करता है।
+     */
     document.getElementById('edit-form').addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const { data: authData } = await supabase.auth.getUser();
+      const { data: authData } = await sb.auth.getUser();
+      if (!authData?.user) return;
       const user = authData.user;
-      const name = document.getElementById('name').value.trim();
-      const dob = document.getElementById('dob').value;
-      const username = document.getElementById('username').value.trim();
-
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          user_id: user.id,
-          name,
-          dob,
-          username
-        }, { onConflict: ['user_id'] });
+      
+      const newFullName = document.getElementById('name').value.trim();
+      const newUsername = document.getElementById('username').value.trim();
+      const newGender = document.getElementById('gender').value;
+      
+      // Determine the primary key to find the row to update
+      const identifier = user.email; // Use the Auth email (dummy or real)
+      
+      let updateCriteria = {};
+      if (identifier.endsWith(PHONE_LOGIN_DOMAIN)) {
+          // If phone login, use the cleaned number as the criteria
+          const phoneNumber = identifier.replace(PHONE_LOGIN_DOMAIN, '');
+          updateCriteria = { phone_number: phoneNumber };
+      } else {
+          // If Gmail login, use the full email
+          updateCriteria = { email: identifier };
+      }
+      
+      const { error } = await sb
+        .from('user-details')
+        .update({
+          full_name: newFullName,
+          username: newUsername,
+          gender: newGender,
+        })
+        .match(updateCriteria); // Find the correct row using the primary identifier
 
       if (error) {
-        alert('Failed to save: ' + error.message);
+        alert('❌ Failed to save changes: ' + error.message);
       } else {
-        alert('Profile updated!');
+        alert('✅ Profile updated successfully!');
         window.location.href = 'profile.html';
       }
     });
