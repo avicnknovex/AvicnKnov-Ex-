@@ -367,7 +367,7 @@
                     alert("❌ Login Failed (Gmail): " + error.message);
                 }
             } else if (data.session) {
-                window.location.href = "dashboard.html";
+                window.location.href = "main.html";
             }
             
         } else {
@@ -411,7 +411,7 @@
                 }
             } else if (data.session) {
                 // Success: Supabase session is established.
-                window.location.href = "dashboard.html";
+                window.location.href = "main.html";
             }
             // --- END NEW PHONE NUMBER LOGIN LOGIC ---
         }
