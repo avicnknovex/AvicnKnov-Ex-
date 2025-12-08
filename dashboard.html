@@ -25,9 +25,15 @@
       color: #000;
       display: inline-block;
     }
+    /* Updated style for profile image to ensure it's round */
     .top-bar img.profile-icon {
       width: 28px;
       height: 28px;
+      border-radius: 50%; /* Ensure the image is perfectly round */
+      object-fit: cover; /* Ensure the image covers the area without distortion */
+      border: 1px solid #ccc; /* Small border for better visibility */
+      /* Added transition for smooth loading */
+      transition: all 0.3s ease-in-out;
     }
     .top-bar img.small-icon {
       width: 24px;
@@ -253,7 +259,7 @@
 <body>
   <div class="top-bar">
     <a href="profile.html">
-      <img src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="Profile" class="profile-icon">
+      <img id="dashboard-profile-icon" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="Profile" class="profile-icon">
     </a>
     <div class="search-container">
       <input type="text" class="search-input" placeholder="Search in dashboard..." />
@@ -313,7 +319,68 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
   <script>
+    // Supabase configuration - Defined once and early
+    const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+    // Initialize Supabase Client globally
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    const PROFILE_BUCKET = 'profile-image'; // Profile Image Bucket Name
+    const DEFAULT_PROFILE_ICON = "https://cdn-icons-png.flaticon.com/512/847/847969.png"; // Default icon URL
+
+    // --- Profile Image Logic (HIGH PRIORITY) ---
+    async function loadProfileImage() {
+      const profileIcon = document.getElementById('dashboard-profile-icon');
+      
+      // 1. Set default icon and styling immediately
+      profileIcon.src = DEFAULT_PROFILE_ICON;
+      profileIcon.style.borderColor = '#ccc'; 
+
+      // 2. Get the authenticated user
+      const { data: { user } } = await sb.auth.getUser(); 
+      
+      if (!user) {
+        // User not logged in, stop here.
+        return;
+      }
+
+      const userId = user.id;
+
+      try {
+        // 3. Get the public URL, ensuring we connect to the correct bucket
+        const { data } = sb.storage.from(PROFILE_BUCKET).getPublicUrl(`${userId}/avatar.jpg`);
+        const imageUrl = data.publicUrl;
+        
+        // 4. Validate and load the image
+        const tempImg = new Image();
+        
+        tempImg.onload = function() {
+            // Image loaded successfully, apply it
+            profileIcon.src = imageUrl;
+            profileIcon.style.borderColor = '#3b82f6'; 
+        };
+        
+        tempImg.onerror = function() {
+            // Image not found (404) or failed to load, keep the default icon
+             profileIcon.src = DEFAULT_PROFILE_ICON;
+             profileIcon.style.borderColor = '#ccc';
+        };
+        
+        // Add a timestamp to bypass browser caching, ensuring it fetches the latest image
+        tempImg.src = imageUrl + '?' + new Date().getTime(); 
+
+      } catch (error) {
+        console.error('Error loading profile image (Storage error):', error);
+        // Fallback to default icon on critical error
+        profileIcon.src = DEFAULT_PROFILE_ICON;
+      }
+    }
+    // --------------------------------------------------------
+    
+    // --- Other Dashboard Logic (Kept as is) ---
     const searchInput = document.querySelector('.search-input');
     const searchResultsContainer = document.getElementById('search-results');
     const buttons = [
@@ -334,10 +401,6 @@
       }
     });
     
-    // Supabase configuration
-    const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
-    
     let newsItems = [];
     let currentIndex = 0;
     let rotationInterval;
@@ -345,11 +408,7 @@
     
     async function loadNewsContent() {
       try {
-        if (!window.supabase) {
-          throw new Error('Supabase not loaded');
-        }
-        
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = sb; 
         
         const { data, error } = await supabaseClient
           .from('news_box_ak')
@@ -456,6 +515,8 @@
     }
     
     document.addEventListener('DOMContentLoaded', () => {
+      // Load both profile image and news content when DOM is ready
+      loadProfileImage(); 
       setTimeout(loadNewsContent, 1000);
     });
     
@@ -471,7 +532,6 @@
     });
   </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="wallet-balance.js"></script>
 </body>
 </html>
