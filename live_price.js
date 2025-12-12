@@ -1,6 +1,6 @@
 /* ==========================================================
    live_price.js – Live Price Section for Dashboard
-   Top 25 Crypto prices from CoinGecko, updated every 2 seconds.
+   Top 25 Crypto prices from CoinGecko, updated every 1 second.
    ========================================================== */
 
 (function() {
@@ -10,11 +10,14 @@
     const CONTAINER = document.getElementById(CONTENT_ID);
     
     // CoinGecko public API endpoint for top 25 tokens (sorted by market cap)
-    // vs_currency is set to INR (assuming INR is the local currency based on HTML structure)
+    // vs_currency is set to INR (This ensures live, real market data)
     const API_URL = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=inr&order=market_cap_desc&per_page=25&page=1&sparkline=false&price_change_percentage=24h';
     
-    const REFRESH_INTERVAL_MS = 2000; // 2 seconds update interval (as requested)
-    const REDIRECT_URL = 'market.html';
+    // FIX: Changed from 2000ms to 1000ms (1 second) as requested
+    const REFRESH_INTERVAL_MS = 1000; 
+    
+    // FIX: Changed redirection URL to 'markets.html' as requested
+    const REDIRECT_URL = 'markets.html'; 
     
     let isFetching = false;
     let refreshInterval = null;
@@ -30,11 +33,24 @@
     function formatCurrency(value) {
         if (value === null || value === undefined) return 'N/A';
         // Use Intl.NumberFormat for clean, localized currency formatting
+        // Keep higher precision for lower values to show accurate changes
         return new Intl.NumberFormat('en-IN', {
             style: 'currency',
             currency: 'INR',
             minimumFractionDigits: value >= 100 ? 2 : 4,
-            maximumFractionDigits: value >= 100 ? 2 : 6,
+            maximumFractionDigits: value >= 100 ? 2 : 6, 
+        }).format(value);
+    }
+
+    // Function to format market cap (only integer part)
+    function formatMarketCap(value) {
+        if (value === null || value === undefined) return 'N/A';
+        // Use Indian numbering system for crores/lakhs for better readability
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
         }).format(value);
     }
 
@@ -50,33 +66,41 @@
     function renderTable(tokens) {
         let tableHTML = `
             <style>
-                /* Internal Styles for Attractive Look */
+                /* Internal Styles for Attractive and Smart Look */
                 .avx-token-table {
                     width: 100%;
                     border-collapse: collapse;
                     font-size: 14px;
                     text-align: right;
+                    /* Attractive Font */
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
                 }
                 .avx-token-table th, .avx-token-table td {
                     padding: 12px 10px;
-                    border-bottom: 1px solid #f0f0f0;
+                    border-bottom: 1px solid #e0e0e0;
                     white-space: nowrap;
+                    transition: background-color 0.1s ease; /* Smooth hover effect */
                 }
                 .avx-token-table th {
                     text-align: left;
-                    font-weight: 600;
-                    color: #555;
-                    position: sticky; /* Sticky header for internal scroll */
+                    font-weight: 700;
+                    color: #444;
+                    position: sticky; 
                     top: 0; 
-                    background-color: #f7f7f7;
+                    background-color: #f3f4f6; /* Light gray background */
                     z-index: 5;
+                    border-bottom: 2px solid #ddd;
+                }
+                .avx-token-table tr {
+                    cursor: pointer;
+                    transition: background-color 0.15s ease;
                 }
                 .avx-token-table tr:hover {
-                    background-color: #eef2ff;
-                    cursor: pointer;
+                    background-color: #eef2ff; /* Soft blue on hover */
                 }
                 .avx-token-table td:first-child {
                     text-align: center;
+                    font-weight: 600;
                 }
                 .avx-token-table td:nth-child(2) {
                     text-align: left;
@@ -84,26 +108,29 @@
                 .avx-token-name {
                     display: flex;
                     align-items: center;
+                    font-weight: 600;
                 }
                 .avx-token-icon {
                     width: 24px;
                     height: 24px;
                     margin-right: 8px;
                     border-radius: 50%;
+                    box-shadow: 0 0 3px rgba(0,0,0,0.1);
                 }
                 .avx-symbol {
-                    color: #777;
-                    font-size: 12px;
+                    color: #999;
+                    font-size: 11px;
                     margin-left: 5px;
+                    font-weight: normal;
                 }
             </style>
             <table class="avx-token-table">
                 <thead>
                     <tr>
                         <th style="width: 5%; text-align: center;">#</th>
-                        <th style="width: 30%; text-align: left;">Name</th>
-                        <th style="width: 25%;">Price (INR)</th>
-                        <th style="width: 20%;">24h %</th>
+                        <th style="width: 30%; text-align: left;">Token Name</th>
+                        <th style="width: 25%;">Live Price (INR)</th>
+                        <th style="width: 20%;">24h % Change</th>
                         <th style="width: 20%;">Market Cap</th>
                     </tr>
                 </thead>
@@ -126,7 +153,7 @@
                     </td>
                     <td>${formatCurrency(token.current_price)}</td>
                     <td>${formatChange(priceChange)}</td>
-                    <td>${formatCurrency(marketCap)}</td>
+                    <td>${formatMarketCap(marketCap)}</td>
                 </tr>
             `;
         });
@@ -145,11 +172,9 @@
 
     // --- FETCH DATA ---
     async function fetchLivePrices() {
-        // Prevent simultaneous fetching
         if (isFetching) return;
         isFetching = true;
 
-        // Display a temporary loading state for the first load or if fetching takes time
         if (CONTAINER.innerHTML.indexOf('avx-token-table') === -1) {
             CONTAINER.innerHTML = `
                 <div style="text-align: center; padding: 50px; color: #555;">
@@ -162,7 +187,6 @@
             const response = await fetch(API_URL);
             
             if (!response.ok) {
-                // If the API limit is hit or another error occurs, log it but don't crash
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
             
@@ -176,7 +200,6 @@
             
         } catch (error) {
             console.error('Error fetching crypto data:', error);
-            // Display error clearly in the box
             CONTAINER.innerHTML = `
                 <div style="text-align: center; padding: 20px; color: #ef4444; font-weight: bold;">
                     ❌ Error: Live market data could not be loaded. (API/Network Issue)
@@ -197,8 +220,7 @@
             if (targetRow) {
                 const symbol = targetRow.getAttribute('data-symbol');
                 console.log(`Redirecting to market for token: ${symbol}`);
-                // Redirect user to market.html, passing the token symbol in the query parameter
-                // This symbol can be read by market.html to load the correct chart/trading interface
+                // FIX: Use the correct markets.html URL
                 window.location.href = `${REDIRECT_URL}?token=${symbol}`;
             }
         });
@@ -215,15 +237,10 @@
     // 1. Initial fetch
     fetchLivePrices();
 
-    // 2. Set up the 2-second periodic refresh
+    // 2. Set up the 1-second periodic refresh (guaranteeing real-time feel)
     refreshInterval = setInterval(fetchLivePrices, REFRESH_INTERVAL_MS);
     
     // 3. Setup click listeners after the DOM is ready and content is available
     setupClickHandlers();
-
-    // Optional: Clean up interval when the user switches away from the Live Price tab
-    // This requires checking the 'active' class on the buttons, but for simplicity here, 
-    // we rely on the main dashboard script managing visibility.
-    // If the main dashboard unloads the script, the interval will stop.
 
 })();
