@@ -1,6 +1,6 @@
 /* ==========================================================
    live_price.js – Live Price Section for Dashboard
-   Top 30 Crypto prices, updated every 1 second, no source mention or logos.
+   Top 30 Crypto prices, updated every 1 second. NO CLICK ACTION.
    ========================================================== */
 
 (function() {
@@ -13,7 +13,6 @@
     const API_URL = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=inr&order=market_cap_desc&per_page=30&page=1&sparkline=false&price_change_percentage=24h';
     
     const REFRESH_INTERVAL_MS = 1000; 
-    const REDIRECT_URL = 'markets.html'; 
 
     // --- RETRY LOGIC CONFIG ---
     const MAX_RETRIES = 3; 
@@ -28,6 +27,7 @@
     }
 
     // --- SKELETON DATA FOR IMMEDIATE DISPLAY (30 Placeholders) ---
+    // This ensures that the user sees the structure immediately.
     const INITIAL_TOKENS = [
         { name: "Bitcoin", symbol: "btc", current_price: 5200000, price_change_percentage_24h: 0.85, market_cap: 102000000000000 },
         { name: "Ethereum", symbol: "eth", current_price: 350000, price_change_percentage_24h: 1.20, market_cap: 4500000000000 },
@@ -107,6 +107,12 @@
                         width: 100%; border-collapse: collapse; font-size: 14px; text-align: right;
                         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
                     }
+                    /* CURSOR CHANGE: Removed pointer, set to default */
+                    .avx-token-table tr { cursor: default; transition: background-color 0.15s ease; }
+                    
+                    /* Hover effect kept for visual appeal, but cursor is default */
+                    .avx-token-table tr:hover { background-color: #f7f7f7; } 
+
                     .avx-token-table th, .avx-token-table td {
                         padding: 12px 10px; border-bottom: 1px solid #e0e0e0; white-space: nowrap;
                         transition: background-color 0.1s ease;
@@ -115,16 +121,12 @@
                         text-align: left; font-weight: 700; color: #444; position: sticky; top: 0; 
                         background-color: #f3f4f6; z-index: 5; border-bottom: 2px solid #ddd;
                     }
-                    .avx-token-table tr { cursor: pointer; transition: background-color 0.15s ease; }
-                    .avx-token-table tr:hover { background-color: #eef2ff; }
                     .avx-token-table td:first-child { text-align: center; font-weight: 600; }
                     .avx-token-table td:nth-child(2) { text-align: left; }
-                    /* UPDATED CSS: Removed icon styles and centered text properly */
                     .avx-token-name { 
                         display: flex; 
                         align-items: center; 
                         font-weight: 600; 
-                        /* Ensure alignment is clean without an icon */
                     }
                     .avx-symbol { color: #999; font-size: 11px; margin-left: 5px; font-weight: normal; }
                 </style>
@@ -197,7 +199,7 @@
                 await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
                 await fetchLivePrices(retryCount + 1);
             } else {
-                // If all retries fail, no visible error is displayed to the user.
+                // Fail silently after retries as requested.
             }
 
         } finally {
@@ -208,19 +210,11 @@
     }
 
 
-    // --- CLICK HANDLER & REDIRECT ---
-    function setupClickHandlers() {
-        CONTAINER.addEventListener('click', (event) => {
-            let targetRow = event.target.closest('tr[data-symbol]');
-            
-            if (targetRow) {
-                const symbol = targetRow.getAttribute('data-symbol');
-                window.location.href = `${REDIRECT_URL}?token=${symbol}`;
-            }
-        });
-    }
+    // --- CLICK HANDLER & REDIRECT (REMOVED) ---
+    // The setupClickHandlers function is removed entirely.
+    // The only remaining task is to ensure that the user experience is clean.
 
-
+    
     // --- INITIALIZATION AND LIFECYCLE ---
     
     if (refreshInterval) {
@@ -236,7 +230,7 @@
     // 3. Set up the 1-second periodic refresh
     refreshInterval = setInterval(fetchLivePrices, REFRESH_INTERVAL_MS);
     
-    // 4. Setup click listeners
-    setupClickHandlers();
+    // 4. Setup click listeners (NO ACTION NEEDED)
+    // The table rows now use cursor: default in CSS and have no JS click listener.
 
 })();
