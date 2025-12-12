@@ -1,7 +1,7 @@
 /* ==========================================================
    live_price.js – Live Price Section for Dashboard
    Top 25 Crypto prices from CoinGecko, updated every 1 second.
-   (FIXED: Guaranteed immediate display using skeleton data)
+   (FIXED: Implemented Retry Logic for immediate data display)
    ========================================================== */
 
 (function() {
@@ -10,12 +10,14 @@
     const CONTENT_ID = 'live_price_content';
     const CONTAINER = document.getElementById(CONTENT_ID);
     
-    // CoinGecko public API endpoint for top 25 tokens (sorted by market cap)
     const API_URL = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=inr&order=market_cap_desc&per_page=25&page=1&sparkline=false&price_change_percentage=24h';
-    
     const REFRESH_INTERVAL_MS = 1000; 
-    const REDIRECT_URL = 'markets.html'; // Corrected URL: markets.html
-    
+    const REDIRECT_URL = 'markets.html'; 
+
+    // --- NEW: RETRY LOGIC CONFIG ---
+    const MAX_RETRIES = 3; 
+    const RETRY_DELAY_MS = 1500; // 1.5 seconds wait before retrying
+
     let isFetching = false;
     let refreshInterval = null;
 
@@ -24,8 +26,8 @@
         return;
     }
 
-    // --- SKELETON DATA FOR IMMEDIATE DISPLAY (Ensures no initial error) ---
-    // This data provides a structure for the user to see instantly while the real data loads.
+    // --- SKELETON DATA FOR IMMEDIATE DISPLAY ---
+    // This is the fallback/instant view data.
     const INITIAL_TOKENS = [
         {
             name: "Bitcoin", symbol: "btc", image: "https://assets.coingecko.com/coins/images/1/small/bitcoin.png",
@@ -49,7 +51,7 @@
         }
     ];
 
-    // --- HELPER FUNCTIONS ---
+    // --- UTILITY FUNCTIONS (Unchanged) ---
     function formatCurrency(value) {
         if (value === null || value === undefined) return 'N/A';
         return new Intl.NumberFormat('en-IN', {
@@ -77,68 +79,36 @@
         return `<span style="color: ${color}; font-weight: bold;">${sign}${value.toFixed(2)}%</span>`;
     }
 
-    // --- RENDER TABLE ---
+    // --- RENDER TABLE (Unchanged) ---
     function renderTable(tokens) {
-        // Only inject <style> once to keep the DOM clean
-        if (CONTAINER.querySelector('.avx-token-table') === null) {
+        const tableExists = CONTAINER.querySelector('.avx-token-table') !== null;
+        
+        if (!tableExists) {
             CONTAINER.innerHTML = `
                 <style>
                     /* Internal Styles for Attractive and Smart Look */
                     .avx-token-table {
-                        width: 100%;
-                        border-collapse: collapse;
-                        font-size: 14px;
-                        text-align: right;
+                        width: 100%; border-collapse: collapse; font-size: 14px; text-align: right;
                         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
                     }
                     .avx-token-table th, .avx-token-table td {
-                        padding: 12px 10px;
-                        border-bottom: 1px solid #e0e0e0;
-                        white-space: nowrap;
+                        padding: 12px 10px; border-bottom: 1px solid #e0e0e0; white-space: nowrap;
                         transition: background-color 0.1s ease;
                     }
                     .avx-token-table th {
-                        text-align: left;
-                        font-weight: 700;
-                        color: #444;
-                        position: sticky; 
-                        top: 0; 
-                        background-color: #f3f4f6; 
-                        z-index: 5;
-                        border-bottom: 2px solid #ddd;
+                        text-align: left; font-weight: 700; color: #444; position: sticky; top: 0; 
+                        background-color: #f3f4f6; z-index: 5; border-bottom: 2px solid #ddd;
                     }
-                    .avx-token-table tr {
-                        cursor: pointer;
-                        transition: background-color 0.15s ease;
-                    }
-                    .avx-token-table tr:hover {
-                        background-color: #eef2ff;
-                    }
-                    .avx-token-table td:first-child {
-                        text-align: center;
-                        font-weight: 600;
-                    }
-                    .avx-token-table td:nth-child(2) {
-                        text-align: left;
-                    }
-                    .avx-token-name {
-                        display: flex;
-                        align-items: center;
-                        font-weight: 600;
-                    }
+                    .avx-token-table tr { cursor: pointer; transition: background-color 0.15s ease; }
+                    .avx-token-table tr:hover { background-color: #eef2ff; }
+                    .avx-token-table td:first-child { text-align: center; font-weight: 600; }
+                    .avx-token-table td:nth-child(2) { text-align: left; }
+                    .avx-token-name { display: flex; align-items: center; font-weight: 600; }
                     .avx-token-icon {
-                        width: 24px;
-                        height: 24px;
-                        margin-right: 8px;
-                        border-radius: 50%;
+                        width: 24px; height: 24px; margin-right: 8px; border-radius: 50%;
                         box-shadow: 0 0 3px rgba(0,0,0,0.1);
                     }
-                    .avx-symbol {
-                        color: #999;
-                        font-size: 11px;
-                        margin-left: 5px;
-                        font-weight: normal;
-                    }
+                    .avx-symbol { color: #999; font-size: 11px; margin-left: 5px; font-weight: normal; }
                 </style>
                 <table class="avx-token-table">
                     <thead>
@@ -163,7 +133,10 @@
         
         let tbodyHTML = '';
 
-        tokens.forEach((token, index) => {
+        // If we only have skeleton data, render only those 5 rows
+        const tokensToRender = tableExists ? tokens : tokens.slice(0, 5); 
+
+        tokensToRender.forEach((token, index) => {
             const priceChange = token.price_change_percentage_24h || 0;
             const marketCap = token.market_cap || 0;
             
@@ -189,53 +162,60 @@
     }
 
 
-    // --- FETCH DATA ---
-    async function fetchLivePrices() {
-        if (isFetching) return;
+    // --- FETCH DATA WITH RETRY LOGIC (The Fix) ---
+    async function fetchLivePrices(retryCount = 0) {
+        if (isFetching && retryCount === 0) return;
         isFetching = true;
 
         try {
             const response = await fetch(API_URL);
             
             if (!response.ok) {
-                // If API fails, log it but let the skeleton data remain visible
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
             
             const data = await response.json();
             
             if (data && data.length > 0) {
-                 // Successfully fetched live data, render it.
                  renderTable(data);
+                 isFetching = false; // Success
+                 return; 
             } else {
                  throw new Error('No token data received from API.');
             }
             
         } catch (error) {
-            console.error('Error fetching crypto data (using skeleton data as fallback):', error);
-            // If the API call fails, the previously rendered table (skeleton or last successful data) remains. 
-            const updateTimeDiv = document.getElementById('avx-live-price-update-time');
-            if (updateTimeDiv) {
-                 updateTimeDiv.innerHTML = `⚠️ Could not get latest data. Using previous values.`;
+            console.warn(`Attempt ${retryCount + 1} failed.`, error.message);
+
+            if (retryCount < MAX_RETRIES) {
+                // If it fails, wait and try again
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+                await fetchLivePrices(retryCount + 1);
+            } else {
+                // All retries failed. Fallback to a clear message.
+                console.error('All retries failed. Using previous/skeleton data.');
+                const updateTimeDiv = document.getElementById('avx-live-price-update-time');
+                if (updateTimeDiv) {
+                    updateTimeDiv.innerHTML = `⚠️ Error: Could not get latest data. Using previous values.`;
+                }
             }
 
         } finally {
-            isFetching = false;
+            if (retryCount === 0 || retryCount === MAX_RETRIES) {
+                isFetching = false;
+            }
         }
     }
 
 
-    // --- CLICK HANDLER & REDIRECT ---
+    // --- CLICK HANDLER & REDIRECT (Unchanged) ---
     function setupClickHandlers() {
-        // Attach listener to the main container (event delegation)
         CONTAINER.addEventListener('click', (event) => {
-            // Find the closest table row that has the token symbol data
             let targetRow = event.target.closest('tr[data-symbol]');
             
             if (targetRow) {
                 const symbol = targetRow.getAttribute('data-symbol');
                 console.log(`Redirecting to market for token: ${symbol}`);
-                // Redirect user to markets.html, passing the token symbol
                 window.location.href = `${REDIRECT_URL}?token=${symbol}`;
             }
         });
@@ -248,10 +228,10 @@
         clearInterval(refreshInterval);
     }
     
-    // 1. IMMEDIATE RENDER: Show skeleton data instantly to the user (FIX for no loading/error screen)
+    // 1. IMMEDIATE RENDER: Show skeleton data instantly (Fixes the initial blank/error screen)
     renderTable(INITIAL_TOKENS);
     
-    // 2. Initial fetch (runs right after rendering the skeleton)
+    // 2. Initial fetch with retries
     fetchLivePrices();
 
     // 3. Set up the 1-second periodic refresh
