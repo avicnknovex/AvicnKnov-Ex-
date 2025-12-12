@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE ahtml>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -181,13 +181,42 @@
       border: 2px solid #000;
       border-radius: 10px;
       height: 300px; /* Fixed height for consistent look */
-      overflow: hidden;
       padding: 0;
       position: relative;
       background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      
+      /* --- NEWS SCROLLING/SLIDING UPDATES --- */
+      overflow: hidden; /* Only show one item at a time */
+      touch-action: pan-y; /* Allows horizontal swipe without interfering with vertical page scroll */
+      cursor: grab;
     }
 
-    /* New: Styles for the 6 new options */
+    /* NEW: Carousel container for horizontal arrangement and translation */
+    .news-carousel {
+        display: flex; /* Lines up items horizontally */
+        height: 100%;
+        width: 100%;
+        transition: transform 0.5s ease-in-out; /* For smooth automatic scroll */
+        will-change: transform; 
+    }
+
+    /* UPDATED: Individual news item for sliding */
+    .news-item {
+      flex-shrink: 0; /* Important: prevents items from shrinking */
+      width: 100%; /* Each item takes full viewport width */
+      height: 100%;
+      position: relative;
+      /* Keep existing display/center logic */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 1; /* Always visible in the row */
+      transition: none; /* Removed fade transition */
+    }
+    
+    /* REMOVED: .news-item.active { display: flex; opacity: 1; } (No longer needed for visibility) */
+
+    /* New: Styles for the 6 new options (Rest unchanged) */
     .new-options-bar {
       display: flex;
       overflow-x: scroll; /* Allows horizontal scrolling for options */
@@ -221,7 +250,7 @@
       border-color: #3b82f6;
     }
     
-    /* New: Styles for the content area where JS output will go */
+    /* New: Styles for the content area where JS output will go (Rest unchanged) */
     .js-content-area {
       flex-grow: 1;
       border: 1px solid #ddd;
@@ -253,26 +282,7 @@
         min-height: 100%; /* Ensures it fills min-height */
     }
 
-    /* Perfect fitting और attractive display for news box content */
-    .news-item {
-      width: 100%;
-      height: 100%;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      position: absolute;
-      top: 0;
-      left: 0;
-      opacity: 0;
-      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-      cursor: pointer;
-    }
-    
-    .news-item.active {
-      display: flex;
-      opacity: 1;
-    }
-    
+    /* Perfect fitting और attractive display for news box content (Rest largely unchanged) */
     .news-item img {
       width: 100%;
       height: 100%;
@@ -563,6 +573,11 @@
     let rotationInterval;
     let currentVideo = null;
     
+    // --- NEW: Global variables for Swipe Handler ---
+    let startX = 0;
+    let isDragging = false;
+    const DRAG_THRESHOLD = 50; // Pixels to swipe before switching item
+
     async function loadNewsContent() {
       try {
         const supabaseClient = sb; 
@@ -585,6 +600,38 @@
       }
     }
     
+    function updateCarouselPosition(useTransition = true) {
+        const carousel = document.getElementById('news-carousel');
+        if (!carousel) return;
+
+        // Calculate the percentage offset based on the current index
+        const offset = -currentIndex * 100; 
+        
+        // Control transition effect
+        carousel.style.transition = useTransition ? 'transform 0.5s ease-in-out' : 'none';
+        carousel.style.transform = `translateX(${offset}%)`;
+    }
+    
+    function goToNext() {
+      if (newsItems.length <= 1) return;
+      
+      // Update index: go to next, loop back to 0
+      currentIndex = (currentIndex + 1) % newsItems.length;
+      
+      // Slide the carousel
+      updateCarouselPosition(true);
+    }
+    
+    function goToPrev() {
+      if (newsItems.length <= 1) return;
+      
+      // Update index: go to previous, loop back to max
+      currentIndex = (currentIndex - 1 + newsItems.length) % newsItems.length;
+      
+      // Slide the carousel
+      updateCarouselPosition(true);
+    }
+
     function displayNewsContent() {
       const newsBox = document.getElementById('news-box');
       
@@ -593,11 +640,15 @@
         return;
       }
       
-      newsBox.innerHTML = '';
-      
+      // NEW: Create carousel container
+      const carousel = document.createElement('div');
+      carousel.className = 'news-carousel';
+      carousel.id = 'news-carousel'; 
+
       newsItems.forEach((item, index) => {
         const newsItem = document.createElement('div');
-        newsItem.className = `news-item ${index === 0 ? 'active' : ''}`;
+        // Use a generic class for sliding, 'active' is now just for tracking
+        newsItem.className = 'news-item'; 
         
         // Add click functionality if link exists
         if (item.click_url && item.click_url.trim()) {
@@ -621,13 +672,23 @@
             </div>`;
         }
         
-        newsBox.appendChild(newsItem);
+        carousel.appendChild(newsItem);
       });
+      
+      newsBox.innerHTML = ''; // Clear newsBox
+      newsBox.appendChild(carousel); // Append carousel
+      
+      // Set initial position (for index 0) without transition
+      currentIndex = 0; 
+      updateCarouselPosition(false);
       
       // Start rotation if multiple items
       if (newsItems.length > 1) {
         startRotation();
       }
+      
+      // Add manual swipe handlers
+      addSwipeHandlers();
     }
     
     function handleVideoPlay(video) {
@@ -642,37 +703,119 @@
       currentVideo = null;
       // Resume rotation after video ends
       if (newsItems.length > 1) {
-        setTimeout(() => {
-          goToNext();
-          startRotation();
-        }, 500);
+        // Immediately go to next item
+        goToNext(); 
+        // Restart rotation timer after transition
+        setTimeout(startRotation, 500); 
       }
-    }
-    
-    function goToNext() {
-      document.querySelectorAll('.news-item').forEach(item => item.classList.remove('active'));
-      currentIndex = (currentIndex + 1) % newsItems.length;
-      document.querySelectorAll('.news-item')[currentIndex].classList.add('active');
     }
     
     function startRotation() {
       if (rotationInterval) clearInterval(rotationInterval);
       
+      // Update interval to 10000ms (10 seconds)
       rotationInterval = setInterval(() => {
         const activeItem = document.querySelector('.news-item.active');
         const hasVideo = activeItem && activeItem.querySelector('video');
         
         // Don't rotate if video is playing
-        if (hasVideo && currentVideo && !currentVideo.paused) {
+        if (currentVideo && !currentVideo.paused) {
           return;
         }
         
         goToNext();
-      }, 3000); // 3 seconds for images/gifs/text
+      }, 10000); 
+    }
+    
+    // --- MANUAL SWIPE/DRAG HANDLERS (New Logic) ---
+    function addSwipeHandlers() {
+        const newsBox = document.getElementById('news-box');
+        if (!newsBox || newsItems.length <= 1) return;
+
+        // Touch events
+        newsBox.addEventListener('touchstart', handleTouchStart);
+        newsBox.addEventListener('touchmove', handleTouchMove);
+        newsBox.addEventListener('touchend', handleTouchEnd);
+        
+        // Mouse drag for desktop support
+        newsBox.addEventListener('mousedown', handleTouchStart);
+        newsBox.addEventListener('mousemove', handleTouchMove);
+        newsBox.addEventListener('mouseup', handleTouchEnd);
+        newsBox.addEventListener('mouseleave', handleTouchEnd); 
+    }
+
+    function handleTouchStart(e) {
+        if (newsItems.length <= 1) return;
+        
+        // Stop automatic rotation when dragging starts
+        if (rotationInterval) clearInterval(rotationInterval);
+        
+        isDragging = true;
+        // Get initial X position from touch or mouse event
+        startX = (e.touches ? e.touches[0].clientX : e.clientX);
+
+        // Disable transition during drag for a direct, "no-effect" feel during drag
+        const carousel = document.getElementById('news-carousel');
+        if (carousel) carousel.style.transition = 'none';
+        
+        // Prevent default only on mouse events to stop image dragging/selection
+        if (e.type === 'mousedown') e.preventDefault();
+    }
+
+    function handleTouchMove(e) {
+        if (!isDragging || newsItems.length <= 1) return;
+
+        const currentX = (e.touches ? e.touches[0].clientX : e.clientX);
+        const diffX = currentX - startX;
+        
+        const newsBox = document.getElementById('news-box');
+        const carousel = document.getElementById('news-carousel');
+        if (!carousel || !newsBox) return;
+        
+        // Calculate the current base offset (e.g., -100%, -200% translated to px)
+        const baseOffset = -currentIndex * newsBox.offsetWidth;
+        
+        // Apply the drag displacement
+        const newOffset = baseOffset + diffX;
+
+        // Apply immediate translation
+        carousel.style.transform = `translateX(${newOffset}px)`;
+        
+        // Prevent vertical page scrolling while swiping horizontally
+        if (e.touches) e.preventDefault();
+    }
+
+    function handleTouchEnd(e) {
+        if (!isDragging || newsItems.length <= 1) return;
+
+        isDragging = false;
+        
+        // Determine final position
+        const endX = (e.changedTouches ? e.changedTouches[0].clientX : (e.clientX || startX));
+        const diffX = endX - startX;
+
+        const carousel = document.getElementById('news-carousel');
+        if (carousel) carousel.style.transition = 'transform 0.5s ease-in-out'; // Re-enable transition for snap
+
+        if (diffX > DRAG_THRESHOLD) {
+            // Swipe right (go to previous item)
+            goToPrev();
+        } else if (diffX < -DRAG_THRESHOLD) {
+            // Swipe left (go to next item)
+            goToNext();
+        } else {
+            // Not enough drag, snap back to current item
+            updateCarouselPosition(true); 
+        }
+
+        // Restart rotation timer after a short delay
+        if (newsItems.length > 1) {
+            setTimeout(startRotation, 500); 
+        }
     }
     
     // --------------------------------------------------------
-    // --- NEW: JS Content Switching Logic ---
+    // --- NEW: JS Content Switching Logic (Unchanged) ---
     // --------------------------------------------------------
     
     const optionsMap = {
@@ -720,39 +863,35 @@
         if (scriptName && !loadedScripts[scriptName]) {
             loadScript(scriptName, contentId);
         }
-        
-        // Optional: If script is already loaded, you might call a function to re-initialize or update its content.
-        // For now, we assume once loaded, it's ready.
     }
-
+    
     function loadScript(scriptName, contentId) {
         if (loadedScripts[scriptName]) return; // Already loading or loaded
         
         const script = document.createElement('script');
         script.src = scriptName;
         script.type = 'text/javascript';
+        
+        // Remove existing children (the blank white div) to let the script write directly
+        const contentWrapper = document.getElementById(contentId + '_content');
+        if (contentWrapper) {
+            contentWrapper.innerHTML = ''; 
+        }
+
         script.onload = () => {
             loadedScripts[scriptName] = true;
             console.log(`${scriptName} loaded successfully.`);
-            // After loading, ensure the content area is blank if the script hasn't written anything
-            const contentWrapper = document.getElementById(contentId + '_content');
-            if (contentWrapper && contentWrapper.children.length === 1 && contentWrapper.children[0].style.backgroundColor === 'white') {
-                // If the only child is the initial blank div, remove it so the script can write directly
-                contentWrapper.innerHTML = ''; 
-            }
         };
+        
         script.onerror = () => {
             console.error(`Failed to load ${scriptName}.`);
-            // Display an error message or keep it blank
-            const contentWrapper = document.getElementById(contentId + '_content');
-            if (contentWrapper) {
-                contentWrapper.innerHTML = '<div style="color: red; padding: 15px;">Error loading content for ' + contentId + ' (' + scriptName + ')</div>';
-            }
+            // Yahan koi error message DOM mein nahi dikhaya jayega.
+            // Content area khali (blank) hi rahega.
         };
+        
         document.head.appendChild(script);
         loadedScripts[scriptName] = 'loading'; // Mark as loading
     }
-
 
     // Add event listeners to the new option buttons
     optionButtons.forEach(button => {
