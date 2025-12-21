@@ -479,7 +479,7 @@
                 email,
                 password: pass,
                 options: {
-                    emailRedirectTo: 'https://avicnknov.netlify.app/success.html'
+                    emailRedirectTo: 'https://avicnknovex.github.io/AvicnKnov-Ex-/success.html'
                 }
             });
 
@@ -560,7 +560,7 @@
             // --- GMAIL FORGOT PASSWORD ---
             if (!email) return alert("Enter your Gmail");
             let { error } = await sb.auth.resetPasswordForEmail(email, {
-                redirectTo: 'https://avicnknov.netlify.app/reset-password.html'
+                redirectTo: 'https://avicnknovex.github.io/AvicnKnov-Ex-/reset-password.html'
             });
             if (error) alert("❌ Forgot Password Failed: " + error.message);
             else alert("🔗 Reset link sent to " + email);
