@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinity Achievements | Ultra Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Rajdhani:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --gold: #FFD700;
+            --purple: #bf00ff;
+            --bg: #030303;
+        }
+
+        body {
+            background: var(--bg);
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* --- Background Aura --- */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 50%; left: 50%;
+            width: 100vw; height: 100vh;
+            background: radial-gradient(circle, rgba(191,0,255,0.05) 0%, rgba(0,0,0,0) 70%);
+            transform: translate(-50%, -50%);
+            z-index: -1;
+        }
+
+        /* --- Header --- */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 5%; background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(15px); border-bottom: 2px solid rgba(255,215,0,0.2);
+            position: sticky; top: 0; z-index: 1000;
+        }
+
+        .back-btn { color: var(--gold); cursor: pointer; font-size: 20px; font-weight: bold; letter-spacing: 2px; }
+
+        .my-ach-btn {
+            background: linear-gradient(45deg, #222, #000);
+            border: 1px solid var(--gold); color: var(--gold);
+            padding: 10px 25px; border-radius: 5px; cursor: pointer;
+            font-family: 'Orbitron'; font-size: 12px;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+            transition: 0.3s;
+        }
+
+        /* --- Achievement Card --- */
+        .container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+
+        .ach-card {
+            background: linear-gradient(135deg, rgba(20,20,20,0.9), rgba(5,5,5,0.9));
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 20px; padding: 30px; margin-bottom: 35px;
+            display: flex; align-items: center; position: relative;
+            overflow: hidden; transition: 0.4s;
+        }
+
+        .ach-card:hover { border-color: var(--gold); transform: translateY(-5px); }
+
+        /* Icon with Light Ray Effect */
+        .icon-wrapper {
+            position: relative; margin-right: 30px;
+        }
+
+        .ach-icon {
+            width: 85px; height: 85px; background: #000;
+            border: 2px solid var(--gold); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 40px; z-index: 2; position: relative;
+            box-shadow: 0 0 20px rgba(255,215,0,0.3);
+            animation: rotateGlow 5s linear infinite;
+        }
+
+        @keyframes rotateGlow {
+            0% { filter: drop-shadow(0 0 5px gold); }
+            50% { filter: drop-shadow(0 0 25px gold); }
+            100% { filter: drop-shadow(0 0 5px gold); }
+        }
+
+        /* --- Multi-Color Progress System --- */
+        .progress-container {
+            position: absolute; bottom: 0; left: 0;
+            width: 100%; height: 6px; background: rgba(255,255,255,0.05);
+        }
+
+        .progress-bar {
+            height: 100%; width: 0%;
+            background: linear-gradient(to right, #ff0000, #ff8000, #ffff00, #00ff00, #bf00ff);
+            background-size: 500% 100%;
+            transition: width 1.5s cubic-bezier(0.1, 0.7, 1.0, 0.1);
+            position: relative;
+        }
+
+        /* Smoke/Dua Effect when complete */
+        .smoke {
+            position: absolute; right: 0; top: -20px;
+            width: 20px; height: 20px; background: rgba(255,255,255,0.5);
+            filter: blur(10px); border-radius: 50%;
+            animation: rise 1s infinite; display: none;
+        }
+
+        @keyframes rise {
+            0% { transform: translateY(0) scale(1); opacity: 0.5; }
+            100% { transform: translateY(-40px) scale(3); opacity: 0; }
+        }
+
+        .ach-details h3 { font-family: 'Orbitron'; color: var(--gold); margin: 0; letter-spacing: 1px; }
+        .ach-details p { color: #888; margin: 5px 0; font-size: 14px; }
+
+        .claim-btn {
+            margin-left: auto; padding: 12px 30px; border-radius: 8px;
+            border: none; font-family: 'Orbitron'; font-weight: 900;
+            cursor: not-allowed; background: #222; color: #444; transition: 0.3s;
+        }
+
+        .claim-btn.unlocked {
+            background: linear-gradient(45deg, var(--gold), #ff8c00);
+            color: #000; cursor: pointer; box-shadow: 0 0 20px var(--gold);
+        }
+
+        .claim-btn.claimed { background: transparent; border: 1px solid #555; color: #555; }
+
+        /* Sidebar Collection */
+        #sidePanel {
+            position: fixed; right: -400px; top: 0; width: 350px; height: 100%;
+            background: rgba(5,5,5,0.98); border-left: 2px solid var(--gold);
+            z-index: 2000; transition: 0.5s ease; padding: 30px;
+        }
+        #sidePanel.open { right: 0; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="back-btn" onclick="history.back()"> <i class="fas fa-arrow-left"></i> DASHBOARD</div>
+        <div class="my-ach-btn" onclick="togglePanel(true)">MY ACHIEVEMENTS</div>
+    </div>
+
+    <div class="container" id="list">
+        </div>
+
+    <div id="sidePanel">
+        <div style="text-align: right; cursor: pointer; color: var(--gold);" onclick="togglePanel(false)">CLOSE</div>
+        <h2 style="font-family: Orbitron; color: var(--gold); text-align: center;">COLLECTION</h2>
+        <div id="collectedItems" style="margin-top: 30px;"></div>
+    </div>
+
+    <audio id="claimSnd" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3"></audio>
+
+    <script>
+        const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // Use your actual key
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const UID = "USER_123";
+
+        // Main 5 Achievements
+        const dataSet = [
+            { id: 'm_trader', name: 'MASTER TRADER', icon: '🏆', criteria: 'Trade ₹5,00,00,000', file: 'favourites-all.js', reward: '₹10-10L' },
+            { id: 'a_trader', name: 'AVICNKNOV TRADER', icon: '🔥', criteria: 'Deposit ₹1,000', file: 'wallet-balance.js', reward: '₹100' },
+            { id: 'c_trader', name: 'CTO TRADER', icon: '🛡️', criteria: '10k Crypto Trades', file: 'market-crypto.js', reward: '₹370' },
+            { id: 'p_trader', name: 'P2P MASTER', icon: '💎', criteria: '100 P2P Orders', file: 'p2p.html', reward: '₹100-1L' },
+            { id: 'e_master', name: 'ENTRY MASTER', icon: '👤', criteria: 'Participate in Events', file: 'events.html', reward: '₹10-1k' }
+        ];
+
+        async function load() {
+            const list = document.getElementById('list');
+            
+            // 1. Fetch from achievement-control (Extra Achievements)
+            const { data: dbAch } = await _supabase.from('achievement-control').select('*');
+            const finalAch = [...dataSet, ...(dbAch || [])];
+
+            // 2. Fetch User Progress/Claimed
+            const { data: userClaims } = await _supabase.from('my-achievements').select('*').eq('uid', UID);
+            const claimedIds = userClaims ? userClaims.map(u => u.achievement_id) : [];
+
+            list.innerHTML = '';
+            finalAch.forEach(ach => {
+                const isClaimed = claimedIds.includes(ach.id);
+                // Simulation of progress (Aap isse SQL se bhi fetch kar sakte hain)
+                let progress = isClaimed ? 100 : Math.floor(Math.random() * 90); 
+
+                const card = document.createElement('div');
+                card.className = 'ach-card';
+                card.innerHTML = `
+                    <div class="icon-wrapper">
+                        <div class="ach-icon" id="icon-${ach.id}">${ach.icon}</div>
+                    </div>
+                    <div class="ach-details">
+                        <h3>${ach.name}</h3>
+                        <p>${ach.criteria}</p>
+                        <small style="color:cyan">${ach.reward}</small>
+                    </div>
+                    <button class="claim-btn ${isClaimed ? 'claimed' : (progress>=100?'unlocked':'')}" 
+                            id="btn-${ach.id}" 
+                            onclick="claim('${ach.id}', '${ach.name}')" 
+                            ${isClaimed ? 'disabled' : ''}>
+                        ${isClaimed ? 'CLAIMED' : (progress>=100 ? 'CLAIM' : 'LOCKED')}
+                    </button>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="pb-${ach.id}" style="width: ${progress}%">
+                            <div class="smoke" id="smoke-${ach.id}" style="display: ${progress>=100?'block':'none'}"></div>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        async function claim(id, name) {
+            const btn = document.getElementById(`btn-${id}`);
+            if(!btn.classList.contains('unlocked')) return;
+
+            const icon = document.getElementById(`icon-${id}`);
+            const snd = document.getElementById('claimSnd');
+
+            // Sound and Move effect
+            snd.play();
+            icon.style.transition = "1s";
+            icon.style.transform = "scale(1.5) translateX(100px) rotate(360deg)";
+            icon.style.opacity = "0";
+
+            // Reward Calculation
+            const reward = Math.floor(Math.random() * 100) + 10;
+
+            // Save to Supabase
+            await _supabase.from('my-achievements').insert([{
+                uid: UID, achievement_id: id, achievement_name: name, reward_amount: reward
+            }]);
+
+            setTimeout(() => {
+                icon.style.transform = "scale(1) translateX(0) rotate(0)";
+                icon.style.opacity = "1";
+                btn.innerText = "CLAIMED";
+                btn.classList.remove('unlocked');
+                btn.classList.add('claimed');
+                btn.disabled = true;
+                loadCollection();
+            }, 1000);
+        }
+
+        function togglePanel(show) {
+            document.getElementById('sidePanel').classList.toggle('open', show);
+            if(show) loadCollection();
+        }
+
+        async function loadCollection() {
+            const cont = document.getElementById('collectedItems');
+            const { data } = await _supabase.from('my-achievements').select('*').eq('uid', UID);
+            
+            if(!data || data.length === 0) {
+                cont.innerHTML = `<p style="text-align:center; color:#444;">No Achievements Yet</p>`;
+                return;
+            }
+
+            cont.innerHTML = data.map(i => `
+                <div style="border: 1px solid gold; padding:10px; margin-bottom:10px; border-radius:10px; background:rgba(255,215,0,0.05)">
+                    <div style="color:gold; font-weight:bold;">${i.achievement_name}</div>
+                    <div style="font-size:12px; color:white;">Reward: ₹${i.reward_amount}</div>
+                </div>
+            `).join('');
+        }
+
+        window.onload = load;
+    </script>
+</body>
+</html>
