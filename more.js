@@ -122,8 +122,8 @@
                     <div class="btn-icon"><i class="fas fa-chevron-right"></i></div>
                 </a>
 
-                <a href="platform.html" class="more-btn btn-platform">
-                    <span><i class="fas fa-crown" style="margin-right:10px;"></i> AvicnKnov VAG</span>
+                <a href="platform.html" class="more-btn btn-prime">
+                    <span><i class="fas fa-crown" style="margin-right:10px;"></i> AvicnKnov </span>
                     <div class="btn-icon"><i class="fas fa-chevron-right"></i></div>
                 </a>
             </div>
