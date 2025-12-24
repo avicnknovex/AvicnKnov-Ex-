@@ -122,8 +122,8 @@
                     <div class="btn-icon"><i class="fas fa-chevron-right"></i></div>
                 </a>
 
-                <a href="platform.html" class="more-btn btn-Aviceknov">
-                    <span><i class="fas fa-crown" style="margin-right:10px;"></i> PRIME VAG</span>
+                <a href="platform.html" class="more-btn btn-platform">
+                    <span><i class="fas fa-crown" style="margin-right:10px;"></i> AvicnKnov VAG</span>
                     <div class="btn-icon"><i class="fas fa-chevron-right"></i></div>
                 </a>
             </div>
