@@ -122,7 +122,7 @@
                     <div class="btn-icon"><i class="fas fa-chevron-right"></i></div>
                 </a>
 
-                <a href="prime.html" class="more-btn btn-prime">
+                <a href="platform.html" class="more-btn btn-Aviceknov">
                     <span><i class="fas fa-crown" style="margin-right:10px;"></i> PRIME VAG</span>
                     <div class="btn-icon"><i class="fas fa-chevron-right"></i></div>
                 </a>
