@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AvicnKnov | Premium Platforms</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Poppins:wght@300;400;600&display=swap');
+
+        :root {
+            --neon-purple: #bc13fe;
+            --glass-white: rgba(255, 255, 255, 0.15);
+            --glow-white: rgba(255, 255, 255, 0.8);
+            --bg-dark: #050505;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            background: radial-gradient(circle at center, #1a0b2e 0%, #000000 100%);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Back Navigation */
+        .back-nav {
+            position: fixed;
+            top: 25px;
+            left: 25px;
+            z-index: 1000;
+        }
+
+        .back-btn {
+            background: var(--glass-white);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-decoration: none;
+        }
+
+        .back-btn:hover {
+            background: var(--neon-purple);
+            box-shadow: 0 0 20px var(--neon-purple);
+            transform: scale(1.1);
+        }
+
+        /* Container */
+        .container {
+            max-width: 650px;
+            margin: 100px auto 50px;
+            padding: 0 20px;
+        }
+
+        /* Platform Card */
+        .platform-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 20px;
+            padding: 12px 20px;
+            border-radius: 100px; /* Fully rounded capsule shape */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.4s ease;
+        }
+
+        .platform-card:hover {
+            background: rgba(188, 19, 254, 0.05);
+            border-color: var(--neon-purple);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Round Logo System with White Glowing Glass Ring */
+        .logo-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-ring {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000; /* Black Base */
+            border: 2px solid var(--glass-white);
+            box-shadow: 0 0 10px var(--glass-white); /* Initial subtle white glow */
+        }
+
+        .logo-ring::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 50%;
+            border: 2px solid var(--glow-white); /* Glowing White Ring */
+            opacity: 0.6;
+            animation: ring-pulse 2s infinite linear;
+        }
+
+        .logo-ring img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%; /* Image ekdam gol */
+            object-fit: cover;
+            z-index: 2;
+        }
+
+        .platform-name {
+            font-family: 'Syncopate', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Glowing Open Button */
+        .btn-open {
+            background: white;
+            color: black;
+            text-decoration: none;
+            padding: 10px 24px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+            animation: btn-glow-pulse 1.8s infinite;
+            transition: 0.3s;
+        }
+
+        .btn-open:hover {
+            background: var(--neon-purple);
+            color: white;
+            box-shadow: 0 0 25px var(--neon-purple);
+        }
+
+        /* Future Notice Box */
+        .future-glass-card {
+            margin-top: 60px;
+            padding: 30px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(188, 19, 254, 0.05));
+            backdrop-filter: blur(15px);
+            border-radius: 30px;
+            border: 1px solid var(--glass-white);
+            text-align: center;
+        }
+
+        .future-glass-card h4 {
+            color: var(--neon-purple);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-bottom: 15px;
+            font-family: 'Syncopate', sans-serif;
+            text-shadow: 0 0 10px var(--neon-purple);
+        }
+
+        .future-glass-card p {
+            font-size: 0.85rem;
+            line-height: 1.8;
+            color: #bbb;
+            margin: 0;
+        }
+
+        /* Animations */
+        @keyframes ring-pulse {
+            0% { opacity: 0.4; box-shadow: 0 0 5px var(--glow-white); }
+            50% { opacity: 1; box-shadow: 0 0 15px var(--glow-white); }
+            100% { opacity: 0.4; box-shadow: 0 0 5px var(--glow-white); }
+        }
+
+        @keyframes btn-glow-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); filter: brightness(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        #status-msg {
+            text-align: center;
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            color: var(--neon-purple);
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="back-nav">
+        <a href="dashboard.html" class="back-btn">
+            <i class="fa-solid fa-chevron-left"></i>
+        </a>
+    </nav>
+
+    <div class="container">
+        <div id="status-msg">INITIALIZING SECURE PROTOCOL...</div>
+        
+        <div id="platform-container">
+            </div>
+
+        <div class="future-glass-card">
+            <h4>Next Phase</h4>
+            <p>Future mein more platforms bhi aaenge jinke andar ham aapse behtarin tarike ki commity banane ki try karenge hamari sites aaenge aur bhi kafi chijen ham aapke liye lekar aane wale hain.</p>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+        
+        const _client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function syncPlatforms() {
+            const { data, error } = await _client
+                .from('platform_control')
+                .select('*')
+                .order('id', { ascending: true });
+
+            if (error) return;
+
+            const container = document.getElementById('platform-container');
+            const status = document.getElementById('status-msg');
+            status.style.display = 'none';
+            container.innerHTML = '';
+
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'platform-card';
+                card.innerHTML = `
+                    <div class="logo-group">
+                        <div class="logo-ring">
+                            <img src="${item.image_url}" alt="icon">
+                        </div>
+                        <div class="platform-name">${item.name}</div>
+                    </div>
+                    <a href="${item.url}" target="_blank" class="btn-open">Open</a>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Real-time listener
+        _client.channel('custom-all-channel')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'platform_control' }, () => {
+            syncPlatforms();
+        }).subscribe();
+
+        syncPlatforms();
+    </script>
+</body>
+</html>
