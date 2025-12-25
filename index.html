@@ -21,6 +21,7 @@
         width: 90%;
         text-align: center;
         color: white;
+        cursor: default;
       }
       .title {
         font-size: 2rem;
@@ -154,8 +155,8 @@
       }
     </style>
   </head>
-  <body>
-    <div class="container">
+  <body onclick="closeAllForms(event)">
+    <div class="container" onclick="event.stopPropagation()">
       <div class="title">AvicnKnov Ex</div>
       <div class="menu">
         <button id="btn-login" onclick="showForm('login')">Login</button>
@@ -234,17 +235,13 @@
       const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
       const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-      // --- START NEW CONSTANT: Domain used for dummy email creation ---
       const PHONE_LOGIN_DOMAIN = '@crypto-temp.com';
-      // --- END NEW CONSTANT ---
 
-      // Global Variables to track active authentication type
       let registrationType = 'email'; 
       let forgotType = 'email'; 
 
       // --- UTILITY FUNCTIONS ---
 
-      // WTQ ID Generator (12 characters, uppercase letters and numbers)
       function generateWTQID() {
           const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
           let result = '';
@@ -277,6 +274,7 @@
       function showForm(formId) {
         const forms = document.querySelectorAll('.form');
         const buttons = document.querySelectorAll('.menu button');
+        
         forms.forEach(f => f.classList.remove('active'));
         buttons.forEach(b => b.classList.remove('active'));
         
@@ -289,8 +287,15 @@
             document.getElementById('btn-login').classList.add('active');
         }
         
-        // Reset WTQ display when switching forms
         document.getElementById('wtq-display-section').style.display = 'none';
+      }
+
+      // Naya Function: Jab bahar click ho toh band ho jaye
+      function closeAllForms(event) {
+          const forms = document.querySelectorAll('.form');
+          const buttons = document.querySelectorAll('.menu button');
+          forms.forEach(f => f.classList.remove('active'));
+          buttons.forEach(b => b.classList.remove('active'));
       }
 
       function setRegType(type) {
@@ -309,7 +314,7 @@
               btnEmail.classList.add('active');
               btnPhone.classList.remove('active');
               regButton.textContent = 'Register';
-          } else { // phone
+          } else { 
               emailInput.style.display = 'none';
               phoneInput.style.display = 'block';
               btnPhone.classList.add('active');
@@ -332,23 +337,18 @@
               btnEmail.classList.add('active');
               btnPhone.classList.remove('active');
               resetBtn.textContent = 'Send Reset Link';
-          } else { // phone
+          } else { 
               emailInput.style.display = 'none';
               phoneInput.style.display = 'block';
               btnPhone.classList.add('active');
               btnEmail.classList.remove('active');
-              // ----------------------------------------------------
-              // 🚨 MODIFICATION 2: Change button text for phone forgot password
               resetBtn.textContent = 'Forgot Agent'; 
-              // ----------------------------------------------------
           }
       }
-
 
       // --- MAIN AUTH LOGIC ---
 
       async function login() {
-        // This input takes either Email or Phone Number
         const identifier = document.getElementById('login-identifier').value.trim(); 
         const pass = document.getElementById('login-pass').value;
 
@@ -357,10 +357,8 @@
         const isEmail = identifier.includes('@'); 
         
         if (isEmail) {
-            // --- GMAIL LOGIN ---
             let { data, error } = await sb.auth.signInWithPassword({ email: identifier, password: pass });
             if (error) {
-                // Check if error is due to unverified email
                 if (error.message.includes('Email not confirmed')) {
                     alert("❌ Login Failed: Email not verified. Check your Gmail.");
                 } else {
@@ -369,51 +367,21 @@
             } else if (data.session) {
                 window.location.href = "main.html";
             }
-            
         } else {
-            // --- START NEW PHONE NUMBER LOGIN LOGIC ---
-            
-            // 1. Phone number को साफ करें और डमी ईमेल बनाएँ
-            const cleanNumber = identifier.replace(/[^0-9+]/g, ''); // + और 0-9 रखें
+            const cleanNumber = identifier.replace(/[^0-9+]/g, ''); 
             const dummyEmail = cleanNumber + PHONE_LOGIN_DOMAIN;
-            
-            console.log(`Attempting Supabase Auth login for dummy email: ${dummyEmail}`);
-            
-            // 2. Supabase Auth के साथ सीधे लॉगिन करने का प्रयास करें
-            let { data, error } = await sb.auth.signInWithPassword({ 
-                email: dummyEmail, 
-                password: pass 
-            });
+            let { data, error } = await sb.auth.signInWithPassword({ email: dummyEmail, password: pass });
 
             if (error) {
-                if (error.message.includes('Invalid login credentials')) {
-                    // यदि Supabase Auth में लॉगिन विफल होता है, तो आगे की जांच करें (unverified है या नहीं)
-                    
-                    // Fallback: Check in unverified table (user might need to verify via agent)
-                    const { data: unverifiedData } = await sb
-                        .from('user-verify')
-                        .select('wtq_id, is_verified')
-                        .eq('phone_number', cleanNumber)
-                        .maybeSingle();
-
-                    if (unverifiedData && unverifiedData.is_verified === false) {
-                        alert("❌ Account not verified. Please use the 'Verify Agent' button on the registration page to complete verification.");
-                    } else if (unverifiedData && unverifiedData.is_verified === true) {
-                        // This case should ideally not happen if password is correct, 
-                        // as the Edge Function creates the Supabase Auth user.
-                        alert("❌ Login Failed: Credentials incorrect or internal sync issue. Please try again or contact support.");
-                    } else {
-                        // Account not found anywhere or credentials completely incorrect.
-                        alert("❌ Login Failed: Account not found or credentials incorrect.");
-                    }
+                const { data: unverifiedData } = await sb.from('user-verify').select('wtq_id, is_verified').eq('phone_number', cleanNumber).maybeSingle();
+                if (unverifiedData && unverifiedData.is_verified === false) {
+                    alert("❌ Account not verified. Please use the 'Verify Agent' button on the registration page to complete verification.");
                 } else {
-                    alert("❌ Login Failed: " + error.message);
+                    alert("❌ Login Failed: Account not found or credentials incorrect.");
                 }
             } else if (data.session) {
-                // Success: Supabase session is established.
                 window.location.href = "main.html";
             }
-            // --- END NEW PHONE NUMBER LOGIN LOGIC ---
         }
       }
 
@@ -430,7 +398,6 @@
 
         const identifier = registrationType === 'email' ? email : phone;
 
-        // Validation 
         if (!name || !username || !country || !gender || !dob || !identifier || !pass || !policyChecked) {
             return alert("Fill all fields and agree to the policy.");
         }
@@ -447,168 +414,81 @@
         regButton.textContent = 'Processing...';
 
         if (registrationType === 'email') {
-            // --- GMAIL REGISTRATION ---
-            
-            // 1. **FIRST: Insert all form data into the new user-verify-gmail table.**
-            const { error: verifyInsertError } = await sb
-                .from('user-verify-gmail')
-                .insert([
-                    { 
-                        email: email, 
-                        password: pass, 
-                        full_name: name, 
-                        username: username, 
-                        country: country, 
-                        gender: gender, 
-                        dob: dob,
-                        phone_number: phone // Including phone number here as well
-                    }
-                ]);
-
+            const { error: verifyInsertError } = await sb.from('user-verify-gmail').insert([{ email, password: pass, full_name: name, username, country, gender, dob, phone_number: phone }]);
             if (verifyInsertError) {
                 regButton.disabled = false;
                 regButton.textContent = 'Register';
-                if (verifyInsertError.code === '23505') { 
-                    return alert("❌ Registration Failed: Username or Email already exists.");
-                }
-                return alert("❌ Registration Failed during initial save: " + verifyInsertError.message);
+                return alert("❌ Registration Failed: " + verifyInsertError.message);
             }
             
-            // 2. **SECOND: Start Supabase Auth email verification process.**
-            let { error: authError } = await sb.auth.signUp({
-                email,
-                password: pass,
-                options: {
-                    emailRedirectTo: 'https://avicnknovex.github.io/AvicnKnov-Ex-/success.html'
-                }
-            });
-
+            let { error: authError } = await sb.auth.signUp({ email, password: pass, options: { emailRedirectTo: 'https://avicnknovex.github.io/AvicnKnov-Ex-/success.html' } });
             regButton.disabled = false;
             regButton.textContent = 'Register';
-            
-            if (authError) {
-                // Failsafe: If Auth fails, delete the record from user-verify-gmail
-                await sb.from('user-verify-gmail').delete().eq('email', email);
-                return alert("❌ Registration Failed (Auth): " + authError.message);
-            }
-            
-            alert("✅ Registered! Check your Gmail to verify. Your complete profile data will be saved to user-details once verification is successful.");
-            
+            if (authError) return alert("❌ Registration Failed (Auth): " + authError.message);
+            alert("✅ Registered! Check your Gmail to verify.");
         } else {
-            // --- PHONE NUMBER REGISTRATION ---
             const phoneNumber = phone.trim();
-
-            // 1. Check for duplicates in verified and unverified tables
             const { data: verifiedUser } = await sb.from('user-details').select('wtq_id').eq('phone_number', phoneNumber).maybeSingle();
             if (verifiedUser) {
                 regButton.disabled = false;
                 regButton.textContent = 'Create Account & Get ID';
-                return alert("This number is already registered and verified.");
+                return alert("This number is already registered.");
             }
-
-            let { data: unverifiedUser } = await sb.from('user-verify').select('wtq_id').eq('phone_number', phoneNumber).maybeSingle();
-            
-            if (unverifiedUser) {
-                regButton.disabled = false;
-                regButton.textContent = 'Create Account & Get ID';
-                // Show existing ID
-                document.getElementById('generated-wtq-id').textContent = unverifiedUser.wtq_id;
-                document.getElementById('wtq-display-section').style.display = 'block';
-                return alert("This number is already registered but not verified. Use the existing WTQ ID and Agent section for verification.");
-            }
-            
-            // 2. Simulate 5-second loading and Generate WTQ ID
             const newWTQID = generateWTQID();
-            
-            const loadingPromise = new Promise(resolve => setTimeout(resolve, 5000));
-            document.getElementById('wtq-timer').textContent = 'Generating ID and checking tables... (5s)';
-
-            // Wait for 5 seconds
-            await loadingPromise;
-            document.getElementById('wtq-timer').textContent = '';
-
-            // 3. Insert into user-verify table
-            const { error: insertError } = await sb
-                .from('user-verify')
-                .insert({
-                    phone_number: phoneNumber,
-                    password_hash: pass, // **REMINDER: Use Hashed Password in production!**
-                    wtq_id: newWTQID,
-                    full_name: name, username: username, country: country, gender: gender, dob: dob
-                });
-
+            const { error: insertError } = await sb.from('user-verify').insert({ phone_number: phoneNumber, password_hash: pass, wtq_id: newWTQID, full_name: name, username, country, gender, dob });
             regButton.disabled = false;
             regButton.textContent = 'Create Account & Get ID';
-                
-            if (insertError) {
-                console.error(insertError);
-                return alert("❌ Registration failed. (Error: " + insertError.message + ")");
-            }
-
-            // 4. Display WTQ ID and Verify Agent button
+            if (insertError) return alert("❌ Registration failed: " + insertError.message);
             document.getElementById('generated-wtq-id').textContent = newWTQID;
             document.getElementById('wtq-display-section').style.display = 'block';
-            alert("✅ Account creation initiated! Copy your WTQ ID and click 'Verify Agent' to complete verification.");
+            alert("✅ Account creation initiated! Copy WTQ ID.");
         }
       }
 
       async function resetPassword() {
         const email = document.getElementById('forgot-email').value;
         const phone = document.getElementById('forgot-phone').value;
-        
         if (forgotType === 'email') {
-            // --- GMAIL FORGOT PASSWORD ---
-            if (!email) return alert("Enter your Gmail");
-            let { error } = await sb.auth.resetPasswordForEmail(email, {
-                redirectTo: 'https://avicnknovex.github.io/AvicnKnov-Ex-/reset-password.html'
-            });
-            if (error) alert("❌ Forgot Password Failed: " + error.message);
-            else alert("🔗 Reset link sent to " + email);
+            if (!email) return alert("Enter Gmail");
+            let { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: 'https://avicnknovex.github.io/AvicnKnov-Ex-/reset-password.html' });
+            if (error) alert("❌ Failed: " + error.message);
+            else alert("🔗 Link sent to " + email);
         } else {
-            // --- PHONE NUMBER FORGOT PASSWORD (Redirect to Agent) ---
-            if (!phone) return alert("Enter your Phone Number");
-            
-            // 1. Check if the phone number is verified (exists in user-details)
-            const { data, error } = await sb
-                .from('user-details')
-                .select('wtq_id')
-                .eq('phone_number', phone)
-                .maybeSingle();
-
-            if (error || !data) {
-                 return alert("❌ Forgot Password Failed: Account not found or not verified.");
-            }
-            
-            // 2. Redirect to Agent HTML with the action and WTQ ID
+            const { data } = await sb.from('user-details').select('wtq_id').eq('phone_number', phone).maybeSingle();
+            if (!data) return alert("❌ Account not found.");
             window.location.href = `agent.html?action=forgot&id=${data.wtq_id}`;
         }
       }
 
-      // Helper function to populate the Country dropdown
-      const countries = [
-          "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo (Brazzaville)", "Congo (Kinshasa)", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czechia", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", "Palestine State", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
-      ];
+      // Gmail verification sync logic
+      sb.auth.onAuthStateChange(async (event, session) => {
+          if (event === 'SIGNED_IN' && session?.user?.email) {
+              const { data: tempUser } = await sb.from('user-verify-gmail').select('*').eq('email', session.user.email).maybeSingle();
+              if (tempUser) {
+                  await sb.from('user-profile-data').insert([{ full_name: tempUser.full_name, username: tempUser.username, country: tempUser.country, gender: tempUser.gender, dob: tempUser.dob, email: tempUser.email, phone_number: tempUser.phone_number, created_at: new Date() }]);
+                  await sb.from('user-details').insert([{ full_name: tempUser.full_name, username: tempUser.username, country: tempUser.country, gender: tempUser.gender, dob: tempUser.dob, email: tempUser.email, password: tempUser.password, created_at: new Date() }]);
+                  await sb.from('user-verify-gmail').delete().eq('email', session.user.email);
+                  window.location.href = "main.html";
+              }
+          }
+      });
+
+      const countries = ["Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo (Brazzaville)", "Congo (Kinshasa)", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czechia", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", "Palestine State", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"];
       function populateCountries() {
           const select = document.getElementById('reg-country');
           const defaultOption = document.createElement('option');
-          defaultOption.value = "";
-          defaultOption.textContent = "Select Country";
-          defaultOption.disabled = true;
-          defaultOption.selected = true;
+          defaultOption.value = ""; defaultOption.textContent = "Select Country"; defaultOption.disabled = true; defaultOption.selected = true;
           select.appendChild(defaultOption);
-
           countries.forEach(country => {
               const option = document.createElement('option');
-              option.value = country;
-              option.textContent = country;
+              option.value = country; option.textContent = country;
               select.appendChild(option);
           });
       }
 
       window.onload = () => {
         populateCountries(); 
-        // Set defaults and show login form
-        showForm('login');
+        // Default: Sab close rahega
         setRegType('email'); 
         setForgotType('email'); 
       };
