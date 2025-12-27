@@ -1,3 +1,4 @@
+
 (function() {
     const container = document.getElementById('eluza_content');
     
@@ -8,7 +9,7 @@
         
         /* Premium Header Branding */
         .eluza-header { display: flex; align-items: center; padding: 12px 18px; border-bottom: 1px solid #f8f8f8; }
-        .eluza-brand { font-weight: 800; font-size: 15px; color: #000; display: flex; align-items: center; gap: 5px; }
+        .eluza-brand { font-weight: 800; font-size: 15px; color: #000; display: flex; align-items: center; gap: 5px; cursor: pointer; }
         
         /* Verification Ticks */
         .tick { font-size: 14px; }
@@ -38,7 +39,7 @@
         .footer-platforms { text-align: center; margin: 40px 15px 20px; padding: 25px; background: #fff; border-radius: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .platform-icons { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
         .platform-icon { width: 42px; height: 42px; border-radius: 50%; border: 2px solid #000; display: flex; align-items: center; justify-content: center; text-decoration: none; color: #000; background: #fff; transition: 0.3s; font-size: 18px; }
-        .platform-icon:hover { transform: translateY(-5px); background: #000; color: #fff; }
+        .platform-icon:hover { transform: translateY(-5px); background: #000 !important; color: #fff !important; }
         .empty-state { text-align: center; padding: 50px 20px; color: #999; }
     `;
 
@@ -74,7 +75,7 @@
 
             card.innerHTML = `
                 <div class="eluza-header">
-                    <div class="eluza-brand">
+                    <div class="eluza-brand" onclick="if(typeof switchContent === 'function') switchContent('qineq')">
                         AvicnKnov ${getTickHtml(item.verify_tick)}
                     </div>
                 </div>
@@ -135,11 +136,11 @@
     function renderFooter() {
         const f = document.createElement('div'); f.className = 'footer-platforms';
         f.innerHTML = `<div style="font-weight:900; color:#444;">Join Platforms for More Updates</div><div class="platform-icons">
-            <a href="https://t.me/AvicnKnov" class="platform-icon"><i class="fab fa-telegram-plane"></i></a>
-            <a href="https://x.com/AvicnKnov?s=09" class="platform-icon"><i class="fab fa-x-twitter"></i></a>
-            <a href="https://youtube.com/@avicnknov?si=yWHFybgTstYHd3pm" class="platform-icon"><i class="fab fa-youtube"></i></a>
-            <a href="https://www.facebook.com/share/1G8YRZhZ6M/" class="platform-icon"><i class="fab fa-facebook-f"></i></a>
-            <a href="https://www.instagram.com/avicnknov?igsh=a2QwdnhwY3NxZjZ2" class="platform-icon"><i class="fab fa-instagram"></i></a>
+            <a href="https://t.me/AvicnKnov" target="_blank" class="platform-icon"><i class="fab fa-telegram-plane"></i></a>
+            <a href="https://x.com/AvicnKnov?s=09" target="_blank" class="platform-icon"><i class="fab fa-x-twitter"></i></a>
+            <a href="https://youtube.com/@avicnknov?si=yWHFybgTstYHd3pm" target="_blank" class="platform-icon"><i class="fab fa-youtube"></i></a>
+            <a href="https://www.facebook.com/share/1G8YRZhZ6M/" target="_blank" class="platform-icon"><i class="fab fa-facebook-f"></i></a>
+            <a href="https://www.instagram.com/avicnknov?igsh=a2QwdnhwY3NxZjZ2" target="_blank" class="platform-icon"><i class="fab fa-instagram"></i></a>
         </div>`;
         container.appendChild(f);
     }
