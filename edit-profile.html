@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -83,27 +84,25 @@
     const PHONE_LOGIN_DOMAIN = '@crypto-temp.com';
 
     /**
-     * मौजूदा यूज़र का डेटा user-details टेबल से लोड करता है और फ़ॉर्म भरता है।
+     * Load existing profile data
      */
     async function loadProfile() {
-      // 1. Check Auth Status (Must be logged in)
+      // 1. Check Auth Status
       const { data: authData, error: authError } = await sb.auth.getUser();
       if (authError || !authData?.user) {
         alert('You must be logged in to view this page.');
-        window.location.href = 'index.html'; // Redirect to login
+        window.location.href = 'index.html'; 
         return;
       }
 
       const user = authData.user;
       
-      // 2. Determine Account Type (Email or Phone)
-      let identifierValue = user.email; // Supabase Auth's primary identifier is always in the email field
+      // 2. Determine Account Type
+      let identifierValue = user.email; 
       let accountType = 'Gmail';
       
       if (identifierValue && identifierValue.endsWith(PHONE_LOGIN_DOMAIN)) {
-          // It's a Phone Number account disguised as an email
           accountType = 'Phone Number';
-          // Clean the number from the dummy email
           identifierValue = identifierValue.replace(PHONE_LOGIN_DOMAIN, '').replace(/\+/g, ''); 
           document.getElementById('identifier-label').textContent = 'Phone Number';
       } else {
@@ -113,16 +112,12 @@
       document.getElementById('identifier').value = identifierValue;
       document.getElementById('account-type-text').textContent = `(${accountType} Account)`;
 
-
-      // 3. Fetch full user details from the custom table
-      // We search by the actual phone_number or the user's email if it's a standard email login.
-      // We will use the primary email from Supabase Auth for finding the row.
+      // 3. Fetch from user-details
       const { data: profileData, error: profileError } = await sb
         .from('user-details')
         .select('full_name, dob, username, country, gender, email, phone_number')
         .or(`email.eq.${user.email},phone_number.eq.${user.email.replace(PHONE_LOGIN_DOMAIN, '')}`)
-        .maybeSingle(); // Use maybeSingle to handle cases where user might not have a profile yet (though they should)
-
+        .maybeSingle(); 
 
       if (profileError) {
         console.error('Error fetching profile:', profileError.message);
@@ -131,25 +126,23 @@
       }
 
       if (profileData) {
-        // 4. Populate Form Fields
         document.getElementById('name').value = profileData.full_name || '';
         document.getElementById('dob').value = profileData.dob || '';
         document.getElementById('username').value = profileData.username || '';
         document.getElementById('country').value = profileData.country || '';
         document.getElementById('gender').value = profileData.gender || '';
         
-        // Ensure editable fields are active and locked fields are disabled
+        // Lock fields
         document.getElementById('dob').disabled = true;
         document.getElementById('identifier').disabled = true;
         document.getElementById('country').disabled = true;
-        
       } else {
-        alert('Profile not found in user-details table. Please contact support.');
+        alert('Profile not found in user-details table.');
       }
     }
 
     /**
-     * फ़ॉर्म सबमिट हैंडलर: केवल एडिटेबल फ़ील्ड्स को user-details टेबल में अपडेट करता है।
+     * Submit Handler: Updates both 'user-details' and 'user-profile-data'
      */
     document.getElementById('edit-form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -162,30 +155,42 @@
       const newUsername = document.getElementById('username').value.trim();
       const newGender = document.getElementById('gender').value;
       
-      // Determine the primary key to find the row to update
-      const identifier = user.email; // Use the Auth email (dummy or real)
-      
+      // Determine criteria
+      const identifier = user.email; 
       let updateCriteria = {};
       if (identifier.endsWith(PHONE_LOGIN_DOMAIN)) {
-          // If phone login, use the cleaned number as the criteria
           const phoneNumber = identifier.replace(PHONE_LOGIN_DOMAIN, '');
           updateCriteria = { phone_number: phoneNumber };
       } else {
-          // If Gmail login, use the full email
           updateCriteria = { email: identifier };
       }
       
-      const { error } = await sb
+      // 1. Update user-details
+      const { error: errorDetails } = await sb
         .from('user-details')
         .update({
           full_name: newFullName,
           username: newUsername,
           gender: newGender,
         })
-        .match(updateCriteria); // Find the correct row using the primary identifier
+        .match(updateCriteria);
 
-      if (error) {
-        alert('❌ Failed to save changes: ' + error.message);
+      // 2. Update user-profile-data
+      const { error: errorProfile } = await sb
+        .from('user-profile-data')
+        .update({
+          full_name: newFullName,
+          username: newUsername,
+          gender: newGender,
+        })
+        .match(updateCriteria);
+
+      // Feedback
+      if (errorDetails) {
+        alert('❌ Failed to update User Details: ' + errorDetails.message);
+      } else if (errorProfile) {
+        // Yeh error tab aayega agar Policy set nahi hogi
+        alert('⚠️ Main profile updated, but failed to sync to Profile Data. Check Database Policy: ' + errorProfile.message);
       } else {
         alert('✅ Profile updated successfully!');
         window.location.href = 'profile.html';
