@@ -460,14 +460,45 @@
         }
       }
 
-      // Gmail verification sync logic
+      // Gmail and Phone verification sync logic
       sb.auth.onAuthStateChange(async (event, session) => {
-          if (event === 'SIGNED_IN' && session?.user?.email) {
-              const { data: tempUser } = await sb.from('user-verify-gmail').select('*').eq('email', session.user.email).maybeSingle();
-              if (tempUser) {
-                  await sb.from('user-profile-data').insert([{ full_name: tempUser.full_name, username: tempUser.username, country: tempUser.country, gender: tempUser.gender, dob: tempUser.dob, email: tempUser.email, phone_number: tempUser.phone_number, created_at: new Date() }]);
-                  await sb.from('user-details').insert([{ full_name: tempUser.full_name, username: tempUser.username, country: tempUser.country, gender: tempUser.gender, dob: tempUser.dob, email: tempUser.email, password: tempUser.password, created_at: new Date() }]);
-                  await sb.from('user-verify-gmail').delete().eq('email', session.user.email);
+          if (event === 'SIGNED_IN' && session?.user) {
+              const userEmail = session.user.email;
+              
+              // --- GMAIL USER SYNC ---
+              if (userEmail && !userEmail.endsWith(PHONE_LOGIN_DOMAIN)) {
+                  const { data: tempUser } = await sb.from('user-verify-gmail').select('*').eq('email', userEmail).maybeSingle();
+                  if (tempUser) {
+                      await sb.from('user-profile-data').insert([{ full_name: tempUser.full_name, username: tempUser.username, country: tempUser.country, gender: tempUser.gender, dob: tempUser.dob, email: tempUser.email, phone_number: tempUser.phone_number, created_at: new Date() }]);
+                      await sb.from('user-details').insert([{ full_name: tempUser.full_name, username: tempUser.username, country: tempUser.country, gender: tempUser.gender, dob: tempUser.dob, email: tempUser.email, password: tempUser.password, created_at: new Date() }]);
+                      await sb.from('qineq_users').insert([{ user_id: session.user.id, username: tempUser.username, full_name: tempUser.full_name, country: tempUser.country, gender: tempUser.gender, followers_count: 0, following_count: 0, post_count: 0, verify_tick: null }]);
+                      await sb.from('user-verify-gmail').delete().eq('email', userEmail);
+                      window.location.href = "main.html";
+                  }
+              } 
+              
+              // --- PHONE USER SYNC (NEW) ---
+              else if (userEmail && userEmail.endsWith(PHONE_LOGIN_DOMAIN)) {
+                  const cleanPhone = userEmail.replace(PHONE_LOGIN_DOMAIN, '');
+                  // Check if user already exists in qineq_users to avoid duplicate entries
+                  const { data: existingQineq } = await sb.from('qineq_users').select('user_id').eq('user_id', session.user.id).maybeSingle();
+                  
+                  if (!existingQineq) {
+                      const { data: profileData } = await sb.from('user-profile-data').select('*').eq('phone_number', cleanPhone).maybeSingle();
+                      if (profileData) {
+                          await sb.from('qineq_users').insert([{
+                              user_id: session.user.id,
+                              username: profileData.username,
+                              full_name: profileData.full_name,
+                              country: profileData.country,
+                              gender: profileData.gender,
+                              followers_count: 0,
+                              following_count: 0,
+                              post_count: 0,
+                              verify_tick: null
+                          }]);
+                      }
+                  }
                   window.location.href = "main.html";
               }
           }
