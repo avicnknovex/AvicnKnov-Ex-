@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -142,7 +141,7 @@
     }
 
     /**
-     * Submit Handler: Updates both 'user-details' and 'user-profile-data'
+     * Submit Handler: Updates 'user-details', 'user-profile-data', and 'qineq_users'
      */
     document.getElementById('edit-form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -185,14 +184,26 @@
         })
         .match(updateCriteria);
 
+      // 3. Update qineq_users (Naya addition)
+      // Note: Isme hum user_id (Auth UID) ka use karte hain stability ke liye
+      const { error: errorQineq } = await sb
+        .from('qineq_users')
+        .update({
+          full_name: newFullName,
+          username: newUsername,
+          gender: newGender,
+        })
+        .eq('user_id', user.id);
+
       // Feedback
       if (errorDetails) {
         alert('❌ Failed to update User Details: ' + errorDetails.message);
       } else if (errorProfile) {
-        // Yeh error tab aayega agar Policy set nahi hogi
-        alert('⚠️ Main profile updated, but failed to sync to Profile Data. Check Database Policy: ' + errorProfile.message);
+        alert('⚠️ Main profile updated, but failed to sync to Profile Data: ' + errorProfile.message);
+      } else if (errorQineq) {
+        alert('⚠️ Profile updated, but failed to sync to qineq_users: ' + errorQineq.message);
       } else {
-        alert('✅ Profile updated successfully!');
+        alert('✅ Profile updated successfully across all tables!');
         window.location.href = 'profile.html';
       }
     });
