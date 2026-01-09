@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>P2P Withdrawal - AvicnKnov Exchange</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Fonts -->
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
       @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
@@ -33,9 +31,34 @@
         backdrop-filter: blur(12px);
         border: 1px solid rgba(51, 65, 85, 0.5);
       }
+
+      /* Premium Button Glow Effect */
+      .premium-btn-glow {
+        position: relative;
+        overflow: hidden;
+        transition: all 0.4s ease;
+      }
+      .premium-btn-glow:hover {
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+        transform: translateY(-2px);
+      }
+      .premium-btn-glow::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+        transform: rotate(45deg);
+        animation: shine 3s infinite;
+      }
+      @keyframes shine {
+        0% { left: -100%; }
+        100% { left: 100%; }
+      }
     </style>
 
-    <!-- Import Map -->
     <script type="importmap">
     {
       "imports": {
@@ -46,7 +69,6 @@
     }
     </script>
     
-    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
@@ -57,7 +79,7 @@
         import { createRoot } from 'react-dom/client';
         import { 
             ArrowLeft, Bot, ShieldCheck, Zap, AlertTriangle, 
-            Headphones, Mail, Copy, CheckCircle2 
+            Headphones, Mail, Copy, CheckCircle2, ArrowRightLeft, TrendingUp 
         } from 'lucide-react';
 
         const WithdrawalP2P = () => {
@@ -71,6 +93,10 @@
 
             const handleSupport = () => {
                 window.location.href = 'help.html#/help';
+            };
+
+            const handleStartP2P = () => {
+                window.location.href = 'p2p.html'; // Yahan apna P2P HTML section link dalein
             };
 
             const handleCopyEmail = () => {
@@ -209,12 +235,29 @@
                             </div>
                         </section>
 
-                        {/* Coming Soon Button */}
-                        <div className="mt-8 text-center slide-up" style={{ animationDelay: '0.2s' }}>
-                            <button className="w-full py-4 rounded-xl bg-slate-800 text-slate-500 font-bold border border-slate-700 cursor-not-allowed opacity-75">
-                                Finding Peers...
+                        {/* NEW ATTRACTIVE PREMIUM P2P BUTTON */}
+                        <div className="mt-8 slide-up" style={{ animationDelay: '0.2s' }}>
+                            <button 
+                                onClick={handleStartP2P}
+                                className="premium-btn-glow w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 p-[1px] rounded-2xl group shadow-2xl shadow-emerald-900/20"
+                            >
+                                <div className="bg-slate-950/40 group-hover:bg-transparent transition-colors rounded-[15px] py-4 px-6 flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="bg-emerald-500/20 p-2 rounded-lg group-hover:bg-white/20 transition-colors">
+                                            <ArrowRightLeft className="w-6 h-6 text-emerald-400 group-hover:text-white" />
+                                        </div>
+                                        <div className="text-left">
+                                            <span className="block text-white font-extrabold text-lg leading-none mb-1">Enter P2P Market</span>
+                                            <span className="block text-emerald-400/80 text-[10px] font-bold uppercase tracking-widest group-hover:text-emerald-100 transition-colors">Start Selling Assets</span>
+                                        </div>
+                                    </div>
+                                    <TrendingUp className="w-6 h-6 text-emerald-500/50 group-hover:text-white transition-all group-hover:scale-110" />
+                                </div>
                             </button>
-                            <p className="text-xs text-slate-600 mt-2">AI System Active</p>
+                            <p className="text-[10px] text-slate-600 mt-3 font-bold uppercase tracking-tighter">
+                                <span className="inline-block w-2 h-2 bg-emerald-500 rounded-full animate-pulse mr-2"></span>
+                                AI-Assistant is ready to guide your trade
+                            </p>
                         </div>
 
                     </div>
