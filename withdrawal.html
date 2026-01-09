@@ -1,144 +1,264 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Withdraw Funds</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: #f9f9f9;
-      color: #333;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Withdraw Funds - AvicnKnov Exchange</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #020617; /* Slate 950 */
+        color: white;
+      }
 
-    .header {
-      display: flex;
-      align-items: center;
-      padding: 12px 16px;
-      background: #fff;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: #0f172a; }
+      ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
 
-    .header i {
-      font-size: 20px;
-      margin-right: 10px;
-      cursor: pointer;
-      color: #333;
-    }
+      /* Animations */
+      .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+      .slide-up { animation: slideUp 0.5s ease-out forwards; }
+      
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes slideUp { 
+        from { transform: translateY(20px); opacity: 0; } 
+        to { transform: translateY(0); opacity: 1; } 
+      }
+    </style>
 
-    .header h1 {
-      font-size: 18px;
-      margin: 0;
-    }
-
-    .container {
-      padding: 20px;
-    }
-
-    .option-card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 15px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-
-    .option-card:hover {
-      transform: scale(1.02);
-    }
-
-    .option-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .option-icon {
-      width: 40px;
-      height: 40px;
-      background: #e0e7ff;
-      color: #3b82f6;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-    }
-
-    .option-title {
-      font-size: 16px;
-      font-weight: 600;
-    }
-
-    .option-arrow {
-      color: #999;
-      font-size: 18px;
-    }
-
-    .footer-note {
-      text-align: center;
-      font-size: 13px;
-      color: #666;
-      margin-top: 40px;
-    }
-  </style>
-</head>
-<body>
-
-  <!-- Header -->
-  <div class="header">
-    <i class="fas fa-arrow-left" onclick="goBack()"></i>
-    <h1>Withdraw Funds</h1>
-  </div>
-
-  <div class="container">
-
-    <!-- Option 1: UPI & Bank -->
-    <div class="option-card" onclick="location.href='withdrawal-upi.html'">
-      <div class="option-info">
-        <div class="option-icon"><i class="fas fa-university"></i></div>
-        <div class="option-title">UPI & Bank</div>
-      </div>
-      <div class="option-arrow"><i class="fas fa-chevron-right"></i></div>
-    </div>
-
-    <!-- Option 2: Crypto -->
-    <div class="option-card" onclick="location.href='withdrawal-crypto.html'">
-      <div class="option-info">
-        <div class="option-icon"><i class="fab fa-bitcoin"></i></div>
-        <div class="option-title">Crypto</div>
-      </div>
-      <div class="option-arrow"><i class="fas fa-chevron-right"></i></div>
-    </div>
-
-    <!-- Option 3: P2P -->
-    <div class="option-card" onclick="location.href='p2p.html'">
-      <div class="option-info">
-        <div class="option-icon"><i class="fas fa-handshake"></i></div>
-        <div class="option-title">P2P</div>
-      </div>
-      <div class="option-arrow"><i class="fas fa-chevron-right"></i></div>
-    </div>
-
-    <div class="footer-note">Select your preferred method to withdraw funds</div>
-  </div>
-
-  <script>
-    function goBack() {
-      if (document.referrer.includes("dashboard")) {
-        location.href = "dashboard.html";
-      } else {
-        location.href = "assets.html";
+    <!-- Import Map for React & Lucide -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.292.0"
       }
     }
-  </script>
+    </script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
 
+    <script type="text/babel" data-type="module">
+        import React, { useState } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { 
+            ArrowLeft, Landmark, Bitcoin, Users, ShieldCheck, 
+            Clock, Headphones, Copy, CheckCircle2, Mail, ChevronRight 
+        } from 'lucide-react';
+
+        const WithdrawalPage = () => {
+            const [copied, setCopied] = useState(false);
+            const supportEmail = "help.avicnkvonteam@gmail.com";
+
+            // --- Navigation ---
+const handleBack = () => {
+    /**
+     * window.history.length > 1 check karta hai ki kya pichhe jaane ke liye koi page hai.
+     * document.referrer check karta hai ki user kisi link se aaya hai ya direct URL se.
+     */
+    if (window.history.length > 1 && document.referrer !== "") {
+        // User jahan se aaya tha (Trade, Assets, ya Dashboard), wahi wapas bhej dega 
+        // Isse Main HTML ke icons aur state disturb nahi honge.
+        window.history.back();
+    } else {
+        // Agar koi history nahi milti (rare case), to default dashboard par bhej dega.
+        window.location.href = 'dashboard.html';
+    }
+};
+
+            const navigateTo = (page) => {
+                window.location.href = page;
+            };
+
+            // Copy Email Handler
+            const handleCopyEmail = () => {
+                navigator.clipboard.writeText(supportEmail);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-950 text-white pb-12 relative overflow-hidden">
+                    
+                    {/* Background Ambient Glow */}
+                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+                        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[100px]" />
+                        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[100px]" />
+                    </div>
+
+                    <div className="relative z-10 max-w-2xl mx-auto px-4 sm:px-6">
+                        
+                        {/* Header Section */}
+                        <header className="pt-6 pb-8 flex items-center fade-in">
+                            <button 
+                                onClick={handleBack} 
+                                className="p-2.5 rounded-full bg-slate-900/50 border border-slate-700 hover:bg-slate-800 hover:border-slate-500 transition-all duration-300 group shadow-lg shadow-black/20"
+                                aria-label="Back to Dashboard"
+                            >
+                                <ArrowLeft className="w-5 h-5 text-gray-400 group-hover:text-white" />
+                            </button>
+                            <h1 className="ml-4 text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+                                Withdraw Funds
+                            </h1>
+                        </header>
+
+                        {/* Withdrawal Options */}
+                        <section className="space-y-4 slide-up">
+                            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-4 ml-1">Select Withdrawal Method</p>
+                            
+                            {/* Option 1: UPI */}
+                            <WithdrawalOption 
+                                title="Withdraw via UPI / Bank"
+                                subtitle="Direct transfer to your bank account"
+                                icon={<Landmark className="w-6 h-6" />}
+                                color="text-emerald-400"
+                                bgIcon="bg-emerald-500/10"
+                                hoverBorder="hover:border-emerald-500/50"
+                                onClick={() => navigateTo('withdrawal-upi.html')}
+                            />
+
+                            {/* Option 2: Crypto */}
+                            <WithdrawalOption 
+                                title="Withdraw Crypto"
+                                subtitle="USDT, BTC, ETH to external wallet"
+                                icon={<Bitcoin className="w-6 h-6" />}
+                                color="text-amber-400"
+                                bgIcon="bg-amber-500/10"
+                                hoverBorder="hover:border-amber-500/50"
+                                onClick={() => navigateTo('withdrawal-crypto.html')}
+                            />
+
+                            {/* Option 3: P2P */}
+                            <WithdrawalOption 
+                                title="P2P Withdrawal"
+                                subtitle="Sell assets directly to verified peers"
+                                icon={<Users className="w-6 h-6" />}
+                                color="text-purple-400"
+                                bgIcon="bg-purple-500/10"
+                                hoverBorder="hover:border-purple-500/50"
+                                onClick={() => navigateTo('withdrawal-p2p.html')}
+                            />
+                        </section>
+
+                        {/* Security & Info Policy */}
+                        <section className="mt-10 slide-up" style={{ animationDelay: '0.1s' }}>
+                            <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 rounded-2xl p-6 border border-slate-800 shadow-xl">
+                                <div className="flex items-start gap-4 mb-5">
+                                    <div className="p-3 bg-blue-500/10 rounded-xl shrink-0">
+                                        <ShieldCheck className="w-6 h-6 text-blue-400" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-lg font-semibold text-white mb-2">Secure & Reliable Processing</h4>
+                                        <p className="text-sm text-slate-300 leading-relaxed">
+                                            Our withdrawal gateway is designed for speed and security. While processing times may vary based on the network or banking method selected, <span className="text-blue-400 font-medium">AvicnKnov</span> guarantees that your funds will reach their destination safely.
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex items-center gap-3 pt-4 border-t border-slate-700/50">
+                                    <Clock className="w-4 h-4 text-yellow-500/80" />
+                                    <p className="text-xs text-slate-400">
+                                        Most requests are processed instantly, though some may take up to 24 hours.
+                                    </p>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Support Section */}
+                        <section className="mt-8 mb-8 slide-up" style={{ animationDelay: '0.2s' }}>
+                            <div className="flex items-center justify-between mb-4 px-1">
+                                <h3 className="text-lg font-semibold text-white">Support & Assistance</h3>
+                                <button 
+                                    onClick={() => window.location.href = 'index.html#/help'}
+                                    className="flex items-center gap-2 text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors px-3 py-1.5 rounded-full bg-blue-500/10 hover:bg-blue-500/20"
+                                >
+                                    <Headphones className="w-3.5 h-3.5" />
+                                    <span>Help Center</span>
+                                </button>
+                            </div>
+
+                            <div className="bg-slate-900/60 rounded-2xl border border-slate-800 p-5 backdrop-blur-sm">
+                                <p className="text-slate-400 text-sm mb-5 leading-relaxed">
+                                    Facing issues with a withdrawal? Don't worry. Our dedicated support team is here to resolve your queries immediately.
+                                </p>
+
+                                {/* Email Copy Box */}
+                                <div 
+                                    onClick={handleCopyEmail}
+                                    className="group cursor-pointer relative overflow-hidden rounded-xl border border-slate-700 bg-slate-950 p-4 transition-all duration-300 hover:border-blue-500/50 hover:bg-slate-900 hover:shadow-lg hover:shadow-blue-900/10"
+                                >
+                                    <div className="flex items-center justify-between relative z-10">
+                                        <div className="flex items-center gap-3 overflow-hidden">
+                                            <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center group-hover:bg-blue-600 transition-colors duration-300">
+                                                <Mail className="w-5 h-5 text-gray-300 group-hover:text-white" />
+                                            </div>
+                                            <div className="flex flex-col overflow-hidden">
+                                                <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-0.5">Official Support Email</span>
+                                                <span className="text-sm sm:text-base font-medium text-white truncate group-hover:text-blue-100 transition-colors">
+                                                    {supportEmail}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="ml-2 pl-3 border-l border-slate-800 group-hover:border-slate-700 transition-colors">
+                                            {copied ? (
+                                                <CheckCircle2 className="w-5 h-5 text-emerald-400 animate-bounce" />
+                                            ) : (
+                                                <Copy className="w-5 h-5 text-gray-500 group-hover:text-blue-400" />
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    {copied && (
+                                        <div className="absolute inset-0 bg-emerald-500/10 flex items-center justify-center backdrop-blur-[1px] z-20">
+                                            <span className="bg-emerald-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg">Copied!</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </section>
+
+                    </div>
+                </div>
+            );
+        };
+
+        // Reusable Option Card Component
+        const WithdrawalOption = ({ title, subtitle, icon, color, bgIcon, hoverBorder, onClick }) => (
+            <button 
+                onClick={onClick}
+                className={`w-full group relative overflow-hidden bg-slate-900/60 backdrop-blur-md border border-slate-800 ${hoverBorder} rounded-2xl p-5 text-left transition-all duration-300 hover:shadow-xl hover:shadow-black/20 hover:scale-[1.01] hover:bg-slate-800/80`}
+            >
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-xl ${bgIcon} flex items-center justify-center ${color} group-hover:text-white group-hover:bg-opacity-100 transition-all duration-300 shadow-inner`}>
+                            {icon}
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-white group-hover:text-blue-100 transition-colors">{title}</h3>
+                            <p className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">{subtitle}</p>
+                        </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-white transition-colors" />
+                </div>
+            </button>
+        );
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<WithdrawalPage />);
+    </script>
 </body>
 </html>
