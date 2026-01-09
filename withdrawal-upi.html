@@ -1,180 +1,551 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Withdraw Funds - UPI</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f3f4f6;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiat Withdrawal - AvicnKnov</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 
-    .container {
-      background: white;
-      padding: 20px;
-      border-radius: 16px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.1);
-      width: 90%;
-      max-width: 400px;
-    }
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #020617; /* Slate 950 */
+        color: white;
+      }
+      .font-mono { font-family: 'JetBrains Mono', monospace; }
 
-    h2 {
-      margin-top: 0;
-      text-align: center;
-      color: #333;
-    }
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar { width: 5px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
 
-    label {
-      display: block;
-      margin-top: 12px;
-      font-weight: 500;
-    }
+      /* Animations */
+      .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+      .slide-up { animation: slideUp 0.4s ease-out forwards; }
+      .zoom-in { animation: zoomIn 0.3s ease-out forwards; }
+      
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-    input {
-      width: 100%;
-      padding: 10px;
-      margin-top: 6px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 16px;
-    }
+      /* Glassmorphism */
+      .glass {
+        background: rgba(15, 23, 42, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(51, 65, 85, 0.5);
+      }
+      
+      .premium-gradient {
+        background: linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(16,185,129,0.05) 100%);
+      }
+    </style>
 
-    button {
-      margin-top: 20px;
-      width: 100%;
-      padding: 12px;
-      background-color: #4f46e5;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      cursor: pointer;
+    <!-- Import Map -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.292.0",
+        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.3"
+      }
     }
-
-    .notification {
-      text-align: center;
-      margin-top: 15px;
-      font-weight: bold;
-      color: red;
-    }
-
-    .back-button {
-      position: fixed;
-      top: 15px;
-      left: 15px;
-      font-size: 18px;
-      cursor: pointer;
-    }
-  </style>
+    </script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
+    <div id="root"></div>
 
-  <div class="back-button" onclick="window.location.href='withdrawal.html'">⬅ Back</div>
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { createClient } from '@supabase/supabase-js';
+        import { 
+            ArrowLeft, Plus, Wallet, ShieldCheck, Clock, 
+            Headphones, Info, CheckCircle2, Loader2, X, 
+            Banknote, Smartphone, ChevronRight, UploadCloud, Trash2
+        } from 'lucide-react';
 
-  <div class="container">
-    <h2>Withdraw to UPI</h2>
+        // --- Supabase Config ---
+        const supabaseUrl = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+        const supabase = createClient(supabaseUrl, supabaseKey);
 
-    <label>Amount (₹100 min)</label>
-    <input type="number" id="withdrawAmount" placeholder="Enter amount" />
+        const WithdrawalUPI = () => {
+            // --- Global State ---
+            const [userBalance, setUserBalance] = useState(0);
+            const [userId, setUserId] = useState(null);
+            
+            // --- UI State ---
+            const [view, setView] = useState('main'); // 'main', 'add_account'
+            const [activeModalMethod, setActiveModalMethod] = useState(null); // Which method clicked (e.g. 'Google Pay')
+            
+            // --- Data State ---
+            const [savedAccounts, setSavedAccounts] = useState([]);
+            const [loadingData, setLoadingData] = useState(true);
 
-    <label>UPI ID</label>
-    <input type="text" id="upiId" placeholder="Enter your UPI ID" />
+            // --- Form States ---
+            const [withdrawAmount, setWithdrawAmount] = useState('');
+            const [processing, setProcessing] = useState(false);
+            const [successMsg, setSuccessMsg] = useState('');
+            
+            // Add Account Form
+            const [addFormType, setAddFormType] = useState('UPI');
+            const [addFormData, setAddFormData] = useState({
+                name: '', identifier: '', confirmIdentifier: '', secondary: '', contactType: 'phone', qrImage: null
+            });
+            const [addingAccount, setAddingAccount] = useState(false);
 
-    <button onclick="submitWithdrawal()">Withdraw</button>
+            // --- Initialization ---
+            useEffect(() => {
+                const init = async () => {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if(user) {
+                        setUserId(user.id);
+                        fetchUserData(user.id);
+                    }
+                };
+                init();
+            }, []);
 
-    <div class="notification" id="notification"></div>
-  </div>
+            const fetchUserData = async (uid) => {
+                setLoadingData(true);
+                // Balance
+                const { data: wallet } = await supabase.from('user-wallets').select('balance').eq('uid', uid).single();
+                if(wallet) setUserBalance(parseFloat(wallet.balance) || 0);
 
-  <!-- ✅ Supabase JS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script>
-    const supabase = window.supabase.createClient(
-      'https://hwrvqyipozrsxyjdpqag.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM'
-    );
+                // Saved Accounts
+                const { data: methods } = await supabase.from('user-withdrawal-details')
+                    .select('*').eq('user_id', uid).eq('is_active', true).order('created_at', {ascending: false});
+                setSavedAccounts(methods || []);
+                setLoadingData(false);
+            };
 
-    function generateOrderId() {
-      return Math.floor(10000000 + Math.random() * 90000000).toString();
-    }
+            // --- Navigation ---
+            const handleBack = () => {
+                if(view === 'add_account') {
+                    setView('main');
+                } else if (activeModalMethod) {
+                    setActiveModalMethod(null);
+                    setSuccessMsg('');
+                    setWithdrawAmount('');
+                } else {
+                    window.location.href = 'withdrawal.html';
+                }
+            };
 
-    async function submitWithdrawal() {
-      const amount = parseFloat(document.getElementById("withdrawAmount").value);
-      const upiId = document.getElementById("upiId").value.trim();
-      const notification = document.getElementById("notification");
+            // --- Actions ---
 
-      if (!amount || amount < 100) {
-        notification.textContent = "❌ Minimum ₹100 required";
-        return;
-      }
+            // 1. Save New Account
+            const handleSaveAccount = async () => {
+                setAddingAccount(true);
+                try {
+                    // Validations
+                    if (!addFormData.name || !addFormData.identifier) throw new Error("Please fill all required fields.");
+                    if (addFormType === 'Bank Transfer') {
+                        if (addFormData.identifier !== addFormData.confirmIdentifier) throw new Error("Account numbers do not match.");
+                        if (!addFormData.secondary) throw new Error("IFSC Code is required.");
+                    }
 
-      if (!upiId) {
-        notification.textContent = "❌ UPI ID required";
-        return;
-      }
+                    // Upload QR if exists
+                    let qrUrl = null;
+                    if (addFormData.qrImage) {
+                        const fileExt = addFormData.qrImage.name.split('.').pop();
+                        const fileName = `${userId}/${Date.now()}.${fileExt}`;
+                        await supabase.storage.from('user-withdrawal-qr').upload(fileName, addFormData.qrImage);
+                        const { data } = supabase.storage.from('user-withdrawal-qr').getPublicUrl(fileName);
+                        qrUrl = data.publicUrl;
+                    }
 
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) {
-        notification.textContent = "❌ Not logged in";
-        return;
-      }
+                    // Insert
+                    const { error } = await supabase.from('user-withdrawal-details').insert([{
+                        user_id: userId,
+                        method_name: addFormType,
+                        account_holder_name: addFormData.name,
+                        identifier: addFormData.identifier,
+                        secondary_identifier: addFormType === 'Bank Transfer' ? addFormData.secondary : addFormData.contactType === 'email' ? addFormData.secondary : null,
+                        qr_image_url: qrUrl
+                    }]);
+                    if(error) throw error;
 
-      const userId = user.id;
+                    await fetchUserData(userId); // Refresh list
+                    alert("Account Saved Successfully!");
+                    setView('main'); // Go back
+                    setAddFormData({ name: '', identifier: '', confirmIdentifier: '', secondary: '', contactType: 'phone', qrImage: null });
 
-      // ✅ Fetch balance from correct table
-      const { data: wallet, error: walletError } = await supabase
-        .from("user_wallets")
-        .select("balance")
-        .eq("uid", userId)
-        .single();
+                } catch(e) {
+                    alert(e.message);
+                } finally {
+                    setAddingAccount(false);
+                }
+            };
 
-      if (walletError || !wallet) {
-        notification.textContent = "❌ Wallet not found";
-        return;
-      }
+            // 2. Withdraw
+            const handleWithdraw = async (selectedAccountDetails) => {
+                const amt = parseFloat(withdrawAmount);
+                if(isNaN(amt) || amt < 200) { alert("Min withdrawal is ₹200"); return; }
+                if(amt > userBalance) { alert("Insufficient Balance"); return; }
+                
+                setProcessing(true);
+                try {
+                    const orderId = "WID-" + Date.now().toString().slice(-6);
+                    
+                    // Tx Log
+                    await supabase.from('user-transactions').insert([{
+                        uid: userId, order_id: orderId, type: 'withdrawal', 
+                        method: selectedAccountDetails.method_name, amount: amt, status: 'pending',
+                        description: `Withdraw to ${selectedAccountDetails.method_name}`
+                    }]);
 
-      const balance = parseFloat(wallet.balance);
+                    // History Log
+                    await supabase.from('user-withdrawal-history').insert([{
+                        user_id: userId, method_name: selectedAccountDetails.method_name,
+                        amount: amt, status: 'pending', details_snapshot: selectedAccountDetails
+                    }]);
 
-      if (balance < 100 || amount > balance) {
-        notification.textContent = "❌ Insufficient balance";
-        return;
-      }
+                    setSuccessMsg("Withdrawal Placed Successfully!");
+                    setTimeout(() => window.location.reload(), 3000);
 
-      const orderId = generateOrderId(); // ✅ 8-digit unique Order ID
+                } catch(e) {
+                    alert("Error: " + e.message);
+                    setProcessing(false);
+                }
+            };
 
-      const { error: insertError } = await supabase
-        .from("withdrawals")
-        .insert([
-          {
-            uid: userId,
-            amount: amount,
-            method: "Withdrawal", // ✅ fix for method (instead of UPI ID showing up)
-            status: "pending",
-            type: "UPI",
-            order_id: orderId,
-            created_at: new Date().toISOString()
-          }
-        ]);
+            // --- Components ---
 
-      if (insertError) {
-        notification.textContent = "❌ Withdrawal failed";
-        console.error(insertError);
-        return;
-      }
+            const MethodIcon = ({ type }) => {
+                switch(type) {
+                    case 'Google Pay': return <span className="font-bold text-blue-500">GPay</span>;
+                    case 'PhonePe': return <span className="font-bold text-purple-500">Pe</span>;
+                    case 'Paytm': return <span className="font-bold text-cyan-400">Paytm</span>;
+                    case 'UPI': return <span className="font-bold text-orange-400">UPI</span>;
+                    default: return <Banknote className="w-6 h-6 text-emerald-400" />;
+                }
+            };
 
-      notification.style.color = "green";
-      notification.textContent = "✅ Withdrawal has been pending...";
+            return (
+                <div className="min-h-screen bg-slate-950 text-white relative font-sans pb-10 overflow-hidden">
+                    
+                    {/* Ambience */}
+                    <div className="fixed inset-0 pointer-events-none">
+                         <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[100px]"></div>
+                         <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[100px]"></div>
+                    </div>
 
-      setTimeout(() => {
-        window.location.href = "transactions.html";
-      }, 2000);
-    }
-  </script>
+                    <div className="relative z-10 max-w-xl mx-auto px-4">
+                        
+                        {/* Header */}
+                        <div className="pt-6 pb-6 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <button onClick={handleBack} className="p-2 rounded-full glass hover:bg-slate-800 transition-colors">
+                                    <ArrowLeft className="w-5 h-5 text-gray-300" />
+                                </button>
+                                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+                                    {view === 'add_account' ? 'Add New Account' : 'Withdraw Funds'}
+                                </h1>
+                            </div>
+                            
+                            {/* Top Right: Add Account Button (Only on Main View) */}
+                            {view === 'main' && !activeModalMethod && (
+                                <button 
+                                    onClick={() => setView('add_account')}
+                                    className="flex items-center gap-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
+                                >
+                                    <Plus className="w-3.5 h-3.5" /> ADD
+                                </button>
+                            )}
+                        </div>
+
+                        {/* ================= VIEW: MAIN LIST ================= */}
+                        {view === 'main' && !activeModalMethod && (
+                            <div className="fade-in space-y-8">
+                                
+                                {/* Balance Card */}
+                                <div className="glass rounded-2xl p-6 relative overflow-hidden group">
+                                    <div className="absolute inset-0 premium-gradient opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                                    <div className="relative z-10">
+                                        <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Available Balance</p>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-3xl font-mono font-bold text-white">₹{userBalance.toLocaleString('en-IN')}</span>
+                                        </div>
+                                    </div>
+                                    <Wallet className="absolute right-4 bottom-4 w-16 h-16 text-slate-800 rotate-12" />
+                                </div>
+
+                                {/* Methods Grid */}
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-300 mb-4 px-1">Select Withdrawal Method</p>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {['Google Pay', 'Paytm', 'PhonePe', 'UPI', 'Bank Transfer'].map(method => (
+                                            <button 
+                                                key={method}
+                                                onClick={() => {
+                                                    setActiveModalMethod(method);
+                                                    setWithdrawAmount('');
+                                                }}
+                                                className="glass p-4 rounded-xl flex flex-col items-center justify-center gap-3 hover:bg-slate-800/50 hover:border-blue-500/50 transition-all active:scale-[0.98] group"
+                                            >
+                                                <div className="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                                                    <MethodIcon type={method} />
+                                                </div>
+                                                <span className="text-xs font-medium text-slate-300 group-hover:text-white">{method === 'Bank Transfer' ? 'Bank Account' : method}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Info & Policy Section */}
+                                <div className="space-y-4 pt-4 border-t border-slate-800/50">
+                                    
+                                    {/* Tip */}
+                                    <div className="flex gap-3 bg-blue-500/5 border border-blue-500/10 p-4 rounded-xl">
+                                        <Info className="w-5 h-5 text-blue-400 shrink-0" />
+                                        <p className="text-xs text-blue-200 leading-relaxed">
+                                            <span className="font-bold text-blue-400">Tip:</span> Save your account details using the "ADD" button in the top-right corner for faster, one-click withdrawals in the future.
+                                        </p>
+                                    </div>
+
+                                    {/* Policy Text */}
+                                    <div className="bg-slate-900/50 rounded-xl p-5 border border-slate-800">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                                            <h3 className="text-sm font-bold text-white">Safe, Smooth & Secure</h3>
+                                        </div>
+                                        <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                                            We strive to process withdrawals as fast as possible. However, security is our top priority. If a transaction takes longer than usual, it is to ensure your funds are transferred safely without any issues. Your patience allows us to maintain a secure environment.
+                                        </p>
+                                        
+                                        <button 
+                                            onClick={() => window.location.href = 'index.html#/help'}
+                                            className="w-full flex items-center justify-center gap-2 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold text-slate-300 transition-colors"
+                                        >
+                                            <Headphones className="w-4 h-4" />
+                                            Contact Help & Support
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ================= VIEW: ADD ACCOUNT ================= */}
+                        {view === 'add_account' && (
+                            <div className="slide-in-right space-y-6">
+                                {/* Type Selector */}
+                                <div className="flex overflow-x-auto gap-2 pb-2 no-scrollbar">
+                                    {['UPI', 'PhonePe', 'Google Pay', 'Paytm', 'Bank Transfer'].map(type => (
+                                        <button 
+                                            key={type}
+                                            onClick={() => { setAddFormType(type); setAddFormData({...addFormData, qrImage: null}); }}
+                                            className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition-all ${addFormType === type ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}
+                                        >
+                                            {type}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-500 uppercase ml-1">Account Name</label>
+                                        <input 
+                                            type="text" 
+                                            value={addFormData.name}
+                                            onChange={e => setAddFormData({...addFormData, name: e.target.value})}
+                                            className="w-full mt-1 bg-slate-900 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none"
+                                            placeholder="Enter Account Holder Name"
+                                        />
+                                    </div>
+
+                                    {addFormType === 'Bank Transfer' ? (
+                                        <>
+                                            <div>
+                                                <label className="text-xs font-bold text-slate-500 uppercase ml-1">Account Number</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={addFormData.identifier}
+                                                    onChange={e => setAddFormData({...addFormData, identifier: e.target.value.replace(/\D/g, '')})}
+                                                    className="w-full mt-1 bg-slate-900 border border-slate-800 rounded-xl p-4 font-mono text-white focus:border-blue-500 outline-none"
+                                                    placeholder="Enter Account No."
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-slate-500 uppercase ml-1">Confirm Account Number</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={addFormData.confirmIdentifier}
+                                                    onChange={e => setAddFormData({...addFormData, confirmIdentifier: e.target.value.replace(/\D/g, '')})}
+                                                    className="w-full mt-1 bg-slate-900 border border-slate-800 rounded-xl p-4 font-mono text-white focus:border-blue-500 outline-none"
+                                                    placeholder="Re-enter Account No."
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-slate-500 uppercase ml-1">IFSC Code</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={addFormData.secondary}
+                                                    onChange={e => setAddFormData({...addFormData, secondary: e.target.value.toUpperCase()})}
+                                                    className="w-full mt-1 bg-slate-900 border border-slate-800 rounded-xl p-4 font-mono text-white focus:border-blue-500 outline-none uppercase"
+                                                    placeholder="IFSC Code"
+                                                />
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div>
+                                                <label className="text-xs font-bold text-slate-500 uppercase ml-1">{addFormType === 'UPI' ? 'UPI ID' : 'Mobile Number / UPI ID'}</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={addFormData.identifier}
+                                                    onChange={e => setAddFormData({...addFormData, identifier: e.target.value})}
+                                                    className="w-full mt-1 bg-slate-900 border border-slate-800 rounded-xl p-4 font-mono text-white focus:border-blue-500 outline-none"
+                                                    placeholder="Enter Details"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-slate-500 uppercase ml-1">QR Code (Optional)</label>
+                                                <div className="relative mt-1">
+                                                    <input type="file" id="qr" className="hidden" accept="image/*" onChange={e => e.target.files && setAddFormData({...addFormData, qrImage: e.target.files[0]})} />
+                                                    <label htmlFor="qr" className={`flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed rounded-xl cursor-pointer ${addFormData.qrImage ? 'border-green-500/50 text-green-400' : 'border-slate-800 text-slate-500'}`}>
+                                                        <UploadCloud className="w-5 h-5" />
+                                                        <span className="text-sm">{addFormData.qrImage ? "Image Selected" : "Tap to Upload"}</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    <button 
+                                        onClick={handleSaveAccount}
+                                        disabled={addingAccount}
+                                        className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-white shadow-lg mt-4 flex justify-center items-center gap-2"
+                                    >
+                                        {addingAccount ? <Loader2 className="animate-spin" /> : "Save Account"}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ================= MODAL: WITHDRAW ================= */}
+                        {activeModalMethod && (
+                            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-slate-950/90 backdrop-blur-sm fade-in">
+                                <div className="w-full max-w-lg bg-slate-900 sm:rounded-3xl rounded-t-3xl border border-slate-800 shadow-2xl slide-up overflow-hidden max-h-[90vh] flex flex-col">
+                                    
+                                    {/* Modal Header */}
+                                    <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900 sticky top-0 z-10">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
+                                                <MethodIcon type={activeModalMethod} />
+                                            </div>
+                                            <h2 className="text-lg font-bold text-white">{activeModalMethod}</h2>
+                                        </div>
+                                        <button onClick={() => setActiveModalMethod(null)} className="p-2 hover:bg-slate-800 rounded-full text-slate-400">
+                                            <X className="w-6 h-6" />
+                                        </button>
+                                    </div>
+
+                                    {/* Modal Body */}
+                                    <div className="p-6 overflow-y-auto">
+                                        {successMsg ? (
+                                            <div className="text-center py-10 zoom-in">
+                                                <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
+                                                <h3 className="text-xl font-bold text-white">Success!</h3>
+                                                <p className="text-slate-400 text-sm">{successMsg}</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-6">
+                                                {/* Account Selection */}
+                                                <div>
+                                                    <p className="text-xs font-bold text-slate-500 uppercase mb-3">Select Saved Account</p>
+                                                    
+                                                    {savedAccounts.filter(acc => acc.method_name === activeModalMethod).length > 0 ? (
+                                                        <div className="space-y-3">
+                                                            {savedAccounts.filter(acc => acc.method_name === activeModalMethod).map((acc) => (
+                                                                <div key={acc.id} className="group relative">
+                                                                    <div 
+                                                                        onClick={() => {
+                                                                            // Auto-select and trigger withdraw flow UI
+                                                                            // Here we just keep this selected for visual, amount is below
+                                                                        }}
+                                                                        className="bg-slate-950 border border-slate-800 hover:border-blue-500/50 p-4 rounded-xl flex items-center justify-between cursor-pointer"
+                                                                    >
+                                                                        <div>
+                                                                            <p className="font-bold text-white">{acc.account_holder_name}</p>
+                                                                            <p className="text-xs font-mono text-slate-400">{acc.identifier}</p>
+                                                                        </div>
+                                                                        {/* Delete Action */}
+                                                                        <button 
+                                                                            onClick={async (e) => {
+                                                                                e.stopPropagation();
+                                                                                if(confirm("Delete this account?")) {
+                                                                                    await supabase.from('user-withdrawal-details').delete().eq('id', acc.id);
+                                                                                    fetchUserData(userId);
+                                                                                }
+                                                                            }}
+                                                                            className="p-2 text-slate-600 hover:text-red-400"
+                                                                        >
+                                                                            <Trash2 className="w-4 h-4" />
+                                                                        </button>
+                                                                    </div>
+                                                                    
+                                                                    {/* WITHDRAW FORM FOR THIS ACCOUNT */}
+                                                                    <div className="mt-2 pl-4 pr-1 border-l-2 border-blue-500/30">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <input 
+                                                                                type="number" 
+                                                                                placeholder="Amount" 
+                                                                                className="w-full bg-slate-800 border-none rounded-lg p-3 text-white font-mono focus:ring-1 focus:ring-blue-500 outline-none"
+                                                                                onChange={(e) => setWithdrawAmount(e.target.value)}
+                                                                            />
+                                                                            <button 
+                                                                                onClick={() => handleWithdraw(acc)}
+                                                                                disabled={processing}
+                                                                                className="bg-blue-600 hover:bg-blue-500 px-4 py-3 rounded-lg text-sm font-bold text-white shadow-lg"
+                                                                            >
+                                                                                {processing ? <Loader2 className="animate-spin" /> : "Withdraw"}
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-center py-6 bg-slate-950/50 rounded-xl border border-dashed border-slate-800">
+                                                            <p className="text-sm text-slate-500 mb-3">No saved accounts found for {activeModalMethod}</p>
+                                                            <button 
+                                                                onClick={() => {
+                                                                    setActiveModalMethod(null);
+                                                                    setView('add_account');
+                                                                    setAddFormType(activeModalMethod);
+                                                                }}
+                                                                className="px-4 py-2 bg-slate-800 text-blue-400 text-xs font-bold rounded-lg border border-slate-700"
+                                                            >
+                                                                + Add New {activeModalMethod} Account
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<WithdrawalUPI />);
+    </script>
 </body>
 </html>
