@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>P2P Deposit - AvicnKnov Exchange</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Fonts -->
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
       @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
@@ -33,9 +31,35 @@
         backdrop-filter: blur(12px);
         border: 1px solid rgba(51, 65, 85, 0.5);
       }
+
+      /* Premium Purple Glow Button */
+      .premium-p2p-btn {
+        position: relative;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .premium-p2p-btn:hover {
+        box-shadow: 0 0 25px rgba(168, 85, 247, 0.4);
+        transform: translateY(-3px);
+      }
+      .premium-p2p-btn::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -100%;
+        width: 100%;
+        height: 200%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transform: rotate(25deg);
+        animation: premium-shine 4s infinite;
+      }
+      @keyframes premium-shine {
+        0% { left: -100%; }
+        20% { left: 100%; }
+        100% { left: 100%; }
+      }
     </style>
 
-    <!-- Import Map -->
     <script type="importmap">
     {
       "imports": {
@@ -46,7 +70,6 @@
     }
     </script>
     
-    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
@@ -57,7 +80,7 @@
         import { createRoot } from 'react-dom/client';
         import { 
             ArrowLeft, Bot, ShieldCheck, Zap, AlertTriangle, 
-            Headphones, Mail, Copy, CheckCircle2 
+            Headphones, Mail, Copy, CheckCircle2, ShoppingCart, Sparkles 
         } from 'lucide-react';
 
         const DepositP2P = () => {
@@ -71,6 +94,10 @@
 
             const handleSupport = () => {
                 window.location.href = 'help.html#/help';
+            };
+
+            const handleOpenP2PMarket = () => {
+                window.location.href = 'p2p.html';
             };
 
             const handleCopyEmail = () => {
@@ -209,12 +236,29 @@
                             </div>
                         </section>
 
-                        {/* Coming Soon Button */}
-                        <div className="mt-8 text-center slide-up" style={{ animationDelay: '0.2s' }}>
-                            <button className="w-full py-4 rounded-xl bg-slate-800 text-slate-500 font-bold border border-slate-700 cursor-not-allowed opacity-75">
-                                Loading P2P Market...
+                        {/* NEW PREMIUM P2P MARKET BUTTON */}
+                        <div className="mt-10 slide-up" style={{ animationDelay: '0.2s' }}>
+                            <button 
+                                onClick={handleOpenP2PMarket}
+                                className="premium-p2p-btn w-full bg-gradient-to-r from-purple-700 via-purple-600 to-indigo-700 p-[1.5px] rounded-2xl shadow-2xl shadow-purple-900/30 group"
+                            >
+                                <div className="bg-slate-950/40 group-hover:bg-transparent transition-all duration-300 rounded-[15px] py-4 px-6 flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="bg-purple-500/20 p-2.5 rounded-xl group-hover:bg-white/20 transition-all">
+                                            <ShoppingCart className="w-6 h-6 text-purple-300 group-hover:text-white" />
+                                        </div>
+                                        <div className="text-left">
+                                            <h4 className="text-white font-extrabold text-lg leading-none mb-1 group-hover:translate-x-1 transition-transform">Buy via P2P Market</h4>
+                                            <span className="text-purple-300/80 text-[10px] font-bold uppercase tracking-[0.15em] group-hover:text-white transition-colors">Start Fast Deposit</span>
+                                        </div>
+                                    </div>
+                                    <Sparkles className="w-5 h-5 text-purple-400 group-hover:text-white animate-pulse" />
+                                </div>
                             </button>
-                            <p className="text-xs text-slate-600 mt-2">Connecting to Secure Network</p>
+                            <div className="mt-4 flex items-center justify-center gap-2">
+                                <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-ping"></span>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Secure AI Verification Active</p>
+                            </div>
                         </div>
 
                     </div>
