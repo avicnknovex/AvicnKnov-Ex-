@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Withdraw Funds - AvicnKnov Exchange</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Fonts -->
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
       
@@ -34,7 +32,6 @@
       }
     </style>
 
-    <!-- Import Map for React & Lucide -->
     <script type="importmap">
     {
       "imports": {
@@ -45,7 +42,6 @@
     }
     </script>
     
-    <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
@@ -63,23 +59,31 @@
             const [copied, setCopied] = useState(false);
             const supportEmail = "help.avicnkvonteam@gmail.com";
 
-            // --- Navigation ---
-const handleBack = () => {
-    /**
-     * window.history.length > 1 check karta hai ki kya pichhe jaane ke liye koi page hai.
-     * document.referrer check karta hai ki user kisi link se aaya hai ya direct URL se.
-     */
-    if (window.history.length > 1 && document.referrer !== "") {
-        // User jahan se aaya tha (Trade, Assets, ya Dashboard), wahi wapas bhej dega 
-        // Isse Main HTML ke icons aur state disturb nahi honge.
-        window.history.back();
-    } else {
-        // Agar koi history nahi milti (rare case), to default dashboard par bhej dega.
-        window.location.href = 'dashboard.html';
-    }
-};
+            // --- Navigation Fix: Smart Back Logic ---
+            const handleBack = () => {
+                /**
+                 * Hum check kar rahe hain ki kya user kisi sub-page (UPI/Crypto) se wapas aaya hai.
+                 * Agar document.referrer mein in options ka naam hai, toh hum history back nahi karenge, 
+                 * seedha dashboard par bhejenge taaki loop na bane.
+                 */
+                const fromSubPage = document.referrer.includes('withdrawal-upi.html') || 
+                                    document.referrer.includes('withdrawal-crypto.html') || 
+                                    document.referrer.includes('withdrawal-p2p.html');
 
+                if (fromSubPage) {
+                    // Agar user sub-page se yahan aaya hai, toh use dashboard par bhej do
+                    window.location.href = 'dashboard.html';
+                } else if (window.history.length > 1 && document.referrer !== "") {
+                    // Normal case: Dashboard/Assets se seedha yahan aaya hai
+                    window.history.back();
+                } else {
+                    window.location.href = 'dashboard.html';
+                }
+            };
+
+            // --- Smart Navigate: Prevents History Looping ---
             const navigateTo = (page) => {
+                // window.location.href ki jagah hum history mein loop nahi chahte
                 window.location.href = page;
             };
 
