@@ -1,199 +1,497 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Deposit via UPI</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      background: #f3f4f6;
-      color: #111827;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deposit UPI - AvicnKnov Exchange</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #020617; /* Slate 950 */
+        color: white;
+      }
+      .font-mono { font-family: 'JetBrains Mono', monospace; }
+      
+      /* Custom scrollbar */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: #0f172a; }
+      ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+      
+      /* Animation Utilities */
+      .fade-in { animation: fadeIn 0.3s ease-out; }
+      .slide-up { animation: slideUp 0.3s ease-out; }
+      .zoom-in { animation: zoomIn 0.3s ease-out; }
+      
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+
+    <!-- Import Map for React & Supabase -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.292.0",
+        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.3"
+      }
     }
-    header {
-      background: #1f2937;
-      color: white;
-      padding: 15px 20px;
-      display: flex;
-      align-items: center;
-    }
-    .back-btn {
-      background: none;
-      border: none;
-      color: white;
-      font-size: 18px;
-      margin-right: 10px;
-      cursor: pointer;
-    }
-    header h2 {
-      font-size: 1.25rem;
-      margin: 0;
-    }
-    main {
-      max-width: 500px;
-      margin: 20px auto;
-      background: white;
-      border-radius: 10px;
-      padding: 20px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    .upi-box {
-      background: #e0f2fe;
-      padding: 15px;
-      border-radius: 8px;
-      font-size: 18px;
-      font-weight: bold;
-      color: #0369a1;
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    label {
-      font-weight: 600;
-      display: block;
-      margin-top: 15px;
-      margin-bottom: 5px;
-    }
-    input, button {
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 6px;
-      border: 1px solid #d1d5db;
-    }
-    input[type="file"] {
-      padding: 8px;
-    }
-    button {
-      margin-top: 20px;
-      background-color: #2563eb;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    .notification {
-      margin-top: 15px;
-      text-align: center;
-      font-weight: bold;
-    }
-    .error {
-      color: #b91c1c;
-    }
-    .success {
-      color: #065f46;
-    }
-  </style>
+    </script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
-  <header>
-    <button class="back-btn" onclick="goBack()">
-      <i class="fa fa-arrow-left"></i>
-    </button>
-    <h2>UPI Deposit</h2>
-  </header>
+    <div id="root"></div>
 
-  <main>
-    <div class="upi-box">
-      UPI ID: anshumegaming@oksbi
-    </div>
-    <form id="depositForm">
-      <label>Amount (Minimum ₹100)</label>
-      <input type="number" id="amount" min="100" placeholder="Enter amount" required />
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useRef } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { createClient } from '@supabase/supabase-js';
+        import { 
+            ArrowLeft, X, Copy, CheckCircle2, UploadCloud, 
+            Clock, AlertCircle, Loader2, QrCode
+        } from 'lucide-react';
 
-      <label>UTR Number</label>
-      <input type="text" id="utr" minlength="10" placeholder="Enter UTR Number" required />
+        // --- Supabase Configuration ---
+        const supabaseUrl = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+        const supabase = createClient(supabaseUrl, supabaseKey);
 
-      <label>Upload Payment Screenshot</label>
-      <input type="file" id="screenshot" accept="image/*" required />
+        const DepositUPI = () => {
+            const [selectedMethod, setSelectedMethod] = useState(null);
+            const [showModal, setShowModal] = useState(false);
+            const [loadingDetails, setLoadingDetails] = useState(false);
+            const [submitting, setSubmitting] = useState(false);
+            const [adminDetails, setAdminDetails] = useState(null);
+            
+            // Form State
+            const [amount, setAmount] = useState('');
+            const [utr, setUtr] = useState('');
+            const [screenshot, setScreenshot] = useState(null);
+            const [successMsg, setSuccessMsg] = useState('');
+            
+            // Timer State (3600s = 1 Hour)
+            const [timeLeft, setTimeLeft] = useState(3600);
+            const timerRef = useRef(null);
 
-      <button type="submit">Submit Deposit Request</button>
-      <div class="notification" id="notify"></div>
-    </form>
-  </main>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    const { createClient } = supabase;
-    const supabaseClient = createClient(
-      'https://hwrvqyipozrsxyjdpqag.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM'
-    );
-
-    const form = document.getElementById('depositForm');
-    const notify = document.getElementById('notify');
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const amount = parseFloat(document.getElementById('amount').value);
-      const utr = document.getElementById('utr').value.trim();
-      const file = document.getElementById('screenshot').files[0];
-
-      if (!amount || amount < 100 || utr.length < 10 || !file) {
-        notify.textContent = 'Deposit rejected. Please fill all fields correctly.';
-        notify.className = 'notification error';
-        return;
-      }
-
-      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-      if (userError || !user) {
-        notify.textContent = 'Please log in to continue.';
-        notify.className = 'notification error';
-        return;
-      }
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}_${Math.random()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      const { data: uploaded, error: uploadError } = await supabaseClient.storage
-        .from('support-files')
-        .upload(filePath, file);
-
-      if (uploadError) {
-        notify.textContent = 'Screenshot upload failed.';
-        notify.className = 'notification error';
-        return;
-      }
-
-      const { data: urlData } = supabaseClient.storage.from('support-files').getPublicUrl(filePath);
-      const orderId = Math.floor(10000000 + Math.random() * 90000000).toString();
-
-      const { error } = await supabaseClient.from('deposits').insert([
-        {
-          uid: user.id,
-          order_id: orderId,
-          type: 'deposit_upi',
-          amount: amount,
-          utr: utr,
-          status: 'pending',
-          screenshot: urlData.publicUrl
-        }
-      ]);
-
-      if (error) {
-        console.log("Insert Error:", error);
-        notify.textContent = 'Deposit rejected. Please try again.';
-        notify.className = 'notification error';
-        return;
-      }
-
-      notify.textContent = 'Your deposit has been marked as pending.';
-      notify.className = 'notification success';
-
-      setTimeout(() => {
-        location.href = 'transactions.html';
-      }, 2000);
-    });
-
-    function goBack() {
-      const from = document.referrer;
-      if (from.includes("deposit.html")) {
-        window.location.href = "deposit.html";
-      } else {
-        history.back();
-      }
+            // --- Navigation ---
+const handleBack = () => {
+    /**
+     * window.history.length > 1 check karta hai ki kya pichhe jaane ke liye koi page hai.
+     * document.referrer check karta hai ki user kisi link se aaya hai ya direct URL se.
+     */
+    if (window.history.length > 1 && document.referrer !== "") {
+        // User jahan se aaya tha (Trade, Assets, ya Dashboard), wahi wapas bhej dega 
+        // Isse Main HTML ke icons aur state disturb nahi honge.
+        window.history.back();
+    } else {
+        // Agar koi history nahi milti (rare case), to default dashboard par bhej dega.
+        window.location.href = 'dashboard.html';
     }
-  </script>
+};
+
+            // --- Effects ---
+
+            useEffect(() => {
+                if (showModal && timeLeft > 0) {
+                    timerRef.current = setInterval(() => {
+                        setTimeLeft((prev) => {
+                            if (prev <= 1) {
+                                handleCloseModal();
+                                return 0;
+                            }
+                            return prev - 1;
+                        });
+                    }, 1000);
+                }
+                return () => { if (timerRef.current) clearInterval(timerRef.current); };
+            }, [showModal, timeLeft]);
+
+            useEffect(() => {
+                if (selectedMethod && showModal) {
+                    fetchPaymentDetails(selectedMethod);
+                }
+            }, [selectedMethod, showModal]);
+
+            // --- Logic ---
+
+            const fetchPaymentDetails = async (methodName) => {
+                setLoadingDetails(true);
+                try {
+                    // Fetch from upi-payment-control table
+                    const { data, error } = await supabase
+                        .from('upi-payment-control')
+                        .select('upi_id, qr_image')
+                        .eq('change_box', methodName)
+                        .single();
+
+                    if (data) {
+                        setAdminDetails(data);
+                    } else {
+                        // Fallback
+                        setAdminDetails({
+                            upi_id: 'admin@upi', 
+                            qr_image: 'https://placehold.co/200x200/png?text=QR+Not+Found'
+                        });
+                    }
+                } catch (err) {
+                    console.error("Fetch error", err);
+                } finally {
+                    setLoadingDetails(false);
+                }
+            };
+
+            const handleMethodClick = (method) => {
+                setSelectedMethod(method);
+                setShowModal(true);
+                setTimeLeft(3600); // 1 Hour
+                setSuccessMsg('');
+                setAmount('');
+                setUtr('');
+                setScreenshot(null);
+            };
+
+            const handleCloseModal = () => {
+                setShowModal(false);
+                setSelectedMethod(null);
+                if (timerRef.current) clearInterval(timerRef.current);
+            };
+
+            const formatTime = (s) => {
+                const h = Math.floor(s / 3600);
+                const m = Math.floor((s % 3600) / 60);
+                const secs = s % 60;
+                
+                if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                return `${m.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            };
+
+            const handleSubmit = async () => {
+                // 1. Validation
+                if (!amount || !utr || !screenshot) {
+                    alert("Please complete all fields and upload the payment screenshot.");
+                    return;
+                }
+
+                const numAmount = parseFloat(amount);
+                if (isNaN(numAmount) || numAmount < 100) {
+                    alert("Minimum deposit amount is ₹100.");
+                    return;
+                }
+                if (numAmount > 1000000) {
+                    alert("Maximum deposit amount is ₹10,00,000.");
+                    return;
+                }
+
+                if (utr.length < 12 || utr.length > 16) {
+                    alert("UTR number must be between 12 and 16 digits.");
+                    return;
+                }
+
+                setSubmitting(true);
+                
+                try {
+                    // 2. Authenticate
+                    const { data: { user }, error: authError } = await supabase.auth.getUser();
+                    
+                    if (authError || !user) {
+                        alert("Authentication required. Please log in.");
+                        setSubmitting(false);
+                        return;
+                    }
+
+                    const userId = user.id; // Real Supabase User ID
+                    const timestamp = new Date().toISOString();
+
+                    // 3. Upload Image to 'user-payments-image' bucket
+                    const fileExt = screenshot.name.split('.').pop();
+                    const fileName = `${userId}/${Date.now()}.${fileExt}`;
+                    
+                    const { error: uploadError } = await supabase.storage
+                        .from('user-payments-image')
+                        .upload(fileName, screenshot);
+                    
+                    if (uploadError) throw uploadError;
+
+                    // Get Public URL
+                    const { data: { publicUrl } } = supabase.storage
+                        .from('user-payments-image')
+                        .getPublicUrl(fileName);
+
+                    // 4. Insert into 'user-payments' table
+                    const { error: paymentError } = await supabase
+                        .from('user-payments')
+                        .insert([{
+                            user_id: userId,
+                            method: selectedMethod,
+                            amount: numAmount,
+                            utr: utr,
+                            screenshot_url: publicUrl,
+                            created_at: timestamp
+                        }]);
+                    
+                    if (paymentError) throw paymentError;
+
+                    // 5. Insert into 'user-transactions' table
+                    // Note: 'order_id' and 'description' are handled by DB triggers or displayed later
+                    const { error: txError } = await supabase
+                        .from('user-transactions')
+                        .insert([{
+                            user_id: userId,
+                            type: 'deposit',
+                            method: selectedMethod,
+                            amount: numAmount,
+                            status: 'pending',
+                            created_at: timestamp
+                        }]);
+                    
+                    if (txError) throw txError;
+
+                    // 6. Success
+                    setSuccessMsg('Payment details submitted successfully! Verification pending.');
+                    setTimeout(handleCloseModal, 3000);
+
+                } catch (err) {
+                    console.error("Submission Error:", err);
+                    alert("Error submitting payment: " + (err.message || "Unknown error"));
+                } finally {
+                    setSubmitting(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-950 text-white relative overflow-hidden">
+                     {/* Background Glow */}
+                    <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+                    <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+                    <div className="max-w-xl mx-auto px-4 py-6 relative z-10">
+                        {/* Header */}
+                        <div className="flex items-center mb-8 pt-4">
+                            <button onClick={handleBack} className="p-2 rounded-full bg-slate-900/50 border border-slate-700 hover:bg-slate-800 transition-all group">
+                                <ArrowLeft className="w-5 h-5 text-gray-400 group-hover:text-white" />
+                            </button>
+                            <h1 className="ml-4 text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+                                UPI Payment Methods
+                            </h1>
+                        </div>
+
+                        {/* Payment Options Grid */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <MethodButton 
+                                name="UPI" 
+                                icon={<QrCode className="w-6 h-6" />}
+                                color="text-blue-400" 
+                                borderColor="border-slate-800 hover:border-blue-500/50"
+                                bgHover="hover:bg-blue-500/10"
+                                onClick={() => handleMethodClick('UPI')}
+                            />
+                            <MethodButton 
+                                name="PhonePe" 
+                                icon={<span className="font-bold text-xl">Pe</span>}
+                                color="text-purple-400" 
+                                borderColor="border-slate-800 hover:border-purple-500/50"
+                                bgHover="hover:bg-purple-500/10"
+                                onClick={() => handleMethodClick('PhonePe')}
+                            />
+                            <MethodButton 
+                                name="Google Pay" 
+                                icon={<span className="font-bold text-xl">GPay</span>}
+                                color="text-blue-500" 
+                                borderColor="border-slate-800 hover:border-blue-500/50"
+                                bgHover="hover:bg-blue-500/10"
+                                onClick={() => handleMethodClick('Google Pay')}
+                            />
+                            <MethodButton 
+                                name="Paytm" 
+                                icon={<span className="font-bold text-xl">Paytm</span>}
+                                color="text-cyan-400" 
+                                borderColor="border-slate-800 hover:border-cyan-500/50"
+                                bgHover="hover:bg-cyan-500/10"
+                                onClick={() => handleMethodClick('Paytm')}
+                            />
+                        </div>
+
+                        <div className="mt-8 p-4 rounded-xl bg-slate-900/40 border border-slate-800 backdrop-blur-sm">
+                            <p className="text-center text-sm text-slate-400">
+                                Safe & Secure Payments powered by <span className="text-blue-400 font-semibold">AvicnKnov</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Modal */}
+                    {showModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl fade-in">
+                            <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl relative flex flex-col max-h-[90vh] slide-up overflow-hidden">
+                                
+                                {/* Modal Header */}
+                                <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-900 z-20 sticky top-0">
+                                    {/* Left: Close Button */}
+                                    <button onClick={handleCloseModal} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors">
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                    
+                                    {/* Right: Timer */}
+                                    <div className="flex items-center gap-2 px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full">
+                                        <Clock className="w-3.5 h-3.5 text-red-400 animate-pulse" />
+                                        <span className="text-red-400 font-mono text-sm font-bold tracking-wide">{formatTime(timeLeft)}</span>
+                                    </div>
+                                </div>
+
+                                {/* Modal Body */}
+                                <div className="overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                                    {successMsg ? (
+                                        <div className="flex flex-col items-center justify-center py-12 text-center space-y-4 zoom-in">
+                                            <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-2 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+                                                <CheckCircle2 className="w-8 h-8 text-green-500" />
+                                            </div>
+                                            <h3 className="text-xl font-bold text-white">Payment Submitted!</h3>
+                                            <p className="text-slate-300 px-4 leading-relaxed">{successMsg}</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {/* QR & UPI ID Display */}
+                                            <div className="flex flex-col items-center space-y-4">
+                                                <div className="bg-white p-3 rounded-xl shadow-lg relative group">
+                                                    {loadingDetails ? (
+                                                        <div className="w-48 h-48 flex items-center justify-center">
+                                                            <Loader2 className="w-8 h-8 text-slate-900 animate-spin" />
+                                                        </div>
+                                                    ) : (
+                                                        <img 
+                                                            src={adminDetails?.qr_image} 
+                                                            alt="Payment QR" 
+                                                            className="w-48 h-48 object-contain"
+                                                        />
+                                                    )}
+                                                    <div className="absolute inset-0 border-4 border-transparent group-hover:border-blue-500/20 rounded-xl transition-all pointer-events-none"></div>
+                                                </div>
+                                                
+                                                <div className="w-full">
+                                                    <p className="text-xs text-slate-500 text-center mb-1 uppercase tracking-wider font-semibold">UPI ID</p>
+                                                    <div 
+                                                        onClick={() => navigator.clipboard.writeText(adminDetails?.upi_id)}
+                                                        className="flex items-center justify-between bg-slate-950 border border-slate-700 rounded-xl p-3 cursor-pointer hover:border-blue-500 hover:bg-slate-900 transition-all active:scale-[0.99] group"
+                                                    >
+                                                        <span className="font-mono text-sm text-white truncate max-w-[200px] select-all">
+                                                            {loadingDetails ? 'Loading...' : (adminDetails?.upi_id || 'Unavailable')}
+                                                        </span>
+                                                        <Copy className="w-4 h-4 text-slate-500 group-hover:text-blue-400" />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="h-px bg-slate-800 w-full"></div>
+
+                                            {/* Input Fields */}
+                                            <div className="space-y-4">
+                                                {/* Amount */}
+                                                <div className="space-y-1">
+                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Deposit Amount (₹)</label>
+                                                    <div className="relative">
+                                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-semibold">₹</span>
+                                                        <input 
+                                                            type="number" 
+                                                            value={amount}
+                                                            onChange={(e) => setAmount(e.target.value)}
+                                                            className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 pl-8 pr-4 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono"
+                                                            placeholder="100 - 10,00,000"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* UTR */}
+                                                <div className="space-y-1">
+                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">UTR Number</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={utr}
+                                                        onChange={(e) => setUtr(e.target.value.replace(/\D/g, '').slice(0, 16))}
+                                                        className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono"
+                                                        placeholder="12-16 digit UTR"
+                                                    />
+                                                    <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-1">
+                                                        <AlertCircle className="w-3 h-3" /> Must be 12-16 digits
+                                                    </p>
+                                                </div>
+
+                                                {/* Screenshot */}
+                                                <div className="space-y-1">
+                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Upload Screenshot</label>
+                                                    <div className="relative">
+                                                        <input 
+                                                            type="file" 
+                                                            id="file-upload" 
+                                                            accept="image/*"
+                                                            className="hidden"
+                                                            onChange={(e) => setScreenshot(e.target.files[0])}
+                                                        />
+                                                        <label 
+                                                            htmlFor="file-upload"
+                                                            className={`flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed rounded-xl cursor-pointer transition-all ${screenshot ? 'border-green-500/50 bg-green-500/10' : 'border-slate-700 hover:border-blue-500/50 hover:bg-slate-900'}`}
+                                                        >
+                                                            <UploadCloud className={`w-5 h-5 ${screenshot ? 'text-green-400' : 'text-slate-400'}`} />
+                                                            <div className="flex flex-col items-center">
+                                                                <span className={`text-sm font-medium ${screenshot ? 'text-green-400' : 'text-slate-300'}`}>
+                                                                    {screenshot ? "Screenshot Selected" : "Tap to upload"}
+                                                                </span>
+                                                                {!screenshot && <span className="text-xs text-slate-500 mt-0.5">JPG, PNG supported</span>}
+                                                            </div>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Submit Button */}
+                                            <button 
+                                                onClick={handleSubmit}
+                                                disabled={submitting || loadingDetails}
+                                                className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-2"
+                                            >
+                                                {submitting ? (
+                                                    <>
+                                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                                        Processing...
+                                                    </>
+                                                ) : (
+                                                    "Submit Payment Details"
+                                                )}
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const MethodButton = ({ name, icon, color, borderColor, bgHover, onClick }) => (
+            <button 
+                onClick={onClick}
+                className={`group flex flex-col items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm border rounded-2xl transition-all duration-300 ${borderColor} ${bgHover} hover:scale-[1.02] hover:shadow-xl hover:shadow-black/20`}
+            >
+                <div className={`w-14 h-14 rounded-2xl bg-slate-950 flex items-center justify-center mb-3 shadow-inner ${color} group-hover:scale-110 transition-transform duration-300`}>
+                    {icon}
+                </div>
+                <span className="font-semibold text-slate-300 group-hover:text-white transition-colors">{name}</span>
+            </button>
+        );
+
+        // Mount React
+        const root = createRoot(document.getElementById('root'));
+        root.render(<DepositUPI />);
+    </script>
 </body>
 </html>
