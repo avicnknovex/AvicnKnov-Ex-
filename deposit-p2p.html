@@ -87,10 +87,21 @@
             const [copied, setCopied] = useState(false);
             const supportEmail = "help.avicnkvonteam@gmail.com";
 
-            // BACK BUTTON LOGIC: Goes back to deposit.html
-            const handleBack = () => {
-                window.location.href = 'deposit.html';
-            };
+            // --- Navigation ---
+const handleBack = () => {
+    /**
+     * window.history.length > 1 check karta hai ki kya pichhe jaane ke liye koi page hai.
+     * document.referrer check karta hai ki user kisi link se aaya hai ya direct URL se.
+     */
+    if (window.history.length > 1 && document.referrer !== "") {
+        // User jahan se aaya tha (Trade, Assets, ya Dashboard), wahi wapas bhej dega 
+        // Isse Main HTML ke icons aur state disturb nahi honge.
+        window.history.back();
+    } else {
+        // Agar koi history nahi milti (rare case), to default dashboard par bhej dega.
+        window.location.href = 'dashboard.html';
+    }
+};
 
             const handleSupport = () => {
                 window.location.href = 'help.html#/help';
@@ -271,3 +282,4 @@
     </script>
 </body>
 </html>
+
