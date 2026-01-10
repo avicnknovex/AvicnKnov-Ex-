@@ -44,7 +44,7 @@
       box-shadow: 0 4px 12px -2px rgba(59, 130, 246, 0.15); /* Soft Glow */
     }
 
-    /* Remove old underline effect if present in mind, we use Pill now */
+    /* Remove old underline effect */
     .tab-btn::after {
       display: none;
     }
@@ -70,27 +70,34 @@
     /* Section Transition */
     .section {
       display: none;
-      animation: fadeIn 0.4s ease-out;
+      width: 100%; /* Force Full Width */
+      animation: smoothFade 0.4s ease-out forwards;
     }
     .section.active {
       display: block;
     }
     
+    /* Content Transition */
     .fav-content {
       display: none;
-      animation: slideUp 0.3s ease-out;
+      width: 100%; /* Force Full Width to prevent corner expansion glitch */
+      animation: smoothFade 0.4s ease-out forwards;
+      transform-origin: center top; /* Ensure animation origin is centered */
     }
     .fav-content.active {
       display: block;
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+    /* Improved Animation - No Scale, just Fade & Lift */
+    @keyframes smoothFade {
+      0% { 
+        opacity: 0; 
+        transform: translateY(10px); /* Start slightly lower */
+      }
+      100% { 
+        opacity: 1; 
+        transform: translateY(0); 
+      }
     }
   </style>
 </head>
@@ -111,10 +118,10 @@
   </div>
 
   <!-- MAIN CONTENT CONTAINER -->
-  <div class="p-4 min-h-[600px]">
+  <div class="p-4 min-h-[600px] w-full">
 
     <!-- ⭐ Favourites Section -->
-    <div class="section active" id="favourites">
+    <div class="section active w-full" id="favourites">
       <!-- Added w-full and flex-1 to buttons to stretch them -->
       <div class="fav-tabs flex w-full gap-3 pb-4 px-1 overflow-x-auto scrollbar-hide">
         <button class="fav-tab flex-1 active py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showFavTab('all', event)">All</button>
@@ -123,15 +130,15 @@
         <button class="fav-tab flex-1 py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showFavTab('futures', event)">Futures</button>
       </div>
       
-      <!-- Content Areas -->
-      <div id="all" class="fav-content active bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
-      <div id="holdings" class="fav-content bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
-      <div id="spot" class="fav-content bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
-      <div id="futures" class="fav-content bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <!-- Content Areas - Added w-full explicitly -->
+      <div id="all" class="fav-content active w-full bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="holdings" class="fav-content w-full bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="spot" class="fav-content w-full bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="futures" class="fav-content w-full bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
     </div>
 
     <!-- 📊 Market Section -->
-    <div class="section" id="market">
+    <div class="section w-full" id="market">
       <div class="fav-tabs flex w-full gap-3 pb-4 px-1 overflow-x-auto scrollbar-hide">
         <button class="fav-tab flex-1 active py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showMarketTab('crypto', event)">Crypto</button>
         <button class="fav-tab flex-1 py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showMarketTab('market-spot', event)">Spot</button>
@@ -139,34 +146,34 @@
         <button class="fav-tab flex-1 py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showMarketTab('coinm', event)">COIN-M</button>
       </div>
 
-      <div id="crypto" class="fav-content active bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
-      <div id="market-spot" class="fav-content bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
-      <div id="usdm" class="fav-content bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
-      <div id="coinm" class="fav-content bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="crypto" class="fav-content active w-full bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="market-spot" class="fav-content w-full bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="usdm" class="fav-content w-full bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="coinm" class="fav-content w-full bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
     </div>
 
     <!-- 🧠 Alpha Section -->
-    <div class="section" id="alpha">
+    <div class="section w-full" id="alpha">
       <div class="fav-tabs flex w-full gap-3 pb-4 px-1 overflow-x-auto scrollbar-hide">
         <button class="fav-tab flex-1 active py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showAlphaTab('alpha-all', event)">All</button>
         <button class="fav-tab flex-1 py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showAlphaTab('alpha-coinm', event)">COIN-M</button>
         <button class="fav-tab flex-1 py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showAlphaTab('alpha-mark', event)">Mark</button>
       </div>
 
-      <div id="alpha-all" class="fav-content active bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
-      <div id="alpha-coinm" class="fav-content bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
-      <div id="alpha-mark" class="fav-content bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="alpha-all" class="fav-content active w-full bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="alpha-coinm" class="fav-content w-full bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="alpha-mark" class="fav-content w-full bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
     </div>
 
     <!-- ⚡ Flach Section -->
-    <div class="section" id="flach">
+    <div class="section w-full" id="flach">
       <div class="fav-tabs flex w-full gap-3 pb-4 px-1 overflow-x-auto scrollbar-hide">
         <button class="fav-tab flex-1 active py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showFlachTab('rubikb', event)">RUBIK-B</button>
         <button class="fav-tab flex-1 py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showFlachTab('plqn', event)">PLQN</button>
       </div>
 
-      <div id="rubikb" class="fav-content active bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
-      <div id="plqn" class="fav-content bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="rubikb" class="fav-content active w-full bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="plqn" class="fav-content w-full bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
     </div>
 
   </div>
