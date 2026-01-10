@@ -2,185 +2,176 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Markets – AvicnKnov Ex</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  
   <style>
+    /* Premium Font Styling */
     body {
-      margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #fff;
+      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background-color: #f8f9fc;
+      color: #1e293b;
+      -webkit-font-smoothing: antialiased;
     }
 
-    .search-box {
-      margin: 10px;
-      text-align: center;
+    /* Hide Scrollbar */
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Top Tab Premium Animation */
+    .tab-btn {
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      border-radius: 14px; /* Smooth corners */
+      position: relative;
+    }
+    
+    /* Click Effect */
+    .tab-btn:active {
+        transform: scale(0.95);
     }
 
-    .search-box input {
-      width: 90%;
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 25px;
-      border: 1px solid #ccc;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    /* Active State for Top Tabs (Premium Pill Effect) */
+    .tab-btn.active {
+      background-color: #eff6ff; /* Light Blue Background */
+      color: #2563eb; /* Blue 600 */
+      font-weight: 800; /* Extra Bold */
+      box-shadow: 0 4px 12px -2px rgba(59, 130, 246, 0.15); /* Soft Glow */
     }
 
-    .tabs {
-      display: flex;
-      justify-content: space-around;
-      margin: 10px 5px;
-      overflow-x: auto;
+    /* Remove old underline effect if present in mind, we use Pill now */
+    .tab-btn::after {
+      display: none;
     }
 
-    .tabs div {
-      flex: 1;
-      text-align: center;
-      padding: 10px 0;
-      border-bottom: 2px solid transparent;
-      color: #444;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.3s;
+    /* Sub-Tab Pill Style (fav-tab) */
+    .fav-tab {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    /* Default State */
+    .fav-tab {
+        background-color: #f1f5f9; /* Slightly gray background for inactive */
+        color: #64748b;
+        border: 1px solid transparent;
+    }
+    /* Active State */
+    .fav-tab.active {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+        transform: translateY(-1px);
     }
 
-    .tabs .active {
-      border-bottom: 2px solid #007bff;
-      color: #007bff;
-      font-weight: bold;
-    }
-
+    /* Section Transition */
     .section {
       display: none;
-      padding: 10px;
-      color: #555;
+      animation: fadeIn 0.4s ease-out;
     }
-
     .section.active {
       display: block;
     }
-
-    .fav-tabs {
-      display: flex;
-      justify-content: space-around;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .fav-tab {
-      padding: 8px 14px;
-      border: none;
-      background: #e0e0e0;
-      border-radius: 10px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-
-    .fav-tab.active {
-      background: #00ffe1;
-      color: black;
-      box-shadow: 0 0 8px #00ffe1;
-    }
-
+    
     .fav-content {
       display: none;
+      animation: slideUp 0.3s ease-out;
     }
-
     .fav-content.active {
       display: block;
     }
 
-    /* Demo content styling */
-    .demo-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 10px;
-      border-bottom: 1px solid #eee;
-      background: #f9f9f9;
-      margin: 5px 0;
-      border-radius: 5px;
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
-
-    .demo-item .name {
-      font-weight: bold;
-      color: #333;
-    }
-
-    .demo-item .price {
-      color: #007bff;
-      font-weight: bold;
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 
-<body>
+<body class="bg-[#f8f9fc] pb-20">
 
-  <!-- 🔍 Search Box -->
-  <div class="search-box">
-    <input type="text" placeholder="Search tokens, pairs, or sections...">
-  </div>
-
-  <!-- 🔝 Top Tabs -->
-  <div class="tabs">
-    <div class="tab-btn active" onclick="showSection('favourites')">Favourites</div>
-    <div class="tab-btn" onclick="showSection('market')">Market</div>
-    <div class="tab-btn" onclick="showSection('alpha')">Alpha</div>
-    <div class="tab-btn" onclick="showSection('flach')">Flach</div>
-  </div>
-
-  <!-- ⭐ Favourites Section -->
-  <div class="section active" id="favourites">
-    <div class="fav-tabs">
-      <button class="fav-tab active" onclick="showFavTab('all', event)">All</button>
-      <button class="fav-tab" onclick="showFavTab('holdings', event)">Holdings</button>
-      <button class="fav-tab" onclick="showFavTab('spot', event)">Spot</button>
-      <button class="fav-tab" onclick="showFavTab('futures', event)">Futures</button>
+  <!-- Sticky Header Container (Search Removed) -->
+  <div class="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-gray-100 shadow-sm transition-all duration-300 py-2">
+    
+    <!-- 🔝 Top Tabs (Premium Selective Effect) -->
+    <div class="tabs flex justify-between px-2 gap-2 overflow-x-auto scrollbar-hide">
+      <!-- Added mx-1 and py-3 for better touch targets and spacing for the pill effect -->
+      <div class="tab-btn active flex-1 text-center py-3 cursor-pointer text-sm font-medium text-slate-500 hover:text-slate-800 whitespace-nowrap" onclick="showSection('favourites')">Favourites</div>
+      <div class="tab-btn flex-1 text-center py-3 cursor-pointer text-sm font-medium text-slate-500 hover:text-slate-800 whitespace-nowrap" onclick="showSection('market')">Market</div>
+      <div class="tab-btn flex-1 text-center py-3 cursor-pointer text-sm font-medium text-slate-500 hover:text-slate-800 whitespace-nowrap" onclick="showSection('alpha')">Alpha</div>
+      <div class="tab-btn flex-1 text-center py-3 cursor-pointer text-sm font-medium text-slate-500 hover:text-slate-800 whitespace-nowrap" onclick="showSection('flach')">Flach</div>
     </div>
-    <div id="all" class="fav-content active"></div>
-    <div id="holdings" class="fav-content"></div>
-    <div id="spot" class="fav-content"></div>
-    <div id="futures" class="fav-content"></div>
   </div>
 
-  <!-- 📊 Market Section -->
-  <div class="section" id="market">
-    <div class="fav-tabs">
-      <button class="fav-tab active" onclick="showMarketTab('crypto', event)">Crypto</button>
-      <button class="fav-tab" onclick="showMarketTab('market-spot', event)">Spot</button>
-      <button class="fav-tab" onclick="showMarketTab('usdm', event)">USD-M</button>
-      <button class="fav-tab" onclick="showMarketTab('coinm', event)">COIN-M</button>
+  <!-- MAIN CONTENT CONTAINER -->
+  <div class="p-4 min-h-[600px]">
+
+    <!-- ⭐ Favourites Section -->
+    <div class="section active" id="favourites">
+      <!-- Added w-full and flex-1 to buttons to stretch them -->
+      <div class="fav-tabs flex w-full gap-3 pb-4 px-1 overflow-x-auto scrollbar-hide">
+        <button class="fav-tab flex-1 active py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showFavTab('all', event)">All</button>
+        <button class="fav-tab flex-1 py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showFavTab('holdings', event)">Holdings</button>
+        <button class="fav-tab flex-1 py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showFavTab('spot', event)">Spot</button>
+        <button class="fav-tab flex-1 py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showFavTab('futures', event)">Futures</button>
+      </div>
+      
+      <!-- Content Areas -->
+      <div id="all" class="fav-content active bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="holdings" class="fav-content bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="spot" class="fav-content bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="futures" class="fav-content bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
     </div>
-    <div id="crypto" class="fav-content active"></div>
-    <div id="market-spot" class="fav-content"></div>
-    <div id="usdm" class="fav-content"></div>
-    <div id="coinm" class="fav-content"></div>
-  </div>
 
-  <!-- 🧠 Alpha Section -->
-  <div class="section" id="alpha">
-    <div class="fav-tabs">
-      <button class="fav-tab active" onclick="showAlphaTab('alpha-all', event)">All</button>
-      <button class="fav-tab" onclick="showAlphaTab('alpha-coinm', event)">COIN-M</button>
-      <button class="fav-tab" onclick="showAlphaTab('alpha-mark', event)">Mark</button>
+    <!-- 📊 Market Section -->
+    <div class="section" id="market">
+      <div class="fav-tabs flex w-full gap-3 pb-4 px-1 overflow-x-auto scrollbar-hide">
+        <button class="fav-tab flex-1 active py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showMarketTab('crypto', event)">Crypto</button>
+        <button class="fav-tab flex-1 py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showMarketTab('market-spot', event)">Spot</button>
+        <button class="fav-tab flex-1 py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showMarketTab('usdm', event)">USD-M</button>
+        <button class="fav-tab flex-1 py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showMarketTab('coinm', event)">COIN-M</button>
+      </div>
+
+      <div id="crypto" class="fav-content active bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="market-spot" class="fav-content bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="usdm" class="fav-content bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="coinm" class="fav-content bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
     </div>
-    <div id="alpha-all" class="fav-content active"></div>
-    <div id="alpha-coinm" class="fav-content"></div>
-    <div id="alpha-mark" class="fav-content"></div>
-  </div>
 
-  <!-- ⚡ Flach Section -->
-  <div class="section" id="flach">
-    <div class="fav-tabs">
-      <button class="fav-tab active" onclick="showFlachTab('rubikb', event)">RUBIK-B</button>
-      <button class="fav-tab" onclick="showFlachTab('plqn', event)">PLQN</button>
+    <!-- 🧠 Alpha Section -->
+    <div class="section" id="alpha">
+      <div class="fav-tabs flex w-full gap-3 pb-4 px-1 overflow-x-auto scrollbar-hide">
+        <button class="fav-tab flex-1 active py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showAlphaTab('alpha-all', event)">All</button>
+        <button class="fav-tab flex-1 py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showAlphaTab('alpha-coinm', event)">COIN-M</button>
+        <button class="fav-tab flex-1 py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showAlphaTab('alpha-mark', event)">Mark</button>
+      </div>
+
+      <div id="alpha-all" class="fav-content active bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="alpha-coinm" class="fav-content bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="alpha-mark" class="fav-content bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
     </div>
-    <div id="rubikb" class="fav-content active"></div>
-    <div id="plqn" class="fav-content"></div>
+
+    <!-- ⚡ Flach Section -->
+    <div class="section" id="flach">
+      <div class="fav-tabs flex w-full gap-3 pb-4 px-1 overflow-x-auto scrollbar-hide">
+        <button class="fav-tab flex-1 active py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showFlachTab('rubikb', event)">RUBIK-B</button>
+        <button class="fav-tab flex-1 py-3 rounded-xl text-xs font-bold cursor-pointer whitespace-nowrap" onclick="showFlachTab('plqn', event)">PLQN</button>
+      </div>
+
+      <div id="rubikb" class="fav-content active bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+      <div id="plqn" class="fav-content bg-white rounded-3xl shadow-sm border border-slate-100 min-h-[300px] p-4"></div>
+    </div>
+
   </div>
 
-  <!-- 🔁 JavaScript Logic -->
+  <!-- 🔁 JavaScript Logic (Preserved) -->
   <script>
     // Section Switch
     function showSection(sectionId) {
@@ -244,7 +235,7 @@
     }
   </script>
 
-  <!-- External JS Files (corrected names) -->
+  <!-- External JS Files (Preserved exactly as requested) -->
   <script src="favourites-all.js"></script>
   <script src="favourites-holdings.js"></script>
   <script src="favourites-spot.js"></script>
@@ -259,7 +250,6 @@
   <script src="alpha-coinm.js"></script>
   <script src="alpha-mark.js"></script>
 
-  <!-- Fixed script names for Flach section -->
   <script src="flach-rubikb.js"></script>
   <script src="flach-plqn.js"></script>
 
