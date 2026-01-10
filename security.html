@@ -2,86 +2,129 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Security Settings</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Security Settings - AvicnKnov Ex</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
+    /* Premium Font Styling */
     body {
-      margin: 0;
-      padding: 20px;
-      font-family: 'Segoe UI', sans-serif;
-      background: #f0f0f0;
+      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background-color: #f8f9fc;
+      color: #1e293b;
+      -webkit-font-smoothing: antialiased;
     }
-    .container {
-      max-width: 400px;
-      margin: 60px auto;
-      background: white;
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+
+    /* Input Field Animation */
+    .input-group {
+      position: relative;
+      transition: all 0.3s ease;
     }
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #333;
-    }
-    input {
+    
+    .input-field {
       width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      font-size: 16px;
+      padding: 14px 16px 14px 45px; /* Space for icon */
+      background-color: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      font-size: 0.95rem;
+      color: #334155;
+      transition: all 0.3s;
+      outline: none;
     }
-    button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 20px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      cursor: pointer;
+
+    .input-field:focus {
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
     }
-    button:hover {
-      background-color: #0056b3;
-    }
-    .back-button {
+
+    .input-icon {
       position: absolute;
-      top: 20px;
-      left: 20px;
-      text-decoration: none;
-      color: #007bff;
-      font-size: 20px;
-      font-weight: bold;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+      font-size: 1.1rem;
+      pointer-events: none;
+      transition: color 0.3s;
     }
-    .back-button:hover {
-      text-decoration: underline;
+
+    .input-field:focus + .input-icon {
+      color: #8b5cf6;
     }
-    .message {
-      text-align: center;
-      margin-top: 10px;
-      font-weight: bold;
+
+    /* Message Animation */
+    #message {
+        transition: all 0.3s ease;
+        min-height: 24px;
     }
   </style>
 </head>
-<body>
+<body class="bg-[#f8f9fc] min-h-screen pb-10">
 
-  <a class="back-button" href="profile.html">← Back</a>
-
-  <div class="container">
-    <h2>Change Password</h2>
-    <input type="password" id="oldPassword" placeholder="Enter Old Password" />
-    <input type="password" id="newPassword" placeholder="Enter New Password (8–12 characters)" />
-    <input type="password" id="confirmPassword" placeholder="Confirm New Password" />
-    <button id="changeBtn">Update Password</button>
-    <div class="message" id="message"></div>
+  <div class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 py-4 flex items-center shadow-sm">
+    <button onclick="window.location.href='profile.html'" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <h1 class="text-lg font-bold text-slate-800 ml-3 tracking-tight">Security</h1>
   </div>
 
-  <!-- ✅ Load Supabase SDK First -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <div class="max-w-md mx-auto px-4 mt-8">
+    
+    <div class="flex justify-center mb-8">
+        <div class="w-24 h-24 bg-gradient-to-tr from-purple-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/30">
+            <i class="fas fa-key text-4xl text-white drop-shadow-md"></i>
+        </div>
+    </div>
 
-  <!-- ✅ All logic runs AFTER supabase is available -->
+    <div class="text-center mb-6">
+        <h2 class="text-2xl font-black text-slate-800">Change Password</h2>
+        <p class="text-sm text-slate-500 mt-1">Ensure your account stays secure.</p>
+    </div>
+
+    <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 p-6 border border-slate-100">
+      
+      <div class="space-y-4">
+        
+        <div>
+           <label class="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">Current Password</label>
+           <div class="input-group">
+             <input type="password" id="oldPassword" class="input-field" placeholder="Enter old password" />
+             <i class="fas fa-unlock-alt input-icon"></i>
+           </div>
+        </div>
+
+        <div>
+           <label class="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">New Password</label>
+           <div class="input-group">
+             <input type="password" id="newPassword" class="input-field" placeholder="8-12 characters" />
+             <i class="fas fa-lock input-icon"></i>
+           </div>
+        </div>
+
+        <div>
+           <label class="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">Confirm New Password</label>
+           <div class="input-group">
+             <input type="password" id="confirmPassword" class="input-field" placeholder="Repeat new password" />
+             <i class="fas fa-check-circle input-icon"></i>
+           </div>
+        </div>
+
+        <button id="changeBtn" class="w-full mt-6 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-purple-500/30 transition-all duration-300 active:scale-[0.98] flex items-center justify-center gap-2">
+          Update Password
+        </button>
+
+        <div id="message" class="text-center text-sm font-semibold mt-4 px-3 py-2 rounded-lg"></div>
+
+      </div>
+    </div>
+  </div>
+
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const supabaseUrl = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
@@ -97,34 +140,37 @@
         const oldPassword = oldPasswordInput.value;
         const newPassword = newPasswordInput.value;
         const confirmPassword = confirmPasswordInput.value;
+        
         messageEl.textContent = "";
-        messageEl.style.color = "red";
+        messageEl.className = "text-center text-sm font-semibold mt-4 px-3 py-2 rounded-lg";
 
         if (!oldPassword || !newPassword || !confirmPassword) {
           messageEl.textContent = "Please fill all fields.";
+          messageEl.classList.add("bg-red-50", "text-red-500");
           return;
         }
 
         if (newPassword.length < 8 || newPassword.length > 12) {
           messageEl.textContent = "New password must be 8 to 12 characters.";
+          messageEl.classList.add("bg-red-50", "text-red-500");
           return;
         }
 
         if (newPassword !== confirmPassword) {
           messageEl.textContent = "New passwords do not match.";
+          messageEl.classList.add("bg-red-50", "text-red-500");
           return;
         }
 
-        const {
-          data: { user },
-          error: userError
-        } = await supabase.auth.getUser();
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
 
         if (userError || !user) {
           messageEl.textContent = "User not logged in.";
+          messageEl.classList.add("bg-red-50", "text-red-500");
           return;
         }
 
+        // 1. Verify old password
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: user.email,
           password: oldPassword
@@ -132,18 +178,38 @@
 
         if (signInError) {
           messageEl.textContent = "Old password is incorrect.";
+          messageEl.classList.add("bg-red-50", "text-red-500");
           return;
         }
 
-        const { error: updateError } = await supabase.auth.updateUser({
+        // 2. Update Auth Password
+        const { error: updateAuthError } = await supabase.auth.updateUser({
           password: newPassword
         });
 
-        if (updateError) {
-          messageEl.textContent = "Password update failed.";
+        if (updateAuthError) {
+          messageEl.textContent = "Security update failed.";
+          messageEl.classList.add("bg-red-50", "text-red-500");
+          return;
+        }
+
+        // 3. Update 'user-details' Table
+        // Logic: Agar phone number login hai toh email mein '@crypto-temp.com' hota hai.
+        const identifier = user.email;
+        const phoneOnly = identifier.includes('@crypto-temp.com') ? identifier.split('@')[0] : identifier;
+
+        const { error: updateTableError } = await supabase
+          .from('user-details')
+          .update({ password: newPassword })
+          .or(`email.eq.${identifier},phone_number.eq.${phoneOnly}`);
+
+        if (updateTableError) {
+          console.error("Table Update Error:", updateTableError);
+          messageEl.textContent = "Updated Auth, but table sync failed.";
+          messageEl.classList.add("bg-amber-50", "text-amber-600");
         } else {
-          messageEl.style.color = "green";
-          messageEl.textContent = "Password updated successfully!";
+          messageEl.textContent = "Password updated successfully in all records!";
+          messageEl.classList.add("bg-emerald-50", "text-emerald-600");
           oldPasswordInput.value = "";
           newPasswordInput.value = "";
           confirmPasswordInput.value = "";
