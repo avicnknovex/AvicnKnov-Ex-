@@ -1,209 +1,119 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Elite Achievement System</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
-        :root {
-            --gold: #FFD700;
-            --neon-blue: #00f3ff;
-            --bg-dark: #050505;
-            --card-bg: rgba(255, 255, 255, 0.05);
-            --border: rgba(255, 215, 0, 0.3);
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
+        /* Premium Font Styling */
         body {
-            background-color: var(--bg-dark);
-            background-image: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #050505 100%);
-            color: #fff;
-            font-family: 'Rajdhani', sans-serif;
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f8f9fc;
+            color: #1e293b;
+            -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
-            min-height: 100vh;
         }
 
-        /* --- Header Section --- */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 25px 40px;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .back-btn {
-            font-size: 24px;
-            color: var(--gold);
-            cursor: pointer;
-            transition: 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .back-btn:hover { transform: translateX(-5px); text-shadow: 0 0 10px var(--gold); }
-
-        .my-ach-btn {
-            background: linear-gradient(135deg, #FFD700 0%, #B8860B 100%);
-            color: #000;
-            padding: 12px 25px;
-            border-radius: 50px;
-            font-weight: 700;
-            font-family: 'Orbitron', sans-serif;
-            cursor: pointer;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
-            border: none;
-            transition: 0.3s;
-        }
-        .my-ach-btn:hover { transform: scale(1.05); box-shadow: 0 0 30px var(--gold); }
-
-        /* --- Main Content --- */
-        .container {
-            max-width: 1000px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-
-        .ach-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            padding: 25px;
-            margin-bottom: 25px;
-            position: relative;
-            backdrop-filter: blur(15px);
-            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .ach-card:hover { border-color: var(--gold); background: rgba(255,215,0,0.05); }
-
-        /* Icon with Glow Effect */
-        .ach-icon {
-            width: 90px;
-            height: 90px;
-            background: #000;
-            border: 3px solid var(--gold);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 45px;
-            margin-right: 25px;
-            box-shadow: 0 0 15px var(--gold);
-            position: relative;
-            z-index: 2;
-        }
-
-        .ach-icon.glow-anim { animation: pulseGlow 2s infinite; }
-
-        @keyframes pulseGlow {
-            0% { box-shadow: 0 0 10px var(--gold); transform: scale(1); }
-            50% { box-shadow: 0 0 30px var(--gold); transform: scale(1.05); }
-            100% { box-shadow: 0 0 10px var(--gold); transform: scale(1); }
-        }
-
-        .ach-details { flex-grow: 1; }
-        .ach-details h2 { font-family: 'Orbitron', sans-serif; color: var(--gold); font-size: 22px; margin-bottom: 5px; }
-        .ach-details p { color: #ccc; font-size: 16px; margin-bottom: 8px; }
-        .reward-tag { color: var(--neon-blue); font-weight: bold; font-size: 14px; text-transform: uppercase; }
-
-        /* Buttons State */
-        .btn-action {
-            padding: 12px 30px;
-            border-radius: 10px;
-            font-family: 'Orbitron', sans-serif;
-            font-weight: bold;
-            border: none;
-            min-width: 130px;
-            cursor: not-allowed;
-            background: #222;
-            color: #555;
-            transition: 0.3s;
-        }
-
-        .btn-action.unlocked {
-            background: linear-gradient(135deg, #00ff87 0%, #60efff 100%);
-            color: #000;
-            cursor: pointer;
-            box-shadow: 0 0 15px rgba(0, 255, 135, 0.5);
-        }
-
-        .btn-action.claimed {
-            background: transparent;
-            border: 2px solid var(--gold);
-            color: var(--gold);
-            cursor: default;
-        }
-
-        /* --- My Achievements Sidebar --- */
-        .overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
-            z-index: 999; display: none;
-        }
-
-        #myAchSection {
-            position: fixed; right: -450px; top: 0; width: 400px; height: 100%;
-            background: #0a0a0a; border-left: 2px solid var(--gold);
-            z-index: 1000; padding: 30px; transition: 0.5s cubic-bezier(0.77, 0, 0.175, 1);
-            display: flex; flex-direction: column;
-        }
-
-        #myAchSection.active { right: 0; }
-
-        .close-panel { position: absolute; top: 20px; right: 20px; font-size: 30px; cursor: pointer; color: var(--gold); }
-
-        .ach-list-scroll { overflow-y: auto; margin-top: 30px; flex-grow: 1; }
-
-        .no-ach-text { text-align: center; margin-top: 100px; color: #555; font-size: 20px; font-family: 'Orbitron'; }
-
-        /* Animation for Claim */
+        /* Animations */
         .claim-move {
-            animation: moveTowardsBag 1s ease-in-out forwards;
+            animation: moveTowardsBag 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+            z-index: 50;
         }
 
         @keyframes moveTowardsBag {
             0% { transform: scale(1) translate(0, 0); }
-            50% { transform: scale(1.5) translate(100px, -200px) rotate(360deg); opacity: 0.7; }
-            100% { transform: scale(1) translate(0, 0); opacity: 1; }
+            50% { transform: scale(1.5) translate(50px, -100px) rotate(15deg); opacity: 0.8; }
+            100% { transform: scale(0.5) translate(200px, -400px); opacity: 0; }
+        }
+
+        /* Sidebar Transition */
+        #myAchSection {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #myAchSection.active {
+            transform: translateX(0);
+        }
+        
+        /* Glass Effect for Header */
+        .glass-header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
     </style>
 </head>
-<body>
+<body class="bg-[#f8f9fc] min-h-screen pb-10">
 
-    <div class="header">
-        <div class="back-btn" onclick="window.location.href='dashboard.html'">
-            <i class="fas fa-chevron-left"></i> BACK
-        </div>
-        <div class="my-ach-btn" onclick="openMyAchievements()">
-            MY ACHIEVEMENTS
-        </div>
-    </div>
-
-    <div class="container" id="mainAchievementList">
-        </div>
-
-    <div class="overlay" id="overlay" onclick="closeMyAchievements()"></div>
-    <div id="myAchSection">
-        <div class="close-panel" onclick="closeMyAchievements()">&times;</div>
-        <h1 style="color: var(--gold); font-family: 'Orbitron'; text-align: center;">COLLECTION</h1>
-        <div id="collectionItems" class="ach-list-scroll">
+    <!-- Header -->
+    <div class="sticky top-0 z-40 glass-header border-b border-gray-100 shadow-sm px-4 py-4 flex items-center justify-between">
+        <button onclick="window.location.href='dashboard.html'" class="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors font-bold text-sm">
+            <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center shadow-sm border border-slate-100">
+                <i class="fas fa-chevron-left text-xs"></i>
             </div>
+            <span>Back</span>
+        </button>
+        
+        <button onclick="openMyAchievements()" class="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg shadow-orange-500/20 active:scale-95 transition-transform flex items-center gap-2">
+            <i class="fas fa-trophy"></i>
+            <span>Collection</span>
+        </button>
     </div>
 
+    <!-- Title Section -->
+    <div class="max-w-md mx-auto px-6 mt-8 mb-6 text-center">
+        <h1 class="text-2xl font-black text-slate-800 tracking-tight">Achievements</h1>
+        <p class="text-sm text-slate-400 font-medium mt-1">Complete tasks to earn rewards</p>
+    </div>
+
+    <!-- Main List Container -->
+    <div class="max-w-md mx-auto px-4 space-y-5" id="mainAchievementList">
+        <!-- Content injected by JS -->
+        <div class="flex justify-center py-10">
+            <i class="fas fa-circle-notch fa-spin text-slate-300 text-2xl"></i>
+        </div>
+    </div>
+
+    <!-- Sidebar Overlay -->
+    <div id="overlay" onclick="closeMyAchievements()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden transition-opacity duration-300 opacity-0"></div>
+
+    <!-- My Achievements Sidebar -->
+    <div id="myAchSection" class="fixed inset-y-0 right-0 w-80 bg-white shadow-2xl z-[60] transform translate-x-full flex flex-col border-l border-slate-100">
+        
+        <!-- Sidebar Header -->
+        <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <h2 class="text-lg font-black text-slate-800 flex items-center gap-2">
+                <i class="fas fa-crown text-amber-500"></i> My Collection
+            </h2>
+            <button onclick="closeMyAchievements()" class="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-400 hover:text-rose-500 flex items-center justify-center transition-colors">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Collection List -->
+        <div id="collectionItems" class="flex-1 overflow-y-auto p-4 space-y-3 bg-[#f8f9fc]">
+            <!-- Items injected here -->
+        </div>
+
+        <!-- Bottom Stats -->
+        <div class="p-4 bg-white border-t border-slate-100">
+             <div class="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-4 text-center">
+                 <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Earned</p>
+                 <p class="text-2xl font-black text-white mt-1" id="totalEarnedValue">₹0</p>
+             </div>
+        </div>
+    </div>
+
+    <!-- Audio Effect -->
     <audio id="successSound" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3"></audio>
 
     <script>
@@ -211,9 +121,9 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        const CURRENT_USER_UID = "USER_777"; // Dynamic UID setup karein login ke baad
+        // Keeping the exact logic structure as requested
+        const CURRENT_USER_UID = "USER_777"; 
 
-        // 1. Static Achievement List (As per your request)
         const coreAchievements = [
             { id: 'ach_01', name: 'Master Trader', icon: '🏆', criteria: 'Trade ₹5,00,00,000 in total volume', reward_text: 'Reward: ₹10 - ₹10,00,000', file: 'favourites-all.js' },
             { id: 'ach_02', name: 'AVICNKNOV TRADER', icon: '💎', criteria: 'Deposit ₹1,000 to your wallet', reward_text: 'Reward: ₹100 Bonus', file: 'wallet-balance.js' },
@@ -227,63 +137,107 @@
             checkUserGlobalStatus();
         }
 
-        // List Render Function
+        // List Render Function (Modified only to generate Premium Tailwind HTML)
         async function renderList() {
             const listDiv = document.getElementById('mainAchievementList');
             listDiv.innerHTML = '';
 
-            // Fetch extra achievements from achievement-control table
             const { data: dbAch } = await _supabase.from('achievement-control').select('*');
             const totalAch = [...coreAchievements, ...(dbAch || [])];
 
-            // Fetch already claimed achievements
             const { data: claimed } = await _supabase.from('my-achievements').select('achievement_id').eq('uid', CURRENT_USER_UID);
             const claimedIds = claimed ? claimed.map(c => c.achievement_id) : [];
 
-            totalAch.forEach(ach => {
+            totalAch.forEach((ach, index) => {
                 const isClaimed = claimedIds.includes(ach.id);
                 const card = document.createElement('div');
-                card.className = 'ach-card';
+                
+                // New Premium Card Structure
+                card.className = 'bg-white rounded-3xl shadow-xl shadow-slate-200/60 p-5 border border-slate-100 relative overflow-hidden group transition-all duration-300 hover:shadow-2xl hover:-translate-y-1';
                 card.id = `card-${ach.id}`;
 
+                // Gradient Logic based on index
+                const gradients = [
+                    'from-yellow-400 to-orange-500 shadow-orange-500/30',
+                    'from-blue-400 to-indigo-500 shadow-blue-500/30',
+                    'from-emerald-400 to-teal-500 shadow-emerald-500/30',
+                    'from-purple-400 to-fuchsia-500 shadow-purple-500/30',
+                    'from-rose-400 to-pink-500 shadow-pink-500/30'
+                ];
+                const gradClass = gradients[index % gradients.length];
+
+                // Button State Styling
+                let btnClass, btnText, disabledAttr;
+                if (isClaimed) {
+                    btnClass = 'bg-slate-100 text-slate-400 cursor-default border border-slate-200';
+                    btnText = '<i class="fas fa-check-circle mr-2"></i>Claimed';
+                    disabledAttr = 'disabled';
+                } else {
+                    btnClass = 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-80'; // Default Locked
+                    btnText = '<i class="fas fa-lock mr-2"></i>Locked';
+                    disabledAttr = 'disabled';
+                }
+
                 card.innerHTML = `
-                    <div class="ach-icon glow-anim" id="icon-${ach.id}">${ach.icon}</div>
-                    <div class="ach-details">
-                        <h2>${ach.name}</h2>
-                        <p>${ach.criteria}</p>
-                        <div class="reward-tag">${ach.reward_text}</div>
+                    <div class="flex items-start gap-4">
+                        <!-- Icon -->
+                        <div class="shrink-0 w-16 h-16 rounded-2xl bg-gradient-to-br ${gradClass} flex items-center justify-center text-3xl text-white shadow-lg relative z-10 transition-transform duration-500 group-hover:scale-105" id="icon-${ach.id}">
+                            <div class="drop-shadow-md">${ach.icon}</div>
+                        </div>
+                        
+                        <!-- Content -->
+                        <div class="flex-grow pt-1">
+                            <h2 class="text-lg font-black text-slate-800 leading-tight group-hover:text-blue-600 transition-colors">${ach.name}</h2>
+                            <p class="text-xs text-slate-500 font-medium mt-1 leading-relaxed">${ach.criteria}</p>
+                            <div class="inline-block mt-2 px-2.5 py-1 rounded-lg bg-slate-50 text-slate-600 text-[10px] font-bold uppercase tracking-wider border border-slate-100">
+                                ${ach.reward_text}
+                            </div>
+                        </div>
                     </div>
-                    <button class="btn-action ${isClaimed ? 'claimed' : ''}" id="btn-${ach.id}" 
-                            onclick="handleClaim('${ach.id}', '${ach.name}')" ${isClaimed ? 'disabled' : ''}>
-                        ${isClaimed ? 'CLAIMED' : 'LOCKED'}
-                    </button>
+                    
+                    <!-- Action Button -->
+                    <div class="mt-5">
+                        <button class="w-full py-3.5 rounded-xl font-bold text-xs tracking-widest uppercase transition-all duration-300 shadow-sm ${btnClass}" 
+                                id="btn-${ach.id}" 
+                                onclick="handleClaim('${ach.id}', '${ach.name}')" 
+                                ${disabledAttr}>
+                            ${btnText}
+                        </button>
+                    </div>
+                    
+                    <!-- Decorative Blur -->
+                    <div class="absolute -top-10 -right-10 w-32 h-32 bg-slate-50 rounded-full blur-3xl opacity-50 group-hover:bg-blue-50 transition-colors pointer-events-none"></div>
                 `;
+                
                 listDiv.appendChild(card);
                 
                 if(!isClaimed) simulateTaskDetection(ach);
             });
         }
 
-        // Real-time task detection simulation (Jo aapne JS files boli unse connect karne ke liye)
+        // Logic Preserved
         function simulateTaskDetection(ach) {
-            // Yahan logic aayega jo check karega ki user ne task complete kiya ya nahi
-            // Example: Agar User UID ke 'all_achievement' column mein 'all' likha hai
-            // To button turant 'UNLOCKED' ho jayega
+            // Task detection stub
         }
 
         async function checkUserGlobalStatus() {
             const { data } = await _supabase.from('my-achievements').select('*').eq('uid', CURRENT_USER_UID).eq('all_achievement', 'all');
             if(data && data.length > 0) {
-                // Unlock all buttons logic
-                const btns = document.querySelectorAll('.btn-action:not(.claimed)');
+                // Unlock all buttons logic -> Updated to match Tailwind classes
+                const btns = document.querySelectorAll('button[id^="btn-"]');
                 btns.forEach(b => {
-                    b.classList.add('unlocked');
-                    b.innerText = "CLAIM NOW";
+                    // Check if not claimed by checking class
+                    if(!b.classList.contains('bg-slate-100')) {
+                        b.className = 'w-full py-3.5 rounded-xl font-bold text-xs tracking-widest uppercase transition-all duration-300 shadow-lg bg-gradient-to-r from-emerald-400 to-teal-500 text-white hover:shadow-emerald-500/40 hover:-translate-y-0.5 cursor-pointer';
+                        b.innerHTML = 'Claim Reward <i class="fas fa-gift ml-2"></i>';
+                        b.disabled = false;
+                        b.classList.add('unlocked'); // Keep marker class
+                    }
                 });
             }
         }
 
-        // --- Claim Logic with Sound and Movement ---
+        // --- Claim Logic ---
         async function handleClaim(id, name) {
             const btn = document.getElementById(`btn-${id}`);
             if(!btn.classList.contains('unlocked')) return;
@@ -291,14 +245,14 @@
             const icon = document.getElementById(`icon-${id}`);
             const sound = document.getElementById('successSound');
 
-            // 1. Premium Animation & Sound
+            // Animation
             icon.classList.add('claim-move');
             sound.play();
 
-            // 2. Probabilistic Reward Calculation
+            // Reward Calc
             let reward = calculateReward(id);
 
-            // 3. Update Supabase
+            // Supabase Insert
             const { error } = await _supabase.from('my-achievements').insert([{
                 uid: CURRENT_USER_UID,
                 achievement_id: id,
@@ -308,57 +262,97 @@
             }]);
 
             if(!error) {
+                // Button Loading State
+                btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Processing';
+                
                 setTimeout(() => {
-                    btn.classList.remove('unlocked');
-                    btn.classList.add('claimed');
-                    btn.innerText = "CLAIMED";
+                    // Update to Claimed State (Tailwind)
+                    btn.className = 'w-full py-3.5 rounded-xl font-bold text-xs tracking-widest uppercase transition-all duration-300 shadow-sm bg-slate-100 text-slate-400 cursor-default border border-slate-200';
+                    btn.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Claimed';
                     btn.disabled = true;
+                    btn.classList.remove('unlocked');
                     icon.classList.remove('claim-move');
-                    // Add to wallet balance logic can be added here
-                }, 1000);
+                    
+                    // Refresh Sidebar stats if open
+                    if(document.getElementById('myAchSection').classList.contains('active')) {
+                        fetchCollection();
+                    }
+                }, 1500);
             }
         }
 
         function calculateReward(id) {
             const rand = Math.random() * 100;
-            if(id === 'ach_01') { // Master Trader
-                if(rand <= 0.1) return 1000000; // 0.1% chance for 10 Lakh
-                if(rand <= 5) return 1000; // 5% chance for 1000
+            if(id === 'ach_01') { 
+                if(rand <= 0.1) return 1000000;
+                if(rand <= 5) return 1000;
                 return Math.floor(Math.random() * 50) + 10;
             }
             if(id === 'ach_02') return 100;
             if(id === 'ach_03') return 370;
-            return 50; // Default
+            return 50; 
         }
 
-        // --- My Achievements Sidebar Functions ---
+        // --- Sidebar Functions ---
         function openMyAchievements() {
-            document.getElementById('myAchSection').classList.add('active');
-            document.getElementById('overlay').style.display = 'block';
+            const overlay = document.getElementById('overlay');
+            const sidebar = document.getElementById('myAchSection');
+            
+            overlay.classList.remove('hidden');
+            // Trigger reflow
+            void overlay.offsetWidth;
+            overlay.classList.remove('opacity-0');
+            
+            sidebar.classList.add('active');
             fetchCollection();
         }
 
         function closeMyAchievements() {
-            document.getElementById('myAchSection').classList.remove('active');
-            document.getElementById('overlay').style.display = 'none';
+            const overlay = document.getElementById('overlay');
+            const sidebar = document.getElementById('myAchSection');
+            
+            overlay.classList.add('opacity-0');
+            sidebar.classList.remove('active');
+            
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+            }, 300);
         }
 
         async function fetchCollection() {
             const container = document.getElementById('collectionItems');
-            const { data } = await _supabase.from('my-achievements').select('*').eq('uid', CURRENT_USER_UID);
+            container.innerHTML = '<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-slate-300"></i></div>';
+            
+            const { data } = await _supabase.from('my-achievements').select('*').eq('uid', CURRENT_USER_UID).order('claimed_at', { ascending: false });
 
             if(!data || data.length === 0) {
-                container.innerHTML = `<div class="no-ach-text">NO ACHIEVEMENTS YET</div>`;
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-10 opacity-50">
+                        <i class="fas fa-box-open text-4xl text-slate-300 mb-2"></i>
+                        <p class="text-sm font-bold text-slate-400">No achievements yet</p>
+                    </div>
+                `;
+                document.getElementById('totalEarnedValue').innerText = '₹0';
                 return;
             }
 
-            container.innerHTML = data.map(item => `
-                <div style="background: rgba(255,215,0,0.1); border: 1px solid var(--gold); padding: 15px; border-radius: 12px; margin-bottom: 15px;">
-                    <div style="font-weight: bold; color: gold;">${item.achievement_name}</div>
-                    <div style="font-size: 14px; color: #00f3ff;">Reward Won: ₹${item.reward_amount}</div>
-                    <div style="font-size: 11px; opacity: 0.6; margin-top: 5px;">Claimed: ${new Date(item.claimed_at).toLocaleString()}</div>
+            let total = 0;
+            container.innerHTML = data.map(item => {
+                total += item.reward_amount || 0;
+                return `
+                <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center">
+                    <div>
+                        <div class="font-bold text-slate-800 text-sm">${item.achievement_name}</div>
+                        <div class="text-[10px] text-slate-400 mt-1">${new Date(item.claimed_at).toLocaleDateString()}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-black text-emerald-500 text-lg">₹${item.reward_amount}</div>
+                        <div class="text-[9px] font-bold text-slate-300 uppercase tracking-wider">Reward</div>
+                    </div>
                 </div>
-            `).join('');
+            `}).join('');
+            
+            document.getElementById('totalEarnedValue').innerText = '₹' + total.toLocaleString();
         }
 
         window.onload = init;
