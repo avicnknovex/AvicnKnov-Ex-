@@ -2,208 +2,340 @@
 <html lang="en">
 <head>  
   <meta charset="UTF-8" />  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>  
   <title>Assets - AvicnKnov Ex</title>  
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>  
+
   <style>  
+    /* Premium Font Styling */
     body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: white;
-      color: black;
+      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background-color: #f8f9fc;
+      color: #1e293b;
+      -webkit-font-smoothing: antialiased;
     }
-    .top-tabs, .sub-tabs, .crypto-account-tabs {
-      display: flex;
-      justify-content: space-around;
-      border-bottom: 1px solid #ccc;
-      background: #f9f9f9;
-    }
-    .top-tabs div, .sub-tabs div, .crypto-account-tabs div {
-      padding: 12px 0;
-      width: 100%;
-      text-align: center;
-      cursor: pointer;
+
+    /* Hide Scrollbar */
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Tab Animations */
+    .tab-btn {
       position: relative;
-      font-weight: 500;
-      color: #555;
       transition: all 0.3s ease;
     }
-    .top-tabs div:hover, .sub-tabs div:hover, .crypto-account-tabs div:hover {
-      background: #eee;
-      color: black;
-    }
-    .top-tabs .active, .sub-tabs .active, .crypto-account-tabs .active {
-      color: dodgerblue;
-      font-weight: bold;
-    }
-    .top-tabs .active::after, .sub-tabs .active::after, .crypto-account-tabs .active::after {
+    .tab-btn::after {
       content: '';
       position: absolute;
-      bottom: 0;
-      left: 30%;
-      width: 40%;
+      bottom: -2px;
+      left: 50%;
+      width: 0;
       height: 3px;
-      background-color: dodgerblue;
-      border-radius: 2px;
+      background: #3b82f6;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 4px;
+      transform: translateX(-50%);
     }
+    .tab-btn.active {
+      color: #2563eb;
+      font-weight: 700;
+    }
+    .tab-btn.active::after {
+      width: 60%;
+    }
+
+    /* Sub-Tab Pill Style */
+    .sub-tab-btn {
+        transition: all 0.2s ease;
+    }
+    .sub-tab-btn.active {
+        background-color: #eff6ff;
+        color: #2563eb;
+        font-weight: 600;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    /* Content Transition */
     .tab-content {
       display: none;
-      padding: 20px;
-      margin-bottom: 80px;
+      animation: fadeIn 0.3s ease-out;
     }
     .tab-content.active {
       display: block;
     }
-    .balance-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-    .balance-header select {
-      background: #e5e5e5;
-      color: black;
-      border: none;
-      padding: 5px;
-    }
-    .balance-amount {
-      font-size: 2em;
-      margin: 10px 0;
-    }
-    .buttons {
-      display: flex;
-      justify-content: space-between;
-      margin: 20px 0;
-      padding: 0 10px;
-    }
-    .buttons button {
-      flex: 1;
-      margin: 0 5px;
-      padding: 12px;
-      border: none;
-      border-radius: 8px;
-      color: white;
-      font-weight: bold;
-      font-size: 15px;
-      cursor: pointer;
-    }
-    .buttons .deposit {
-      background: linear-gradient(to right, #3b82f6, #60a5fa);
-    }
-    .buttons .withdrawal {
-      background: linear-gradient(to right, #10b981, #34d399);
-    }
-    .buttons .transactions {
-      background: linear-gradient(to right, #f59e0b, #fbbf24);
-    }
-    .search-bar {
-      padding: 10px;
-    }
-    .search-bar input {
-      width: 100%;
-      padding: 10px;
-      background: #f0f0f0;
-      border: 1px solid #ccc;
-      color: black;
-      border-radius: 5px;
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
-<body>
+<body class="bg-[#f8f9fc] pb-20">
 
-  <!-- ✅ Top Tabs -->
-  <div class="top-tabs">
-    <div class="active">Assets</div>
-    <div onclick="location.href='wallet.html'">Wallet</div>
-  </div>
-
-  <!-- ✅ Sub Tabs -->
-  <div class="sub-tabs">
-    <div class="active" onclick="showSubTab('overview')">Overview</div>
-    <div onclick="showSubTab('spot')">Spot</div>
-    <div onclick="showSubTab('funding')">Funding</div>
-    <div onclick="showSubTab('futures')">Futures</div>
-    <div onclick="showSubTab('earn')">Earn</div>
-  </div>
-
-  <!-- ✅ Overview Tab Content -->
-  <div id="overview" class="tab-content active">
-    <div class="balance-header">
-      <div>Total Balance</div>
-      <select id="currency-select">
-        <option>INR</option>
-        <option>USD</option>
-        <option>BTC</option>
-        <option>ETH</option>
-        <option>BNB</option>
-        <option>USDT</option>
-      </select>
-    </div>
-
-    <div class="balance-amount" id="walletBalance">Loading...</div>
-
-    <div class="buttons">
-      <button class="deposit" onclick="location.href='deposit.html'">DEPOSIT</button>
-      <button class="withdrawal" onclick="location.href='withdrawal.html'">WITHDRAWAL</button>
-      <button class="transactions" onclick="location.href='transactions.html'">TRANSACTIONS</button>
-    </div>
-
-    <!-- ✅ Crypto/Account Tabs -->
-    <div class="crypto-account-tabs">
-      <div class="active" onclick="showAccountTab('crypto')">Crypto</div>
-      <div onclick="showAccountTab('account')">Account</div>
-    </div>
-
-    <div id="crypto" class="tab-content active">
-      <div class="search-bar">
-        <input type="text" placeholder="Search your tokens..." />
-      </div>
-      <div class="tab-content" id="search-results">
-        <!-- Token list will be shown here -->
+  <!-- TOP HEADER TABS -->
+  <div class="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-gray-100 shadow-sm">
+    <div class="flex justify-around items-center px-2">
+      <div class="top-tabs flex w-full">
+        <div class="tab-btn active flex-1 py-4 text-center cursor-pointer text-sm tracking-wide text-slate-600 hover:bg-slate-50" onclick="switchMainTab(this)">Assets</div>
+        <div class="tab-btn flex-1 py-4 text-center cursor-pointer text-sm tracking-wide text-slate-600 hover:bg-slate-50" onclick="location.href='wallet.html'">Wallet</div>
       </div>
     </div>
+  </div>
 
-    <div id="account" class="tab-content">
-      <!-- Account section content will be added via JS -->
+  <!-- SUB TABS (Overview, Spot, etc.) -->
+  <div class="bg-white border-b border-gray-100 py-2 px-2 shadow-sm">
+    <div class="sub-tabs flex justify-between gap-1 overflow-x-auto scrollbar-hide">
+      <div class="sub-tab-btn active px-4 py-2 rounded-full text-xs text-slate-500 cursor-pointer whitespace-nowrap" onclick="showSubTab('overview', this)">Overview</div>
+      <div class="sub-tab-btn px-4 py-2 rounded-full text-xs text-slate-500 cursor-pointer whitespace-nowrap" onclick="showSubTab('spot', this)">Spot</div>
+      <div class="sub-tab-btn px-4 py-2 rounded-full text-xs text-slate-500 cursor-pointer whitespace-nowrap" onclick="showSubTab('funding', this)">Funding</div>
+      <div class="sub-tab-btn px-4 py-2 rounded-full text-xs text-slate-500 cursor-pointer whitespace-nowrap" onclick="showSubTab('futures', this)">Futures</div>
+      <div class="sub-tab-btn px-4 py-2 rounded-full text-xs text-slate-500 cursor-pointer whitespace-nowrap" onclick="showSubTab('earn', this)">Earn</div>
     </div>
   </div>
 
-  <!-- ✅ Other Sub-Tabs -->
-  <div id="spot" class="tab-content"></div>
-  <div id="funding" class="tab-content"></div>
-  <div id="futures" class="tab-content"></div>
-  <div id="earn" class="tab-content"></div>
+  <!-- MAIN CONTENT CONTAINER -->
+  <div class="p-4 min-h-screen">
+    
+    <!-- OVERVIEW TAB -->
+    <div id="overview" class="tab-content active">
+      
+      <!-- Balance Card -->
+      <div class="relative group mb-6">
+        <div class="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[2rem] blur opacity-20 group-hover:opacity-30 transition duration-1000"></div>
+        <div class="relative bg-white p-6 rounded-[1.8rem] shadow-xl shadow-slate-200/50 border border-white overflow-hidden">
+            <!-- Deco -->
+            <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-full -mr-10 -mt-10 blur-2xl"></div>
+            
+            <div class="balance-header flex justify-between items-center relative z-10 mb-2">
+                <span class="text-slate-400 font-bold text-[10px] uppercase tracking-[0.15em]">Total Valuation</span>
+                <div class="relative">
+                    <select id="currency-select" class="appearance-none bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 pl-3 pr-7 py-1.5 cursor-pointer hover:bg-slate-100 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all">
+                        <option>INR</option>
+                        <option>USD</option>
+                        <option>BTC</option>
+                        <option>ETH</option>
+                        <option>BNB</option>
+                        <option>USDT</option>
+                    </select>
+                    <i class="fas fa-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-[8px] text-slate-400 pointer-events-none"></i>
+                </div>
+            </div>
 
-  <!-- ✅ Supabase JS Client -->
+            <div class="relative z-10">
+                <div class="balance-amount text-4xl font-black text-slate-800 tracking-tight drop-shadow-sm tabular-nums" id="walletBalance">0.00</div>
+                <div class="text-xs text-slate-400 font-medium mt-1">≈ Estimated Value</div>
+            </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="buttons flex justify-between gap-3 mb-8">
+        <button onclick="location.href='deposit.html'" class="deposit flex-1 group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 p-3.5 text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:-translate-y-0.5 active:scale-95">
+            <div class="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors"></div>
+            <div class="flex flex-col items-center gap-1 relative z-10">
+                <i class="fas fa-arrow-down text-sm mb-1"></i>
+                <span class="text-[10px] font-bold uppercase tracking-wide">Deposit</span>
+            </div>
+        </button>
+        <button onclick="location.href='withdrawal.html'" class="withdrawal flex-1 group relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-3.5 text-white shadow-lg shadow-emerald-500/25 transition-all hover:shadow-xl hover:-translate-y-0.5 active:scale-95">
+            <div class="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors"></div>
+            <div class="flex flex-col items-center gap-1 relative z-10">
+                <i class="fas fa-arrow-up text-sm mb-1"></i>
+                <span class="text-[10px] font-bold uppercase tracking-wide">Withdraw</span>
+            </div>
+        </button>
+        <button onclick="location.href='transactions.html'" class="transactions flex-1 group relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-3.5 text-white shadow-lg shadow-amber-500/25 transition-all hover:shadow-xl hover:-translate-y-0.5 active:scale-95">
+            <div class="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors"></div>
+            <div class="flex flex-col items-center gap-1 relative z-10">
+                <i class="fas fa-history text-sm mb-1"></i>
+                <span class="text-[10px] font-bold uppercase tracking-wide">History</span>
+            </div>
+        </button>
+      </div>
+
+      <!-- Inner Tabs (Crypto/Account) -->
+      <div class="crypto-account-tabs flex bg-slate-100 p-1 rounded-xl mb-4">
+        <div class="active flex-1 py-2 text-center rounded-lg text-xs font-bold cursor-pointer transition-all duration-200 text-slate-500 hover:text-slate-800" id="btn-crypto" onclick="showAccountTab('crypto', this)">Crypto</div>
+        <div class="flex-1 py-2 text-center rounded-lg text-xs font-bold cursor-pointer transition-all duration-200 text-slate-500 hover:text-slate-800" id="btn-account" onclick="showAccountTab('account', this)">Account</div>
+      </div>
+
+      <!-- Crypto Content -->
+      <div id="crypto" class="tab-content active">
+        <div class="search-bar relative mb-4">
+          <input type="text" placeholder="Search assets..." class="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-xl px-4 py-3 pl-10 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none transition-all shadow-sm placeholder-slate-400" />
+          <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+        </div>
+        
+        <!-- Results Container -->
+        <div id="search-results" class="bg-white rounded-2xl border border-slate-100 shadow-sm min-h-[200px]">
+           <!-- Content injected by assets-crypto.js -->
+        </div>
+      </div>
+
+      <!-- Account Content -->
+      <div id="account" class="tab-content">
+         <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 min-h-[200px]">
+            <!-- Content injected by assets-account.js -->
+            <p class="text-center text-slate-400 text-sm mt-8">Account details loading...</p>
+         </div>
+      </div>
+
+    </div>
+    
+    <!-- OTHER TABS PLACEHOLDERS -->
+    <div id="spot" class="tab-content"><div class="p-10 text-center text-slate-400">Spot Wallet Loading...</div></div>
+    <div id="funding" class="tab-content"><div class="p-10 text-center text-slate-400">Funding Wallet Loading...</div></div>
+    <div id="futures" class="tab-content"><div class="p-10 text-center text-slate-400">Futures Wallet Loading...</div></div>
+    <div id="earn" class="tab-content"><div class="p-10 text-center text-slate-400">Earn Wallet Loading...</div></div>
+
+  </div>
+
+  <!-- SUPABASE & LOGIC -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- ✅ Wallet Balance Logic -->
-  <script src="wallet-balance.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  <!-- ✅ Required External JS Files -->
+    const WALLET_RATES = { INR: 1, USD: 0.012, BTC: 0.00000027, ETH: 0.0000042, BNB: 0.00013, USDT: 0.012 };
+
+    // --- ANIMATED COUNTER LOGIC ---
+    let currentDisplayedValue = 0;
+    let storedRawBalance = 0;
+
+    function animateValue(obj, start, end, duration) {
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+            
+            const value = start + (end - start) * ease;
+            const currency = document.getElementById("currency-select").value;
+            obj.innerHTML = value.toFixed(currency === 'BTC' ? 8 : 2);
+            
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            } else {
+                obj.innerHTML = end.toFixed(currency === 'BTC' ? 8 : 2);
+            }
+        };
+        window.requestAnimationFrame(step);
+    }
+
+    // --- REALTIME & AUTO-REFRESH LOGIC ---
+    async function syncRealtimeBalance() {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) return;
+
+      // Helper for updating logic
+      const processUpdate = (newBalance) => {
+          if (newBalance !== undefined && newBalance !== storedRawBalance) {
+              console.log("Balance Updated:", newBalance);
+              storedRawBalance = newBalance;
+              updateDisplay();
+          }
+      };
+
+      // 1. Initial Fetch
+      const { data: wallet } = await sb.from("user_wallets").select("balance").eq("uid", user.id).maybeSingle();
+      if (wallet) {
+          storedRawBalance = wallet.balance;
+          updateDisplay(); // Trigger initial render/anim
+      }
+
+      // 2. Realtime Subscription (Instant)
+      sb.channel('db-assets-sync')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'user_wallets', filter: `uid=eq.${user.id}` }, 
+          (payload) => {
+            processUpdate(payload.new.balance);
+          })
+        .subscribe();
+      
+      // 3. Auto-Refresh Polling (Every 5 Seconds)
+      setInterval(async () => {
+          const { data: latest } = await sb.from("user_wallets").select("balance").eq("uid", user.id).maybeSingle();
+          if (latest) processUpdate(latest.balance);
+      }, 5000);
+    }
+
+    function updateDisplay() {
+      const currency = document.getElementById("currency-select").value;
+      const balanceEl = document.getElementById("walletBalance");
+      if (balanceEl) {
+        const rate = WALLET_RATES[currency] || 1;
+        const targetValue = storedRawBalance * rate;
+        
+        // Trigger Smooth Animation
+        animateValue(balanceEl, currentDisplayedValue, targetValue, 1200);
+        currentDisplayedValue = targetValue;
+      }
+    }
+
+    document.getElementById("currency-select").addEventListener("change", () => {
+       updateDisplay(); // Use updateDisplay to trigger animation
+    });
+
+    document.addEventListener('DOMContentLoaded', syncRealtimeBalance);
+
+    // --- TAB LOGIC (Updated for Styles) ---
+    function switchMainTab(el) {
+        // Just visual toggle for this demo, logic remains same
+    }
+
+    function showSubTab(id, el) {
+      // Update Pills Styles
+      document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active', 'bg-blue-50', 'text-blue-600', 'font-semibold', 'shadow-sm'));
+      document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.add('text-slate-500'));
+      
+      el.classList.add('active'); // CSS handles bg color
+      el.classList.remove('text-slate-500');
+
+      // Show Content
+      document.querySelectorAll('.tab-content').forEach(div => div.classList.remove('active'));
+      // Only hide direct children tab-contents of main container to avoid hiding nested tabs logic if structured differently, 
+      // but based on provided file structure, IDs are unique.
+      const target = document.getElementById(id);
+      if(target) target.classList.add('active');
+    }
+
+    function showAccountTab(id, el) {
+      // Toggle Styles for Crypto/Account Switcher
+      const cryptoBtn = document.getElementById('btn-crypto');
+      const accountBtn = document.getElementById('btn-account');
+      
+      [cryptoBtn, accountBtn].forEach(btn => {
+          btn.classList.remove('bg-white', 'text-slate-800', 'shadow-sm');
+          btn.classList.add('text-slate-500');
+      });
+
+      el.classList.remove('text-slate-500');
+      el.classList.add('bg-white', 'text-slate-800', 'shadow-sm');
+
+      // Hide internal tabs of Overview
+      document.getElementById('crypto').style.display = 'none';
+      document.getElementById('account').style.display = 'none';
+      
+      const target = document.getElementById(id);
+      if(target) {
+          target.style.display = 'block';
+          target.classList.add('active'); // Trigger animation
+      }
+    }
+  </script>
+
+  <!-- External Logic Preserved -->
   <script src="assets-crypto.js"></script>
   <script src="assets-account.js"></script>
   <script src="assets-spot.js"></script>
   <script src="assets-funding.js"></script>
   <script src="assets-futures.js"></script>
   <script src="assets-earn.js"></script>
-
-  <!-- ✅ Tab Switching JS -->
-  <script>
-    function showSubTab(id) {
-      document.querySelectorAll('.sub-tabs div').forEach(el => el.classList.remove('active'));
-      event.target.classList.add('active');
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-    }
-
-    function showAccountTab(id) {
-      document.querySelectorAll('.crypto-account-tabs div').forEach(el => el.classList.remove('active'));
-      event.target.classList.add('active');
-      document.querySelectorAll('#overview .tab-content').forEach(el => el.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-    }
-  </script>
 
 </body>
 </html>
