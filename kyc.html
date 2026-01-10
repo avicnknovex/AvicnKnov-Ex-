@@ -1,232 +1,407 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>KYC Verification</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>KYC Verification - AvicnKnov Ex</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  
+  <!-- Supabase Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
+    /* Premium Font Styling */
     body {
-      font-family: Arial, sans-serif;
-      background: #f0f4f8;
-      padding: 20px;
+      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background-color: #f8f9fc;
+      color: #1e293b;
+      -webkit-font-smoothing: antialiased;
     }
-    .step {
+
+    /* Animations */
+    .step-container {
       display: none;
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
+      animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .step.active {
+    .step-container.active {
       display: block;
     }
-    input, select, button {
-      display: block;
-      margin-top: 10px;
-      padding: 10px;
-      width: 100%;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    button {
-      background: #007bff;
-      color: white;
-      border: none;
+
+    /* Custom File Input Styling */
+    input[type="file"]::file-selector-button {
+      margin-right: 16px;
+      padding: 8px 16px;
+      border-radius: 9999px;
+      border: 1px solid #e2e8f0;
+      background-color: #f8fafc;
+      color: #475569;
+      font-size: 0.75rem;
+      font-weight: 700;
       cursor: pointer;
+      transition: all 0.2s;
     }
-    button:hover {
-      background: #0056b3;
+    input[type="file"]::file-selector-button:hover {
+      background-color: #e0f2fe;
+      color: #0284c7;
+      border-color: #bae6fd;
     }
-    .back-button {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      background: #eee;
-      padding: 10px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: bold;
-      color: #333;
+
+    /* Input Field Styling */
+    .input-field {
+      width: 100%;
+      padding: 14px 16px;
+      background-color: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      color: #334155;
+      transition: all 0.3s;
+      outline: none;
+    }
+    .input-field:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
     }
   </style>
 </head>
-<body><a href="profile.html" class="back-button">← Back to Profile</a>
+<body class="bg-[#f8f9fc] min-h-screen pb-10">
 
-<div id="step1" class="step active">
-  <h2>Step 1: Enter ID Details</h2>
-  <select id="idType">
-    <option value="">Select ID Type</option>
-    <option value="Aadhar">Aadhar</option>
-    <option value="PAN">PAN</option>
-    <option value="Passport">Passport</option>
-  </select>
-  <input type="text" id="idNumber" placeholder="Enter ID Number" />
-  <button onclick="submitStep1()">Next</button>
-</div><div id="step2" class="step">
-  <h2>Step 2: Upload Document Images</h2>
-  <label>Front Side</label>
-  <input type="file" id="docFront" accept="image/*" />
-  <label>Back Side</label>
-  <input type="file" id="docBack" accept="image/*" />
-  <button onclick="submitStep2()">Upload & Continue</button>
-</div><div id="step3" class="step">
-  <h2>Step 3: Upload Selfie Video (7 seconds)</h2>
-  <input type="file" id="selfieVideo" accept="video/*" />
-  <button onclick="submitStep3()">Submit Video</button>
-</div><div id="step4" class="step">
-  <h2>KYC Verification Submitted</h2>
-  <p>
-    You have completed all the steps of your KYC. Now we will check your KYC step to see if you have done everything correctly and all your documents and other things are correct.
-    <br><br>
-    Then the KYC verification will be successful, otherwise you will have to do the KYC verification again.
-    <br><br>
-    If you are facing any problem, you can choose the help and support option. And can you tell us your issue? Our AvicnKnov team will contact you soon and solve your problem.
-  </p>
-</div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script><script>
-  const supabaseUrl = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
-  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
-  const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+  <!-- Header -->
+  <div class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 py-4 flex items-center shadow-sm">
+    <button onclick="window.location.href='profile.html'" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <h1 class="text-lg font-bold text-slate-800 ml-3 tracking-tight">Identity Verification</h1>
+  </div>
 
-  const kycData = {
-    id_type: '',
-    id_number: '',
-    front_url: '',
-    back_url: '',
-    video_url: ''
-  };
+  <div class="max-w-md mx-auto px-4 mt-6">
+    
+    <!-- Progress Bar (Visual) -->
+    <div class="flex justify-between items-center mb-8 px-2">
+      <div class="flex flex-col items-center">
+        <div id="p1" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-lg shadow-blue-500/30">1</div>
+        <span class="text-[10px] font-bold text-blue-600 mt-1">ID</span>
+      </div>
+      <div class="flex-1 h-[2px] bg-gray-200 mx-2 relative"><div id="l1" class="absolute left-0 top-0 h-full bg-blue-600 w-0 transition-all duration-500"></div></div>
+      
+      <div class="flex flex-col items-center">
+        <div id="p2" class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-xs font-bold transition-colors duration-300">2</div>
+        <span class="text-[10px] font-bold text-gray-400 mt-1">Docs</span>
+      </div>
+      <div class="flex-1 h-[2px] bg-gray-200 mx-2 relative"><div id="l2" class="absolute left-0 top-0 h-full bg-blue-600 w-0 transition-all duration-500"></div></div>
+      
+      <div class="flex flex-col items-center">
+        <div id="p3" class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-xs font-bold transition-colors duration-300">3</div>
+        <span class="text-[10px] font-bold text-gray-400 mt-1">Video</span>
+      </div>
+    </div>
 
-  function showStep(n) {
-    document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
-    document.getElementById(`step${n}`).classList.add('active');
-  }
+    <!-- Main Card Container -->
+    <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 p-6 border border-slate-100 min-h-[400px]">
 
-  async function submitStep1() {
-    const idType = document.getElementById('idType').value;
-    const idNumber = document.getElementById('idNumber').value;
-    if (!idType || !idNumber) {
-      alert('Please enter both ID type and number.');
-      return;
-    }
-    kycData.id_type = idType;
-    kycData.id_number = idNumber;
-    showStep(2);
-  }
-
-  async function uploadFile(file, bucket) {
-    const fileName = `${Date.now()}-${file.name}`;
-    const { data, error } = await supabase.storage.from(bucket).upload(fileName, file);
-    if (error) {
-      console.error('Upload failed:', error.message);
-      return null;
-    }
-    return `${supabaseUrl}/storage/v1/object/public/${bucket}/${fileName}`;
-  }
-
-  async function submitStep2() {
-    const front = document.getElementById('docFront').files[0];
-    const back = document.getElementById('docBack').files[0];
-    if (!front || !back) {
-      alert('Please upload both front and back images.');
-      return;
-    }
-    const frontUrl = await uploadFile(front, 'kyc-documents');
-    const backUrl = await uploadFile(back, 'kyc-documents');
-    if (!frontUrl || !backUrl) {
-      alert('Failed to upload images.');
-      return;
-    }
-    kycData.front_url = frontUrl;
-    kycData.back_url = backUrl;
-    showStep(3);
-  }
-
-  async function submitStep3() {
-    const video = document.getElementById('selfieVideo').files[0];
-    if (!video) {
-      alert('Please upload a selfie video.');
-      return;
-    }
-    const videoUrl = await uploadFile(video, 'kyc-selfie-videos');
-    if (!videoUrl) {
-      alert('Video upload failed.');
-      return;
-    }
-    kycData.video_url = videoUrl;
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      alert('User not logged in.');
-      return;
-    }
-
-    const { error } = await supabase.from('kyc_verifications').insert({
-      user_id: user.id,
-      id_type: kycData.id_type,
-      id_number: kycData.id_number,
-      front_url: kycData.front_url,
-      back_url: kycData.back_url,
-      video_url: kycData.video_url,
-      status: 'pending'
-    });
-
-    if (error) {
-      console.error('Save error:', error.message);
-      alert('Database save failed.');
-      return;
-    }
-
-    showStep(4);
-  }
-
-  document.addEventListener("DOMContentLoaded", async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from('kyc_verifications')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (error || !data) return;
-
-    const status = data.status;
-    const createdAt = new Date(data.created_at);
-    const now = new Date();
-    const minutesPassed = (now - createdAt) / (1000 * 60);
-
-    if (status === 'approved') {
-      if (minutesPassed >= 10) {
-        document.body.innerHTML = `
-          <a href="profile.html" class="back-button">← Back to Profile</a>
-          <div class="step active">
-            <h2>KYC Status: ✅ Completed</h2>
-            <p>Your KYC has been successfully completed but in future you may have to do KYC again, currently your KYC verification is successful ✓</p>
+      <!-- STEP 1: ID Details -->
+      <div id="step1" class="step-container active">
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-3 text-blue-500">
+            <i class="fas fa-address-card text-2xl"></i>
           </div>
-        `;
-      } else {
-        document.body.innerHTML = `
-          <a href="profile.html" class="back-button">← Back to Profile</a>
-          <div class="step active">
-            <h2>KYC Status: ⏳ Approved, Waiting</h2>
-            <p>Your KYC has been approved. It will be marked complete after 10 minutes. Please wait a little longer.</p>
+          <h2 class="text-xl font-bold text-slate-800">Identity Details</h2>
+          <p class="text-xs text-slate-500 mt-1">Select your government issued ID type.</p>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Document Type</label>
+            <div class="relative">
+              <select id="idType" class="input-field appearance-none cursor-pointer">
+                <option value="">Select ID Type</option>
+                <option value="Aadhar">Aadhar Card</option>
+                <option value="PAN">PAN Card</option>
+                <option value="Passport">Passport</option>
+              </select>
+              <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xs"></i>
+            </div>
           </div>
-        `;
+
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Document Number</label>
+            <input type="text" id="idNumber" class="input-field" placeholder="Enter ID Number (e.g. ABCD1234E)" />
+          </div>
+
+          <button onclick="submitStep1()" class="w-full mt-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all duration-300 active:scale-[0.98]">
+            Next Step <i class="fas fa-arrow-right ml-2 text-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Document Upload -->
+      <div id="step2" class="step-container">
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-3 text-indigo-500">
+            <i class="fas fa-file-upload text-2xl"></i>
+          </div>
+          <h2 class="text-xl font-bold text-slate-800">Upload Documents</h2>
+          <p class="text-xs text-slate-500 mt-1">Clear photos of Front & Back side.</p>
+        </div>
+
+        <div class="space-y-5">
+          <div class="p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-300 hover:bg-blue-50 transition-colors">
+            <label class="block text-sm font-bold text-slate-700 mb-2"><i class="fas fa-id-card-clip mr-2 text-blue-500"></i>Front Side</label>
+            <input type="file" id="docFront" accept="image/*" class="w-full text-slate-500 text-sm" />
+          </div>
+
+          <div class="p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-300 hover:bg-blue-50 transition-colors">
+            <label class="block text-sm font-bold text-slate-700 mb-2"><i class="fas fa-id-card mr-2 text-blue-500"></i>Back Side</label>
+            <input type="file" id="docBack" accept="image/*" class="w-full text-slate-500 text-sm" />
+          </div>
+
+          <button onclick="submitStep2()" class="w-full mt-4 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-500/30 transition-all duration-300 active:scale-[0.98]">
+            Upload & Continue <i class="fas fa-cloud-upload-alt ml-2"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 3: Selfie Video -->
+      <div id="step3" class="step-container">
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-3 text-rose-500">
+            <i class="fas fa-video text-2xl"></i>
+          </div>
+          <h2 class="text-xl font-bold text-slate-800">Selfie Video</h2>
+          <p class="text-xs text-slate-500 mt-1">Record a short 7-second video of yourself.</p>
+        </div>
+
+        <div class="space-y-4">
+          <div class="p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-300 flex flex-col items-center justify-center text-center">
+             <i class="fas fa-camera-rotate text-3xl text-slate-400 mb-3"></i>
+             <p class="text-sm font-medium text-slate-600 mb-3">Make sure your face is clearly visible.</p>
+             <input type="file" id="selfieVideo" accept="video/*" class="w-full max-w-xs text-slate-500 text-sm" />
+          </div>
+
+          <button onclick="submitStep3()" class="w-full mt-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-500/30 transition-all duration-300 active:scale-[0.98]">
+            Final Submit <i class="fas fa-check-circle ml-2"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 4: Completed (Initial View) -->
+      <div id="step4" class="step-container text-center py-4">
+        <div class="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 text-green-500 animate-bounce">
+          <i class="fas fa-shield-check text-4xl"></i>
+        </div>
+        <h2 class="text-2xl font-black text-slate-800 mb-2">Submitted!</h2>
+        <div class="p-4 bg-slate-50 rounded-2xl text-left border border-slate-100">
+            <p class="text-sm text-slate-600 leading-relaxed mb-3">
+              We have received your KYC documents. Our AI system will now check your ID details, document clarity, and video verification.
+            </p>
+            <p class="text-sm text-slate-600 leading-relaxed mb-3">
+              If all information is correct, verification will be successful within <strong>10-15 minutes</strong>.
+            </p>
+            <div class="text-xs text-slate-400 mt-4 pt-4 border-t border-slate-200">
+              <i class="fas fa-headset mr-1"></i> Need help? Contact Support.
+            </div>
+        </div>
+        <button onclick="window.location.href='profile.html'" class="w-full mt-6 bg-slate-100 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors">
+          Return to Profile
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    const kycData = {
+      id_type: '',
+      id_number: '',
+      front_url: '',
+      back_url: '',
+      video_url: ''
+    };
+
+    function updateProgressBar(step) {
+      // Logic to update visual steps
+      if (step >= 2) {
+         document.getElementById('p2').className = "w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-lg shadow-blue-500/30 transition-all duration-300";
+         document.getElementById('l1').style.width = "100%";
       }
-    } else if (status === 'pending') {
-      document.body.innerHTML = `
-        <a href="profile.html" class="back-button">← Back to Profile</a>
-        <div class="step active">
-          <h2>KYC Status: ⏳ Pending Verification</h2>
-          <p>Your KYC is under review. Please wait 10 minutes. If everything is correct, your KYC will be automatically verified.</p>
+      if (step >= 3) {
+         document.getElementById('p3').className = "w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-lg shadow-blue-500/30 transition-all duration-300";
+         document.getElementById('l2').style.width = "100%";
+      }
+    }
+
+    function showStep(n) {
+      document.querySelectorAll('.step-container').forEach(step => step.classList.remove('active'));
+      document.getElementById(`step${n}`).classList.add('active');
+      updateProgressBar(n);
+    }
+
+    async function submitStep1() {
+      const idType = document.getElementById('idType').value;
+      const idNumber = document.getElementById('idNumber').value;
+      if (!idType || !idNumber) {
+        alert('Please enter both ID type and number.');
+        return;
+      }
+      kycData.id_type = idType;
+      kycData.id_number = idNumber;
+      showStep(2);
+    }
+
+    async function uploadFile(file, bucket) {
+      const fileName = `${Date.now()}-${file.name}`;
+      const { data, error } = await supabase.storage.from(bucket).upload(fileName, file);
+      if (error) {
+        console.error('Upload failed:', error.message);
+        return null;
+      }
+      return `${supabaseUrl}/storage/v1/object/public/${bucket}/${fileName}`;
+    }
+
+    async function submitStep2() {
+      const front = document.getElementById('docFront').files[0];
+      const back = document.getElementById('docBack').files[0];
+      if (!front || !back) {
+        alert('Please upload both front and back images.');
+        return;
+      }
+      const frontUrl = await uploadFile(front, 'kyc-documents');
+      const backUrl = await uploadFile(back, 'kyc-documents');
+      if (!frontUrl || !backUrl) {
+        alert('Failed to upload images.');
+        return;
+      }
+      kycData.front_url = frontUrl;
+      kycData.back_url = backUrl;
+      showStep(3);
+    }
+
+    async function submitStep3() {
+      const video = document.getElementById('selfieVideo').files[0];
+      if (!video) {
+        alert('Please upload a selfie video.');
+        return;
+      }
+      const videoUrl = await uploadFile(video, 'kyc-selfie-videos');
+      if (!videoUrl) {
+        alert('Video upload failed.');
+        return;
+      }
+      kycData.video_url = videoUrl;
+
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        alert('User not logged in.');
+        return;
+      }
+
+      const { error } = await supabase.from('kyc_verifications').insert({
+        user_id: user.id,
+        id_type: kycData.id_type,
+        id_number: kycData.id_number,
+        front_url: kycData.front_url,
+        back_url: kycData.back_url,
+        video_url: kycData.video_url,
+        status: 'pending'
+      });
+
+      if (error) {
+        console.error('Save error:', error.message);
+        alert('Database save failed.');
+        return;
+      }
+
+      showStep(4);
+    }
+
+    // --- Status Check on Load ---
+    document.addEventListener("DOMContentLoaded", async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('kyc_verifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !data) return;
+
+      const status = data.status;
+      const createdAt = new Date(data.created_at);
+      const now = new Date();
+      const minutesPassed = (now - createdAt) / (1000 * 60);
+
+      // Wrapper for injecting status to maintain premium layout
+      const wrapStatus = (content) => {
+         return `
+           <div class="max-w-md mx-auto px-4 mt-6">
+             <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 p-8 border border-slate-100 text-center">
+                ${content}
+             </div>
+           </div>
+         `;
+      }
+      
+      const backButton = `
+        <div class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 py-4 flex items-center shadow-sm">
+            <button onclick="window.location.href='profile.html'" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors">
+            <i class="fas fa-arrow-left"></i>
+            </button>
+            <h1 class="text-lg font-bold text-slate-800 ml-3 tracking-tight">Status</h1>
         </div>
       `;
-    } else if (status === 'rejected') {
-      alert('Your KYC was rejected. Please redo the verification.');
-      showStep(1); // Start again from Step 1
-    }
-  });
-</script></body>
+
+      if (status === 'approved') {
+        if (minutesPassed >= 10) {
+          document.body.innerHTML = backButton + wrapStatus(`
+             <div class="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 text-green-500">
+               <i class="fas fa-check-circle text-4xl"></i>
+             </div>
+             <h2 class="text-2xl font-black text-slate-800 mb-2">Verified</h2>
+             <p class="text-slate-600 text-sm leading-relaxed mb-4">Your KYC verification is fully successful. Your identity is now verified.</p>
+             <div class="bg-green-50 text-green-700 text-xs px-3 py-2 rounded-lg font-bold inline-block">Status: Active</div>
+          `);
+        } else {
+          document.body.innerHTML = backButton + wrapStatus(`
+             <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-500 animate-pulse">
+               <i class="fas fa-hourglass-half text-3xl"></i>
+             </div>
+             <h2 class="text-2xl font-black text-slate-800 mb-2">Approved</h2>
+             <p class="text-slate-600 text-sm leading-relaxed mb-4">Your KYC has been approved! It will be marked complete in a few minutes.</p>
+             <button onclick="window.location.href='profile.html'" class="w-full bg-slate-100 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors">Go Back</button>
+          `);
+        }
+      } else if (status === 'pending') {
+         document.body.innerHTML = backButton + wrapStatus(`
+             <div class="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-500">
+               <i class="fas fa-clock text-4xl"></i>
+             </div>
+             <h2 class="text-2xl font-black text-slate-800 mb-2">Pending</h2>
+             <p class="text-slate-600 text-sm leading-relaxed mb-4">Your KYC is currently under review. Please wait approx 10 minutes. If everything is correct, it will be automatically verified.</p>
+             <button onclick="location.reload()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/30">Refresh Status</button>
+          `);
+      } else if (status === 'rejected') {
+        alert('Your KYC was rejected. Please redo the verification.');
+        showStep(1); 
+      }
+    });
+  </script>
+</body>
 </html>
