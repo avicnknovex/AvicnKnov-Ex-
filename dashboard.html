@@ -1,743 +1,629 @@
-<!DOCTYPE ahtml>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>AvicnKnov Ex Dashboard</title>
+  
+  <!-- Tailwind CSS for Premium "8K" Styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome for Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  
+  <!-- Supabase Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
+    /* Premium Font Handling */
     body {
-      font-family: sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #fff;
-      /* Main dashboard should not scroll horizontally */
+      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background-color: #f8f9fc;
       overflow-x: hidden;
-    }
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px;
-      flex-wrap: wrap;
-    }
-    .top-bar a {
-      margin: 0 8px;
-      text-decoration: none;
-      color: #000;
-      display: inline-block;
-    }
-    /* Updated style for profile image to ensure it's round */
-    .top-bar img.profile-icon {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%; /* Ensure the image is perfectly round */
-      object-fit: cover; /* Ensure the image covers the area without distortion */
-      border: 1px solid #ccc; /* Small border for better visibility */
-      /* Added transition for smooth loading */
-      transition: all 0.3s ease-in-out;
-    }
-    .top-bar img.small-icon {
-      width: 24px;
-      height: 24px;
-    }
-    .fa-icon {
-      font-size: 22px;
-    }
-    .search-container {
-      position: relative;
-      flex: 1;
-      text-align: center;
-    }
-    .search-input {
-      padding: 6px 10px;
-      width: 90%;
-      max-width: 300px;
-      border-radius: 20px;
-      border: 1px solid #ccc;
-      font-size: 14px;
-    }
-    .search-results {
-      position: absolute;
-      top: 38px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 90%;
-      max-width: 300px;
-      background: #fff;
-      border: 1px solid #ccc;
-      border-top: none;
-      border-radius: 0 0 8px 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      z-index: 10;
-    }
-    .search-results div {
-      padding: 10px;
-      border-bottom: 1px solid #eee;
-      cursor: pointer;
-      text-align: center;
-    }
-    .search-results div:hover {
-      background-color: #f0f0f0;
-    }
-    .balance-box {
-      margin: 10px 20px;
-      text-align: left;
-    }
-    .balance-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .balance-header span {
-      font-size: 18px;
-      font-weight: bold;
-    }
-    .balance-header select {
-      padding: 4px 10px;
-      font-size: 14px;
-      border-radius: 10px;
-    }
-    .balance-value {
-      font-size: 28px;
-      font-weight: bold;
-      text-align: left;
-      margin-top: 4px;
-    }
-    .buttons {
-      display: flex;
-      justify-content: space-between;
-      margin: 20px 20px;
-    }
-    .buttons button {
-      flex: 1;
-      margin: 0 5px;
-      padding: 12px;
-      border: none;
-      border-radius: 8px;
-      color: white;
-      font-weight: bold;
-      font-size: 15px;
-      cursor: pointer;
-    }
-    .buttons .deposit {
-      background: linear-gradient(to right, #3b82f6, #60a5fa);
-    }
-    .buttons .withdrawal {
-      background: linear-gradient(to right, #10b981, #34d399);
-    }
-    .buttons .transactions {
-      background: linear-gradient(to right, #f59e0b, #fbbf24);
-    }
-    .feature-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-      margin: 10px;
-    }
-    .feature-buttons button {
-      padding: 8px 12px;
-      border-radius: 12px;
-      background-color: #eee;
-      border: none;
-      cursor: pointer;
-    }
-    .title {
-      text-align: center;
-      font-weight: bold;
-      font-size: 20px;
-      margin-top: 10px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
-    /* --- NEWS BOX AND NEW OPTIONS STYLES --- */
-
-    /* Row for News Box and new Content Area */
-    .main-content-row {
-      display: flex;
-      /* FIX 1: Default to vertical stacking (Mobile-First approach, but works for desktop too) */
-      flex-direction: column; 
-      margin: 10px;
-      gap: 10px; 
+    /* Hide scrollbar but keep functionality */
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
     }
-    
-    /* New: Reduced size for News Box (approx. 40% width) */
-    .news-box-container {
-      /* FIX 2: Full width for stacking */
-      width: 100%; 
-      flex-shrink: 0; 
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
     }
 
-    /* New: Container for the new options and content (approx. 60% width) */
-    .options-content-container {
-      /* FIX 3: Full width for stacking */
-      width: 100%; 
-      display: flex;
-      flex-direction: column;
-      flex-grow: 1;
-    }
-    
+    /* News Carousel Styles */
     .news-box {
-      border: 2px solid #000;
-      border-radius: 10px;
-      height: 300px; /* Fixed height for consistent look */
-      padding: 0;
       position: relative;
-      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-      
-      /* --- NEWS SCROLLING/SLIDING UPDATES --- */
-      overflow: hidden; /* Only show one item at a time */
-      touch-action: pan-y; /* Allows horizontal swipe without interfering with vertical page scroll */
+      overflow: hidden;
+      touch-action: pan-y;
       cursor: grab;
+      transform: translate3d(0,0,0); /* Hardware acceleration */
     }
-
-    /* NEW: Carousel container for horizontal arrangement and translation */
     .news-carousel {
-        display: flex; /* Lines up items horizontally */
-        height: 100%;
-        width: 100%;
-        transition: transform 0.5s ease-in-out; /* For smooth automatic scroll */
-        will-change: transform; 
+      display: flex;
+      height: 100%;
+      width: 100%;
+      will-change: transform;
     }
-
-    /* UPDATED: Individual news item for sliding */
     .news-item {
-      flex-shrink: 0; /* Important: prevents items from shrinking */
-      width: 100%; /* Each item takes full viewport width */
+      flex-shrink: 0;
+      width: 100%;
       height: 100%;
       position: relative;
-      /* Keep existing display/center logic */
       display: flex;
       align-items: center;
       justify-content: center;
-      opacity: 1; /* Always visible in the row */
-      transition: none; /* Removed fade transition */
     }
-    
-    /* REMOVED: .news-item.active { display: flex; opacity: 1; } (No longer needed for visibility) */
 
-    /* New: Styles for the 6 new options (Rest unchanged) */
-    .new-options-bar {
-      display: flex;
-      overflow-x: scroll; /* Allows horizontal scrolling for options */
-      white-space: nowrap;
-      padding-bottom: 5px; /* Space for scrollbar */
-      margin-bottom: 10px;
-      -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-      /* Hide the scrollbar but keep scrolling functionality */
-      scrollbar-width: none; /* Firefox */
-    }
-    .new-options-bar::-webkit-scrollbar {
-      display: none; /* Chrome, Safari, Opera */
-    }
-    
-    .option-button {
-      flex-shrink: 0; /* Important: Prevents buttons from shrinking */
-      padding: 8px 15px;
-      margin-right: 8px;
-      border: 1px solid #ccc;
-      border-radius: 20px;
-      background-color: #f0f0f0;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: all 0.2s ease;
-    }
-    
-    .option-button.active {
-      background-color: #3b82f6; /* Highlight/Click effect */
-      color: white;
-      border-color: #3b82f6;
-    }
-    
-    /* New: Styles for the content area where JS output will go (Rest unchanged) */
+    /* Content Area Styles */
     .js-content-area {
-      flex-grow: 1;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 0; /* Remove padding here to control inside content */
-      background-color: #fff;
-      min-height: 400px; /* Minimum height */
-      overflow-y: auto; /* Default for Live Price (internal scroll) */
+        transition: all 0.3s ease;
     }
-
-    /* Special style for content area when Live Price is NOT active (full dashboard scroll) */
+    .js-content-area.live-price-active {
+        overflow-y: auto;
+    }
     .js-content-area:not(.live-price-active) {
-        overflow-y: visible; /* Allows content to push the whole dashboard down */
+        overflow-y: visible;
     }
     
-    /* Content wrapper for Live Price's internal scroll */
-    .live-price-content-wrapper {
-        height: 100%;
-        width: 100%;
-        overflow-y: auto; /* Ensures content scrolls INSIDE this wrapper */
-        padding: 15px; /* Add padding inside the scrollable area */
-        box-sizing: border-box;
+    /* Option Button Active State Animation */
+    .option-button.active {
+      animation: pulse-selection 0.3s ease-out;
     }
-
-    /* Content wrapper for other options (full dashboard scroll) */
-    .other-content-wrapper {
-        padding: 15px; /* Add padding here */
-        box-sizing: border-box;
-        min-height: 100%; /* Ensures it fills min-height */
-    }
-
-    /* Perfect fitting और attractive display for news box content (Rest largely unchanged) */
-    .news-item img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 8px;
-      transition: transform 0.3s ease;
-    }
-    
-    .news-item img:hover {
-      transform: scale(1.02);
-    }
-    
-    .news-item video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 8px;
-    }
-    
-    .news-item .text-content {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 40px;
-      box-sizing: border-box;
-      text-align: center;
-      background: linear-gradient(135deg, rgba(30,60,114,0.95) 0%, rgba(42,82,152,0.95) 100%);
-      border-radius: 8px;
-      color: #fff;
-      backdrop-filter: blur(10px);
-    }
-    
-    .news-item .text-content h3 {
-      margin: 0 0 25px 0;
-      font-size: 32px;
-      font-weight: bold;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-      background: linear-gradient(45deg, #fff, #e3f2fd);
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-    }
-    
-    .news-item .text-content p {
-      margin: 0;
-      font-size: 20px;
-      line-height: 1.8;
-      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-      max-width: 90%;
-    }
-    
-    /* Loading state */
-    .loading-state {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      color: #fff;
-      font-size: 20px;
-      background: rgba(0,0,0,0.7);
-      border-radius: 8px;
-    }
-    
-    /* Click indicator */
-    .news-item.clickable::after {
-      content: "🔗";
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      font-size: 20px;
-      opacity: 0.7;
-      z-index: 10;
-    }
-
-    /* Media query for desktop - To ensure they stay stacked even if flex is used elsewhere */
-    @media (min-width: 769px) {
-        .main-content-row {
-            /* FIX 4: Ensure it stays column layout on desktop too, overriding any default flex behaviour */
-            flex-direction: column; 
-        }
-        .news-box-container,
-        .options-content-container {
-            width: 100%; /* Ensure full width on desktop for vertical stacking */
-        }
-    }
-
-    /* Media query for smaller screens */
-    @media (max-width: 768px) {
-        .main-content-row {
-            flex-direction: column; 
-        }
-        .news-box-container,
-        .options-content-container {
-            width: 100%; 
-        }
-        .news-box {
-            height: 200px; 
-        }
+    @keyframes pulse-selection {
+      0% { transform: scale(0.95); }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1.0); }
     }
   </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.90.1",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
+  }
+}
+</script>
 </head>
-<body>
-  <div class="top-bar">
-    <a href="profile.html">
-      <img id="dashboard-profile-icon" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="Profile" class="profile-icon">
+<body class="bg-[#f8f9fc] text-slate-800 pb-8">
+
+  <!-- TOP BAR -->
+  <div class="sticky top-0 z-50 bg-white/85 backdrop-blur-xl border-b border-gray-100 shadow-sm px-4 py-3 flex items-center justify-between gap-3">
+    <!-- Profile -->
+    <a href="profile.html" class="relative block shrink-0 group">
+      <!-- Premium Black & White Metallic Ring -->
+      <div class="p-[2px] rounded-full bg-gradient-to-tr from-black via-gray-200 to-black shadow-lg">
+        <img id="dashboard-profile-icon" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="Profile" class="w-9 h-9 rounded-full border-2 border-white object-cover shadow-sm group-hover:opacity-90 transition-opacity">
+      </div>
     </a>
-    <div class="search-container">
-      <input type="text" class="search-input" placeholder="Search in dashboard..." />
-      <div class="search-results" id="search-results"></div>
+
+    <!-- Search -->
+    <div class="flex-1 relative max-w-md mx-auto search-container">
+      <div class="relative group">
+        <input type="text" class="search-input w-full pl-11 pr-4 py-2.5 bg-gray-100/80 border border-transparent rounded-full text-sm font-medium focus:bg-white focus:border-blue-200 focus:ring-4 focus:ring-blue-500/10 transition-all duration-300 outline-none placeholder-gray-400" placeholder="Search..." />
+        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors"></i>
+      </div>
+      <!-- Search Results -->
+      <div class="search-results absolute top-full left-0 right-0 mt-3 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 hidden transform transition-all" id="search-results"></div>
     </div>
-    <div>
-      <a href="notifications.html">
-        <img src="https://cdn-icons-png.flaticon.com/512/1827/1827392.png" alt="Notifications" class="small-icon">
+
+    <!-- Icons -->
+    <div class="flex items-center gap-2 shrink-0">
+      <a href="notifications.html" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 active:scale-95 transition-all text-gray-600 hover:text-blue-600">
+        <i class="fas fa-bell text-lg"></i>
       </a>
-      <a href="help.html" title="Support">
-        <i class="fas fa-headset fa-icon"></i>
+      <a href="help.html" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 active:scale-95 transition-all text-gray-600 hover:text-blue-600">
+        <i class="fas fa-headset text-lg"></i>
       </a>
     </div>
   </div>
 
-  <div class="balance-box">
-    <div class="balance-header">
-      <span>Total Balance</span>
-      <select id="currency">
-        <option>INR</option>
-        <option>USD</option>
-        <option>BTC</option>
-        <option>ETH</option>
-        <option>BNB</option>
-        <option>USDT</option>
-        <option>XRP</option>
-        <option>EUR</option>
-        <option>JPY</option>
-        <option>GBP</option>
-      </select>
-    </div>
-    <div class="balance-value" id="balanceValue">0.0</div>
-  </div>
-
-  <div class="buttons">
-    <button class="deposit" onclick="location.href='deposit.html'">Deposit</button>
-    <button class="withdrawal" onclick="location.href='withdrawal.html'">Withdrawal</button>
-    <button class="transactions" onclick="location.href='transactions.html'">Transactions</button>
-  </div>
-
-  <div class="feature-buttons">
-    <button onclick="location.href='earn-nx.html'">Earn-NX</button>
-    <button onclick="location.href='reward-box.html'">Reward Hub</button>
-    <button onclick="location.href='nft-kvon.html'">NFT Kvon</button>
-    <button onclick="location.href='achievement.html'">Achievement</button>
-    <button onclick="location.href='pre-launch.html'">Pre Launch</button>
-    <button onclick="location.href='mt-future.html'">M&T Future</button>
-    <button onclick="location.href='more.html'">More</button>
-  </div>
-
-  <div class="title">AvicnKnov Ex</div>
-  <div class="title" style="font-size: 14px; text-align:left; margin-left:10px">AvicnKnov Nex</div>
-
-  <div class="main-content-row">
-    <div class="news-box-container">
-        <div class="news-box" id="news-box">
-          <div class="loading-state">
-            <i class="fas fa-spinner fa-spin" style="margin-right: 10px;"></i>
-            Loading news content...
-          </div>
+  <!-- BALANCE BOX -->
+  <div class="mx-4 mt-6 relative group">
+    <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[26px] blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
+    <div class="relative bg-white p-6 rounded-3xl shadow-xl shadow-blue-900/5 border border-white/50 overflow-hidden">
+      <!-- Decorative background elements -->
+      <div class="absolute top-0 right-0 w-40 h-40 bg-blue-50/50 rounded-full -mr-12 -mt-12 blur-3xl"></div>
+      <div class="absolute bottom-0 left-0 w-32 h-32 bg-purple-50/50 rounded-full -ml-10 -mb-10 blur-3xl"></div>
+      
+      <div class="flex justify-between items-center relative z-10 mb-1">
+        <span class="text-slate-500 font-semibold text-xs uppercase tracking-widest">Total Balance</span>
+        <div class="relative">
+          <select id="currency" class="appearance-none bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 pl-3 pr-8 py-1.5 cursor-pointer hover:bg-slate-100 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all">
+            <option>INR</option>
+            <option>USD</option>
+            <option>BTC</option>
+            <option>ETH</option>
+            <option>BNB</option>
+            <option>USDT</option>
+            <option>XRP</option>
+            <option>EUR</option>
+            <option>JPY</option>
+            <option>GBP</option>
+          </select>
+          <i class="fas fa-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none"></i>
         </div>
-    </div>
-
-    <div class="options-content-container">
-        <div class="new-options-bar" id="newOptionsBar">
-            <button class="option-button active" data-content-id="live_price">Live Price</button>
-            <button class="option-button" data-content-id="announcement">Announcement</button>
-            <button class="option-button" data-content-id="eluza">Eluza</button>
-            <button class="option-button" data-content-id="qineq">Qineq</button>
-            <button class="option-button" data-content-id="news">News</button>
-            <button class="option-button" data-content-id="more">More</button>
-        </div>
-        
-        <div class="js-content-area live-price-active" id="jsContentArea">
-            <div id="live_price_content" class="live-price-content-wrapper">
-                <div style="min-height: 100%; width: 100%; background-color: white;"></div>
-            </div>
-            <div id="announcement_content" class="other-content-wrapper" style="display: none;">
-                <div style="min-height: 100%; width: 100%; background-color: white;"></div>
-            </div>
-            <div id="eluza_content" class="other-content-wrapper" style="display: none;">
-                <div style="min-height: 100%; width: 100%; background-color: white;"></div>
-            </div>
-            <div id="qineq_content" class="other-content-wrapper" style="display: none;">
-                <div style="min-height: 100%; width: 100%; background-color: white;"></div>
-            </div>
-            <div id="news_content" class="other-content-wrapper" style="display: none;">
-                <div style="min-height: 100%; width: 100%; background-color: white;"></div>
-            </div>
-            <div id="more_content" class="other-content-wrapper" style="display: none;">
-                <div style="min-height: 100%; width: 100%; background-color: white;"></div>
-            </div>
-        </div>
+      </div>
+      <div class="relative z-10 flex items-baseline gap-1">
+        <!-- Balance value container -->
+        <span id="balanceValue" class="text-4xl font-extrabold text-slate-900 tracking-tight leading-tight drop-shadow-sm tabular-nums">0.00</span>
+      </div>
     </div>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  
+
+  <!-- MAIN ACTIONS -->
+  <div class="flex justify-between gap-3 mx-4 mt-6">
+    <button onclick="location.href='deposit.html'" class="flex-1 group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 p-4 text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:-translate-y-0.5 active:scale-95 active:shadow-sm">
+      <div class="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors"></div>
+      <div class="flex flex-col items-center gap-2 relative z-10">
+        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-md shadow-inner">
+          <i class="fas fa-arrow-down text-sm"></i>
+        </div>
+        <span class="text-xs font-bold tracking-wide">Deposit</span>
+      </div>
+    </button>
+    
+    <button onclick="location.href='withdrawal.html'" class="flex-1 group relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-4 text-white shadow-lg shadow-emerald-500/25 transition-all hover:shadow-xl hover:-translate-y-0.5 active:scale-95 active:shadow-sm">
+      <div class="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors"></div>
+      <div class="flex flex-col items-center gap-2 relative z-10">
+        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-md shadow-inner">
+          <i class="fas fa-arrow-up text-sm"></i>
+        </div>
+        <span class="text-xs font-bold tracking-wide">Withdraw</span>
+      </div>
+    </button>
+    
+    <button onclick="location.href='transactions.html'" class="flex-1 group relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-4 text-white shadow-lg shadow-amber-500/25 transition-all hover:shadow-xl hover:-translate-y-0.5 active:scale-95 active:shadow-sm">
+      <div class="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors"></div>
+      <div class="flex flex-col items-center gap-2 relative z-10">
+        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-md shadow-inner">
+          <i class="fas fa-clock-rotate-left text-sm"></i>
+        </div>
+        <span class="text-xs font-bold tracking-wide">Transactions</span>
+      </div>
+    </button>
+  </div>
+
+  <!-- FEATURES GRID -->
+  <div class="mx-4 mt-8">
+    <div class="flex items-center justify-between mb-4 px-1">
+      <h2 class="text-lg font-bold text-slate-800">Features</h2>
+    </div>
+    
+    <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-wrap justify-center gap-y-6 gap-x-2">
+      
+      <!-- Feature Item Helper -->
+      <!-- Earn-NX -->
+      <button onclick="location.href='earn-nx.html'" class="w-[85px] flex flex-col items-center gap-2 group active:scale-95 transition-transform">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-yellow-400 to-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-500/20 group-hover:-translate-y-1 transition-transform duration-300">
+          <i class="fas fa-sack-dollar text-2xl drop-shadow-sm"></i>
+        </div>
+        <span class="text-[11px] font-semibold text-slate-600 text-center leading-tight group-hover:text-slate-900">Earn-NX</span>
+      </button>
+
+      <!-- Reward Hub -->
+      <button onclick="location.href='reward-box.html'" class="w-[85px] flex flex-col items-center gap-2 group active:scale-95 transition-transform">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-500 flex items-center justify-center text-white shadow-lg shadow-pink-500/20 group-hover:-translate-y-1 transition-transform duration-300">
+          <i class="fas fa-gift text-2xl drop-shadow-sm"></i>
+        </div>
+        <span class="text-[11px] font-semibold text-slate-600 text-center leading-tight group-hover:text-slate-900">Reward Hub</span>
+      </button>
+
+      <!-- NFT Kvon -->
+      <button onclick="location.href='nft-kvon.html'" class="w-[85px] flex flex-col items-center gap-2 group active:scale-95 transition-transform">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 group-hover:-translate-y-1 transition-transform duration-300">
+          <i class="fas fa-cubes text-2xl drop-shadow-sm"></i>
+        </div>
+        <span class="text-[11px] font-semibold text-slate-600 text-center leading-tight group-hover:text-slate-900">NFT Kvon</span>
+      </button>
+
+      <!-- News -->
+      <button onclick="location.href='news.html'" class="w-[85px] flex flex-col items-center gap-2 group active:scale-95 transition-transform">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-400 to-blue-500 flex items-center justify-center text-white shadow-lg shadow-sky-500/20 group-hover:-translate-y-1 transition-transform duration-300">
+          <i class="fas fa-newspaper text-2xl drop-shadow-sm"></i>
+        </div>
+        <span class="text-[11px] font-semibold text-slate-600 text-center leading-tight group-hover:text-slate-900">News</span>
+      </button>
+
+      <!-- Pre Launch -->
+      <button onclick="location.href='pre-launch.html'" class="w-[85px] flex flex-col items-center gap-2 group active:scale-95 transition-transform">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-red-500 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-red-500/20 group-hover:-translate-y-1 transition-transform duration-300">
+          <i class="fas fa-rocket text-2xl drop-shadow-sm"></i>
+        </div>
+        <span class="text-[11px] font-semibold text-slate-600 text-center leading-tight group-hover:text-slate-900">Pre Launch</span>
+      </button>
+
+      <!-- M&T Future -->
+      <button onclick="location.href='mt-future.html'" class="w-[85px] flex flex-col items-center gap-2 group active:scale-95 transition-transform">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-400 to-green-600 flex items-center justify-center text-white shadow-lg shadow-green-500/20 group-hover:-translate-y-1 transition-transform duration-300">
+          <i class="fas fa-chart-line text-2xl drop-shadow-sm"></i>
+        </div>
+        <span class="text-[11px] font-semibold text-slate-600 text-center leading-tight group-hover:text-slate-900">M&T Future</span>
+      </button>
+
+      <!-- More -->
+      <button onclick="location.href='more.html'" class="w-[85px] flex flex-col items-center gap-2 group active:scale-95 transition-transform">
+        <div class="w-14 h-14 rounded-2xl bg-slate-800 flex items-center justify-center text-white shadow-lg shadow-slate-500/20 group-hover:-translate-y-1 transition-transform duration-300">
+          <i class="fas fa-ellipsis-h text-2xl drop-shadow-sm"></i>
+        </div>
+        <span class="text-[11px] font-semibold text-slate-600 text-center leading-tight group-hover:text-slate-900">More</span>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- TITLE (Subtitle Removed) -->
+  <div class="text-center mt-8 mb-4 px-4">
+    <h1 class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 tracking-tighter">AvicnKnov Ex</h1>
+  </div>
+
+  <!-- MAIN CONTENT ROW -->
+  <div class="flex flex-col gap-6 mx-4 mt-6 md:flex-row md:items-start">
+    
+    <!-- NEWS BOX -->
+    <div class="w-full md:w-5/12 shrink-0">
+      <div class="news-box h-[320px] rounded-3xl shadow-xl shadow-slate-200/50 bg-slate-900 overflow-hidden relative group border border-slate-100/50" id="news-box">
+        <!-- Loading State -->
+        <div class="loading-state absolute inset-0 flex flex-col items-center justify-center text-white/80 bg-slate-900 z-10">
+          <i class="fas fa-circle-notch fa-spin text-3xl mb-3 text-blue-500"></i>
+          <span class="text-sm font-medium tracking-wide">Loading Updates...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- DYNAMIC CONTENT AREA -->
+    <div class="w-full flex-grow flex flex-col min-h-[450px]">
+      
+      <!-- Options Bar (Sticky Header Style) -->
+      <div class="new-options-bar flex overflow-x-auto pb-4 gap-2 scrollbar-hide px-1" id="newOptionsBar">
+        <!-- Buttons injected by HTML, classes handled by JS for perfect selection effect -->
+        <button class="option-button" data-content-id="live_price">Live Price</button>
+        <button class="option-button" data-content-id="announcement">Announcement</button>
+        <button class="option-button" data-content-id="eluza">Eluza</button>
+        <button class="option-button" data-content-id="qineq">Qineq</button>
+        <button class="option-button" data-content-id="news">News</button>
+        <button class="option-button" data-content-id="more">More</button>
+      </div>
+      
+      <!-- Content Box -->
+      <div class="js-content-area bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-100 flex-grow relative overflow-hidden" id="jsContentArea">
+          <!-- Wrappers matching original structure -->
+          <div id="live_price_content" class="live-price-content-wrapper p-0 h-full"></div>
+          <div id="announcement_content" class="other-content-wrapper p-0 h-full" style="display: none;"></div>
+          <div id="eluza_content" class="other-content-wrapper p-0 h-full" style="display: none;"></div>
+          <div id="qineq_content" class="other-content-wrapper p-0 h-full" style="display: none;"></div>
+          <div id="news_content" class="other-content-wrapper p-0 h-full" style="display: none;"></div>
+          <div id="more_content" class="other-content-wrapper p-0 h-full" style="display: none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="h-10"></div> <!-- Bottom Spacer -->
+
+  <!-- DASHBOARD LOGIC -->
   <script>
-    // Supabase configuration - Defined once and early
+    // --- 1. SUPABASE INIT (Preserved) ---
     const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
-    // Initialize Supabase Client globally
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
-    const PROFILE_BUCKET = 'profile-image'; // Profile Image Bucket Name
-    const DEFAULT_PROFILE_ICON = "https://cdn-icons-png.flaticon.com/512/847/847969.png"; // Default icon URL
+    // --- 2. GLOBAL CONSTANTS ---
+    const PROFILE_BUCKET = 'profile-image'; 
+    const DEFAULT_PROFILE_ICON = "https://cdn-icons-png.flaticon.com/512/847/847969.png"; 
+    const WALLET_RATES = { INR: 1, USD: 0.012, BTC: 0.00000027, ETH: 0.0000042, BNB: 0.00013, USDT: 0.012, XRP: 0.78, EUR: 0.011, JPY: 1.72, GBP: 0.0094 };
 
-    // --- Profile Image Logic (HIGH PRIORITY) ---
+    // --- 3. ANIMATED COUNTER LOGIC (Counter Effect) ---
+    let currentDisplayedValue = 0; // Tracks the current visual state for smooth transitions
+    let storedRawBalance = 0; // Tracks actual DB balance to handle currency swaps correctly
+
+    function animateValue(obj, start, end, duration) {
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            
+            // Premium Ease-Out Expo easing function
+            const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+            
+            const value = start + (end - start) * ease;
+            obj.innerHTML = value.toFixed(2);
+            
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            } else {
+                obj.innerHTML = end.toFixed(2); // Ensure it lands exactly on the target
+            }
+        };
+        window.requestAnimationFrame(step);
+    }
+
+    // --- 4. REALTIME WALLET SYNC (Auto System with 5s Polling) ---
+    async function syncRealtimeBalance() {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) return;
+
+      // Helper: Fetch Latest Balance from DB
+      const fetchBalance = async () => {
+         const { data: wallet } = await sb.from("user_wallets").select("balance").eq("uid", user.id).maybeSingle();
+         if (wallet && wallet.balance !== storedRawBalance) {
+             console.log("Auto-Refresh Update:", wallet.balance);
+             storedRawBalance = wallet.balance;
+             updateDisplay();
+         }
+      };
+
+      // 1. Initial Fetch
+      await fetchBalance();
+
+      // 2. Realtime Subscription (Instant)
+      sb.channel('db-sync')
+        .on('postgres_changes', 
+          { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'user_wallets', 
+            filter: `uid=eq.${user.id}` 
+          }, 
+          (payload) => {
+            console.log("Realtime Instant Update:", payload.new.balance);
+            storedRawBalance = payload.new.balance;
+            // Update UI with smooth animation immediately
+            updateDisplay();
+          })
+        .subscribe();
+      
+      // 3. Auto-Refresh System (5 Second Timer/Polling)
+      setInterval(() => {
+          fetchBalance();
+      }, 5000); // Check every 5 seconds
+    }
+
+    // Updates display based on Stored Balance + Selected Currency
+    function updateDisplay() {
+      const currency = document.getElementById("currency").value;
+      const balanceEl = document.getElementById("balanceValue");
+      
+      if (balanceEl) {
+        const rate = WALLET_RATES[currency] || 1;
+        const targetValue = storedRawBalance * rate;
+        
+        // Trigger Counter Animation from current visual number to new target
+        animateValue(balanceEl, currentDisplayedValue, targetValue, 1500); // 1.5s duration
+        currentDisplayedValue = targetValue;
+      }
+    }
+
+    document.getElementById("currency").addEventListener("change", () => updateDisplay());
+
+    // --- 5. PROFILE IMAGE ---
     async function loadProfileImage() {
       const profileIcon = document.getElementById('dashboard-profile-icon');
-      
-      // 1. Set default icon and styling immediately
       profileIcon.src = DEFAULT_PROFILE_ICON;
-      profileIcon.style.borderColor = '#ccc'; 
-
-      // 2. Get the authenticated user
-      const { data: { user } } = await sb.auth.getUser(); 
       
-      if (!user) {
-        // User not logged in, stop here.
-        return;
-      }
-
-      const userId = user.id;
+      const { data: { user } } = await sb.auth.getUser(); 
+      if (!user) return;
 
       try {
-        // 3. Get the public URL, ensuring we connect to the correct bucket
-        const { data } = sb.storage.from(PROFILE_BUCKET).getPublicUrl(`${userId}/avatar.jpg`);
+        const { data } = sb.storage.from(PROFILE_BUCKET).getPublicUrl(`${user.id}/avatar.jpg`);
         const imageUrl = data.publicUrl;
         
-        // 4. Validate and load the image
         const tempImg = new Image();
-        
         tempImg.onload = function() {
-            // Image loaded successfully, apply it
             profileIcon.src = imageUrl;
-            profileIcon.style.borderColor = '#3b82f6'; 
         };
-        
-        tempImg.onerror = function() {
-            // Image not found (404) or failed to load, keep the default icon
-             profileIcon.src = DEFAULT_PROFILE_ICON;
-             profileIcon.style.borderColor = '#ccc';
-        };
-        
-        // Add a timestamp to bypass browser caching, ensuring it fetches the latest image
+        // Bypass cache
         tempImg.src = imageUrl + '?' + new Date().getTime(); 
-
       } catch (error) {
-        console.error('Error loading profile image (Storage error):', error);
-        // Fallback to default icon on critical error
         profileIcon.src = DEFAULT_PROFILE_ICON;
       }
     }
-    // --------------------------------------------------------
-    
-    // --- Other Dashboard Logic (Kept as is) ---
+
+    // --- 6. SEARCH LOGIC ---
     const searchInput = document.querySelector('.search-input');
     const searchResultsContainer = document.getElementById('search-results');
-    const buttons = [
-      'Earn-NX', 'Reward Box', 'NFT Kvon', 'News', 'Pre Launch', 'M&T Future', 'More',
-      'DEPOSIT', 'WITHDRAWAL', 'TRANSACTIONS'
+    const searchItems = [
+      { name: 'Earn-NX', url: 'earn-nx.html', type: 'page' },
+      { name: 'Reward Hub', url: 'reward-box.html', type: 'page' },
+      { name: 'NFT Kvon', url: 'nft-kvon.html', type: 'page' },
+      { name: 'News', url: 'news.html', type: 'page' },
+      { name: 'Pre Launch', url: 'pre-launch.html', type: 'page' },
+      { name: 'M&T Future', url: 'mt-future.html', type: 'page' },
+      { name: 'More', url: 'more.html', type: 'page' },
+      { name: 'Deposit', url: 'deposit.html', type: 'page' },
+      { name: 'Withdrawal', url: 'withdrawal.html', type: 'page' },
+      { name: 'Transactions', url: 'transactions.html', type: 'page' },
+      { name: 'Live Price', target: 'live_price', type: 'section' },
+      { name: 'Announcement', target: 'announcement', type: 'section' },
+      { name: 'Eluza', target: 'eluza', type: 'section' },
+      { name: 'Qineq', target: 'qineq', type: 'section' }
     ];
+
     searchInput.addEventListener('input', () => {
       const query = searchInput.value.toLowerCase().trim();
       searchResultsContainer.innerHTML = '';
       if (query.length > 0) {
-        const matches = buttons.filter(b => b.toLowerCase().includes(query));
+        searchResultsContainer.classList.remove('hidden');
+        const matches = searchItems.filter(item => item.name.toLowerCase().includes(query));
         matches.forEach(match => {
           const div = document.createElement('div');
-          div.textContent = match;
-          div.onclick = () => alert('Redirecting to: ' + match);
+          div.className = 'px-4 py-3 hover:bg-blue-50 cursor-pointer text-sm font-medium text-slate-700 border-b border-gray-50 last:border-none transition-colors flex items-center justify-between group';
+          div.innerHTML = `<span>${match.name}</span> <i class="fas fa-chevron-right text-xs text-gray-300 group-hover:text-blue-400"></i>`;
+          div.onclick = () => {
+            if (match.type === 'page') {
+              window.location.href = match.url;
+            } else if (match.type === 'section') {
+              switchContent(match.target);
+              document.getElementById('newOptionsBar').scrollIntoView({ behavior: 'smooth' });
+            }
+            searchResultsContainer.innerHTML = '';
+            searchResultsContainer.classList.add('hidden');
+            searchInput.value = '';
+          };
           searchResultsContainer.appendChild(div);
         });
+      } else {
+        searchResultsContainer.classList.add('hidden');
       }
     });
     
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !searchResultsContainer.contains(e.target)) {
+            searchResultsContainer.classList.add('hidden');
+        }
+    });
+
+    // --- 7. NEWS CAROUSEL (Logic Preserved) ---
     let newsItems = [];
     let currentIndex = 0;
     let rotationInterval;
     let currentVideo = null;
-    
-    // --- NEW: Global variables for Swipe Handler ---
     let startX = 0;
     let isDragging = false;
-    const DRAG_THRESHOLD = 50; // Pixels to swipe before switching item
+    const DRAG_THRESHOLD = 50; 
 
     async function loadNewsContent() {
       try {
-        const supabaseClient = sb; 
-        
-        const { data, error } = await supabaseClient
+        const { data, error } = await sb
           .from('news_box_ak')
           .select('*')
           .eq('is_active', true)
           .order('display_order');
         
         if (error) throw error;
-        
         newsItems = data || [];
         displayNewsContent();
-        
       } catch (error) {
         console.error('Error loading news:', error);
         document.getElementById('news-box').innerHTML = 
-          '<div class="loading-state" style="color: #e74c3c;">Error loading content</div>';
+          '<div class="flex items-center justify-center h-full text-red-400 font-medium">Unable to load news</div>';
       }
     }
     
     function updateCarouselPosition(useTransition = true) {
         const carousel = document.getElementById('news-carousel');
         if (!carousel) return;
-
-        // Calculate the percentage offset based on the current index
         const offset = -currentIndex * 100; 
-        
-        // Control transition effect
-        carousel.style.transition = useTransition ? 'transform 0.5s ease-in-out' : 'none';
+        carousel.style.transition = useTransition ? 'transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)' : 'none';
         carousel.style.transform = `translateX(${offset}%)`;
     }
     
     function goToNext() {
       if (newsItems.length <= 1) return;
-      
-      // Update index: go to next, loop back to 0
       currentIndex = (currentIndex + 1) % newsItems.length;
-      
-      // Slide the carousel
       updateCarouselPosition(true);
     }
     
     function goToPrev() {
       if (newsItems.length <= 1) return;
-      
-      // Update index: go to previous, loop back to max
       currentIndex = (currentIndex - 1 + newsItems.length) % newsItems.length;
-      
-      // Slide the carousel
       updateCarouselPosition(true);
     }
 
     function displayNewsContent() {
       const newsBox = document.getElementById('news-box');
-      
       if (newsItems.length === 0) {
-        newsBox.innerHTML = '<div class="loading-state">No content available</div>';
+        newsBox.innerHTML = '<div class="flex items-center justify-center h-full text-slate-400">No updates available</div>';
         return;
       }
       
-      // NEW: Create carousel container
       const carousel = document.createElement('div');
       carousel.className = 'news-carousel';
       carousel.id = 'news-carousel'; 
 
-      newsItems.forEach((item, index) => {
+      newsItems.forEach((item) => {
         const newsItem = document.createElement('div');
-        // Use a generic class for sliding, 'active' is now just for tracking
         newsItem.className = 'news-item'; 
         
-        // Add click functionality if link exists
         if (item.click_url && item.click_url.trim()) {
-          newsItem.classList.add('clickable');
+          newsItem.style.cursor = 'pointer';
           newsItem.onclick = () => window.open(item.click_url, '_blank');
         }
         
+        // 8K Quality Rendering
         if (item.content_type === 'image' || item.content_type === 'gif') {
-          newsItem.innerHTML = `<img src="${item.content_url}" alt="${item.title || ''}" />`;
+          newsItem.innerHTML = `<img src="${item.content_url}" alt="${item.title || ''}" class="w-full h-full object-cover" />`;
         } else if (item.content_type === 'video') {
           newsItem.innerHTML = `
-            <video muted controls onended="handleVideoEnd()" onplay="handleVideoPlay(this)">
+            <video muted controls class="w-full h-full object-cover" onended="handleVideoEnd()" onplay="handleVideoPlay(this)">
               <source src="${item.content_url}" type="video/mp4">
-              Video not supported
             </video>`;
         } else if (item.content_type === 'text') {
           newsItem.innerHTML = `
-            <div class="text-content">
-              ${item.title ? '<h3>' + item.title + '</h3>' : ''}
-              <p>${item.content_text}</p>
+            <div class="w-full h-full flex flex-col justify-center items-center p-8 text-center bg-gradient-to-br from-[#0f172a] to-[#1e293b] text-white">
+              ${item.title ? '<h3 class="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-200 to-indigo-200">' + item.title + '</h3>' : ''}
+              <p class="text-lg leading-relaxed text-slate-300 font-light">${item.content_text}</p>
             </div>`;
         }
         
+        // Overlay Gradient for better visibility of text/icons
+        const overlay = document.createElement('div');
+        overlay.className = "absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none";
+        newsItem.appendChild(overlay);
+
+        if (item.click_url && item.click_url.trim()) {
+            const indicator = document.createElement('div');
+            indicator.className = 'absolute top-4 right-4 bg-white/20 backdrop-blur-md border border-white/20 p-2 rounded-full z-10 shadow-lg';
+            indicator.innerHTML = '<i class="fas fa-external-link-alt text-white text-xs"></i>';
+            newsItem.appendChild(indicator);
+        }
+
         carousel.appendChild(newsItem);
       });
       
-      newsBox.innerHTML = ''; // Clear newsBox
-      newsBox.appendChild(carousel); // Append carousel
+      newsBox.innerHTML = ''; 
+      newsBox.appendChild(carousel); 
       
-      // Set initial position (for index 0) without transition
+      // Indicators
+      const indicators = document.createElement('div');
+      indicators.className = "absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20";
+      newsItems.forEach((_, idx) => {
+          const dot = document.createElement('div');
+          dot.className = "w-1.5 h-1.5 rounded-full bg-white/50 transition-all duration-300";
+          if(idx === 0) dot.classList.add('w-4', 'bg-white');
+          indicators.appendChild(dot);
+      });
+
       currentIndex = 0; 
       updateCarouselPosition(false);
-      
-      // Start rotation if multiple items
-      if (newsItems.length > 1) {
-        startRotation();
-      }
-      
-      // Add manual swipe handlers
+      if (newsItems.length > 1) startRotation();
       addSwipeHandlers();
     }
     
     function handleVideoPlay(video) {
       currentVideo = video;
-      // Pause rotation when video is playing
-      if (rotationInterval) {
-        clearInterval(rotationInterval);
-      }
+      if (rotationInterval) clearInterval(rotationInterval);
     }
     
     function handleVideoEnd() {
       currentVideo = null;
-      // Resume rotation after video ends
       if (newsItems.length > 1) {
-        // Immediately go to next item
         goToNext(); 
-        // Restart rotation timer after transition
         setTimeout(startRotation, 500); 
       }
     }
     
     function startRotation() {
       if (rotationInterval) clearInterval(rotationInterval);
-      
-      // Update interval to 10000ms (10 seconds)
       rotationInterval = setInterval(() => {
-        const activeItem = document.querySelector('.news-item.active');
-        const hasVideo = activeItem && activeItem.querySelector('video');
-        
-        // Don't rotate if video is playing
-        if (currentVideo && !currentVideo.paused) {
-          return;
-        }
-        
+        if (currentVideo && !currentVideo.paused) return;
         goToNext();
       }, 10000); 
     }
     
-    // --- MANUAL SWIPE/DRAG HANDLERS (New Logic) ---
     function addSwipeHandlers() {
         const newsBox = document.getElementById('news-box');
         if (!newsBox || newsItems.length <= 1) return;
-
-        // Touch events
-        newsBox.addEventListener('touchstart', handleTouchStart);
-        newsBox.addEventListener('touchmove', handleTouchMove);
-        newsBox.addEventListener('touchend', handleTouchEnd);
         
-        // Mouse drag for desktop support
+        // Touch
+        newsBox.addEventListener('touchstart', handleTouchStart, {passive: false});
+        newsBox.addEventListener('touchmove', handleTouchMove, {passive: false});
+        newsBox.addEventListener('touchend', handleTouchEnd);
+        // Mouse
         newsBox.addEventListener('mousedown', handleTouchStart);
         newsBox.addEventListener('mousemove', handleTouchMove);
         newsBox.addEventListener('mouseup', handleTouchEnd);
@@ -746,78 +632,44 @@
 
     function handleTouchStart(e) {
         if (newsItems.length <= 1) return;
-        
-        // Stop automatic rotation when dragging starts
         if (rotationInterval) clearInterval(rotationInterval);
-        
         isDragging = true;
-        // Get initial X position from touch or mouse event
         startX = (e.touches ? e.touches[0].clientX : e.clientX);
-
-        // Disable transition during drag for a direct, "no-effect" feel during drag
         const carousel = document.getElementById('news-carousel');
         if (carousel) carousel.style.transition = 'none';
-        
-        // Prevent default only on mouse events to stop image dragging/selection
         if (e.type === 'mousedown') e.preventDefault();
     }
 
     function handleTouchMove(e) {
         if (!isDragging || newsItems.length <= 1) return;
-
         const currentX = (e.touches ? e.touches[0].clientX : e.clientX);
         const diffX = currentX - startX;
-        
         const newsBox = document.getElementById('news-box');
         const carousel = document.getElementById('news-carousel');
         if (!carousel || !newsBox) return;
         
-        // Calculate the current base offset (e.g., -100%, -200% translated to px)
         const baseOffset = -currentIndex * newsBox.offsetWidth;
-        
-        // Apply the drag displacement
         const newOffset = baseOffset + diffX;
-
-        // Apply immediate translation
         carousel.style.transform = `translateX(${newOffset}px)`;
-        
-        // Prevent vertical page scrolling while swiping horizontally
-        if (e.touches) e.preventDefault();
+        if (e.touches) e.preventDefault(); // Prevent scroll while swiping
     }
 
     function handleTouchEnd(e) {
         if (!isDragging || newsItems.length <= 1) return;
-
         isDragging = false;
-        
-        // Determine final position
         const endX = (e.changedTouches ? e.changedTouches[0].clientX : (e.clientX || startX));
         const diffX = endX - startX;
-
         const carousel = document.getElementById('news-carousel');
-        if (carousel) carousel.style.transition = 'transform 0.5s ease-in-out'; // Re-enable transition for snap
+        
+        // Snap back or move
+        if (diffX > DRAG_THRESHOLD) goToPrev();
+        else if (diffX < -DRAG_THRESHOLD) goToNext();
+        else updateCarouselPosition(true); 
+        
+        if (newsItems.length > 1) setTimeout(startRotation, 500); 
+    } 
 
-        if (diffX > DRAG_THRESHOLD) {
-            // Swipe right (go to previous item)
-            goToPrev();
-        } else if (diffX < -DRAG_THRESHOLD) {
-            // Swipe left (go to next item)
-            goToNext();
-        } else {
-            // Not enough drag, snap back to current item
-            updateCarouselPosition(true); 
-        }
-
-        // Restart rotation timer after a short delay
-        if (newsItems.length > 1) {
-            setTimeout(startRotation, 500); 
-        }
-    }
-    
-    // --------------------------------------------------------
-    // --- NEW: JS Content Switching Logic (Unchanged) ---
-    // --------------------------------------------------------
-    
+    // --- 8. CONTENT SWITCHING (Fixed Select Effect) ---
     const optionsMap = {
         'live_price': 'live_price.js',
         'announcement': 'announcement.js',
@@ -829,19 +681,22 @@
     
     const jsContentArea = document.getElementById('jsContentArea');
     const optionButtons = document.querySelectorAll('.option-button');
-    let loadedScripts = {}; // To track which scripts have been loaded
+    let loadedScripts = {}; 
 
     function switchContent(contentId) {
-        // 1. Highlight the active button
         optionButtons.forEach(button => {
-            if (button.getAttribute('data-content-id') === contentId) {
-                button.classList.add('active');
+            const btnId = button.getAttribute('data-content-id');
+            // Explicitly set classes for Active vs Inactive state to guarantee the effect
+            if (btnId === contentId) {
+                // Active: Blue Gradient, Shadow, White Text, Scaled Up
+                button.className = 'option-button active whitespace-nowrap px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 transform scale-105 bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/30 border border-transparent';
             } else {
-                button.classList.remove('active');
+                // Inactive: White, Gray Text, Border
+                button.className = 'option-button whitespace-nowrap px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 bg-white text-slate-500 border border-slate-200 hover:bg-slate-50 hover:text-slate-700';
             }
         });
 
-        // 2. Manage the content visibility
+        // Toggle Content Visibility
         for (const id in optionsMap) {
             const contentDiv = document.getElementById(id + '_content');
             if (contentDiv) {
@@ -849,16 +704,16 @@
             }
         }
         
-        // 3. Manage Content Area Scrolling Behavior
+        // Handle Scroll Logic
         if (contentId === 'live_price') {
             jsContentArea.classList.add('live-price-active');
-            jsContentArea.style.overflowY = 'auto'; // Internal scroll for Live Price
+            jsContentArea.style.overflowY = 'auto'; 
         } else {
             jsContentArea.classList.remove('live-price-active');
-            jsContentArea.style.overflowY = 'visible'; // Full dashboard scroll for others
+            jsContentArea.style.overflowY = 'visible'; 
         }
-        
-        // 4. Load the corresponding JS file if not already loaded
+       
+        // Load JS
         const scriptName = optionsMap[contentId];
         if (scriptName && !loadedScripts[scriptName]) {
             loadScript(scriptName, contentId);
@@ -866,52 +721,41 @@
     }
     
     function loadScript(scriptName, contentId) {
-        if (loadedScripts[scriptName]) return; // Already loading or loaded
+        if (loadedScripts[scriptName]) return;
         
         const script = document.createElement('script');
         script.src = scriptName;
         script.type = 'text/javascript';
         
-        // Remove existing children (the blank white div) to let the script write directly
         const contentWrapper = document.getElementById(contentId + '_content');
         if (contentWrapper) {
             contentWrapper.innerHTML = ''; 
+            // Important: Re-add the inner div just in case scripts depend on it, 
+            // though most scripts will overwrite innerHTML of wrapper.
+            const inner = document.createElement('div');
+            inner.style.cssText = "min-height: 100%; width: 100%; background-color: white;";
+            contentWrapper.appendChild(inner);
         }
 
-        script.onload = () => {
-            loadedScripts[scriptName] = true;
-            console.log(`${scriptName} loaded successfully.`);
-        };
-        
-        script.onerror = () => {
-            console.error(`Failed to load ${scriptName}.`);
-            // Yahan koi error message DOM mein nahi dikhaya jayega.
-            // Content area khali (blank) hi rahega.
-        };
-        
+        script.onload = () => { loadedScripts[scriptName] = true; };
         document.head.appendChild(script);
-        loadedScripts[scriptName] = 'loading'; // Mark as loading
+        loadedScripts[scriptName] = 'loading'; 
     }
 
-    // Add event listeners to the new option buttons
     optionButtons.forEach(button => {
         button.addEventListener('click', () => {
-            const contentId = button.getAttribute('data-content-id');
-            switchContent(contentId);
+            switchContent(button.getAttribute('data-content-id'));
         });
     });
 
-    
+    // --- 9. INITIALIZATION ---
     document.addEventListener('DOMContentLoaded', () => {
-      // Load both profile image and news content when DOM is ready
       loadProfileImage(); 
+      syncRealtimeBalance(); 
       setTimeout(loadNewsContent, 1000);
-      
-      // Default: Load Live Price content on page load
-      switchContent('live_price');
+      switchContent('live_price'); // Set default active tab
     });
     
-    // Pause rotation when tab is not visible
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         if (rotationInterval) clearInterval(rotationInterval);
@@ -922,7 +766,5 @@
       }
     });
   </script>
-
-  <script src="wallet-balance.js"></script>
 </body>
 </html>
