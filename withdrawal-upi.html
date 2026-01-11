@@ -2,48 +2,50 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fiat Withdrawal - AvicnKnov</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fiat Withdrawal - AvicnKnov Ex</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Fonts -->
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-      @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
-
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+      
       body {
-        font-family: 'Inter', sans-serif;
-        background-color: #020617; /* Slate 950 */
-        color: white;
+        font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        background-color: #f8f9fc;
+        color: #1e293b;
+        -webkit-font-smoothing: antialiased;
       }
+      
       .font-mono { font-family: 'JetBrains Mono', monospace; }
 
       /* Custom Scrollbar */
       ::-webkit-scrollbar { width: 5px; }
       ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
       /* Animations */
       .fade-in { animation: fadeIn 0.4s ease-out forwards; }
       .slide-up { animation: slideUp 0.4s ease-out forwards; }
       .zoom-in { animation: zoomIn 0.3s ease-out forwards; }
+      .slide-in-right { animation: slideInRight 0.3s ease-out forwards; }
       
       @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
       @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
       @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+      @keyframes slideInRight { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-      /* Glassmorphism */
-      .glass {
-        background: rgba(15, 23, 42, 0.7);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(51, 65, 85, 0.5);
+      /* Premium Card Effects */
+      .premium-card {
+        background: white;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
       }
       
       .premium-gradient {
-        background: linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(16,185,129,0.05) 100%);
+        background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
       }
     </style>
 
@@ -62,7 +64,7 @@
     <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body>
+<body class="bg-[#f8f9fc] pb-12">
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
@@ -87,7 +89,7 @@
             
             // --- UI State ---
             const [view, setView] = useState('main'); // 'main', 'add_account'
-            const [activeModalMethod, setActiveModalMethod] = useState(null); // Which method clicked (e.g. 'Google Pay')
+            const [activeModalMethod, setActiveModalMethod] = useState(null); 
             
             // --- Data State ---
             const [savedAccounts, setSavedAccounts] = useState([]);
@@ -111,19 +113,58 @@
                     const { data: { user } } = await supabase.auth.getUser();
                     if(user) {
                         setUserId(user.id);
+                        await checkAndProcessRefunds(user.id);
                         fetchUserData(user.id);
                     }
                 };
                 init();
             }, []);
 
+            // --- 24h Refund Logic ---
+            const checkAndProcessRefunds = async (uid) => {
+                try {
+                    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+                    const { data: expiredWithdrawals } = await supabase
+                        .from('user-withdrawal-history')
+                        .select('*')
+                        .eq('user_id', uid)
+                        .eq('status', 'pending')
+                        .lt('created_at', twentyFourHoursAgo);
+
+                    if (expiredWithdrawals && expiredWithdrawals.length > 0) {
+                        for (const withdrawal of expiredWithdrawals) {
+                            const { error: updateError } = await supabase
+                                .from('user-withdrawal-history')
+                                .update({ status: 'cancelled' })
+                                .eq('id', withdrawal.id);
+
+                            if (!updateError) {
+                                const { data: walletData } = await supabase
+                                    .from('user_wallets')
+                                    .select('balance')
+                                    .eq('uid', uid)
+                                    .single();
+                                
+                                const currentBalance = walletData ? parseFloat(walletData.balance) : 0;
+                                const refundAmount = parseFloat(withdrawal.amount);
+                                
+                                await supabase
+                                    .from('user_wallets')
+                                    .update({ balance: currentBalance + refundAmount })
+                                    .eq('uid', uid);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error processing auto-refunds:", error);
+                }
+            };
+
             const fetchUserData = async (uid) => {
                 setLoadingData(true);
-                // Balance
-                const { data: wallet } = await supabase.from('user-wallets').select('balance').eq('uid', uid).single();
+                const { data: wallet } = await supabase.from('user_wallets').select('balance').eq('uid', uid).single();
                 if(wallet) setUserBalance(parseFloat(wallet.balance) || 0);
 
-                // Saved Accounts
                 const { data: methods } = await supabase.from('user-withdrawal-details')
                     .select('*').eq('user_id', uid).eq('is_active', true).order('created_at', {ascending: false});
                 setSavedAccounts(methods || []);
@@ -144,19 +185,15 @@
             };
 
             // --- Actions ---
-
-            // 1. Save New Account
             const handleSaveAccount = async () => {
                 setAddingAccount(true);
                 try {
-                    // Validations
                     if (!addFormData.name || !addFormData.identifier) throw new Error("Please fill all required fields.");
                     if (addFormType === 'Bank Transfer') {
                         if (addFormData.identifier !== addFormData.confirmIdentifier) throw new Error("Account numbers do not match.");
                         if (!addFormData.secondary) throw new Error("IFSC Code is required.");
                     }
 
-                    // Upload QR if exists
                     let qrUrl = null;
                     if (addFormData.qrImage) {
                         const fileExt = addFormData.qrImage.name.split('.').pop();
@@ -166,7 +203,6 @@
                         qrUrl = data.publicUrl;
                     }
 
-                    // Insert
                     const { error } = await supabase.from('user-withdrawal-details').insert([{
                         user_id: userId,
                         method_name: addFormType,
@@ -177,9 +213,9 @@
                     }]);
                     if(error) throw error;
 
-                    await fetchUserData(userId); // Refresh list
+                    await fetchUserData(userId); 
                     alert("Account Saved Successfully!");
-                    setView('main'); // Go back
+                    setView('main'); 
                     setAddFormData({ name: '', identifier: '', confirmIdentifier: '', secondary: '', contactType: 'phone', qrImage: null });
 
                 } catch(e) {
@@ -189,7 +225,6 @@
                 }
             };
 
-            // 2. Withdraw
             const handleWithdraw = async (selectedAccountDetails) => {
                 const amt = parseFloat(withdrawAmount);
                 if(isNaN(amt) || amt < 200) { alert("Min withdrawal is ₹200"); return; }
@@ -197,20 +232,35 @@
                 
                 setProcessing(true);
                 try {
+                    const newBalance = userBalance - amt;
+                    const { error: balanceError } = await supabase
+                        .from('user_wallets')
+                        .update({ balance: newBalance })
+                        .eq('uid', userId);
+
+                    if (balanceError) throw new Error("Failed to deduct balance. Please try again.");
+                    setUserBalance(newBalance);
+
                     const orderId = "WID-" + Date.now().toString().slice(-6);
                     
-                    // Tx Log
-                    await supabase.from('user-transactions').insert([{
-                        uid: userId, order_id: orderId, type: 'withdrawal', 
-                        method: selectedAccountDetails.method_name, amount: amt, status: 'pending',
+                    const { error: txError } = await supabase.from('user-transactions').insert([{
+                        user_id: userId, 
+                        order_id: orderId, 
+                        type: 'withdrawal', 
+                        method: selectedAccountDetails.method_name, 
+                        amount: amt, 
+                        status: 'pending',
                         description: `Withdraw to ${selectedAccountDetails.method_name}`
                     }]);
 
-                    // History Log
-                    await supabase.from('user-withdrawal-history').insert([{
+                    if (txError) console.error("Transaction log failed", txError);
+
+                    const { error: histError } = await supabase.from('user-withdrawal-history').insert([{
                         user_id: userId, method_name: selectedAccountDetails.method_name,
                         amount: amt, status: 'pending', details_snapshot: selectedAccountDetails
                     }]);
+                    
+                    if (histError) console.error("History log failed", histError);
 
                     setSuccessMsg("Withdrawal Placed Successfully!");
                     setTimeout(() => window.location.reload(), 3000);
@@ -218,74 +268,69 @@
                 } catch(e) {
                     alert("Error: " + e.message);
                     setProcessing(false);
+                    fetchUserData(userId); 
                 }
             };
 
             // --- Components ---
-
             const MethodIcon = ({ type }) => {
                 switch(type) {
-                    case 'Google Pay': return <span className="font-bold text-blue-500">GPay</span>;
-                    case 'PhonePe': return <span className="font-bold text-purple-500">Pe</span>;
-                    case 'Paytm': return <span className="font-bold text-cyan-400">Paytm</span>;
-                    case 'UPI': return <span className="font-bold text-orange-400">UPI</span>;
-                    default: return <Banknote className="w-6 h-6 text-emerald-400" />;
+                    case 'Google Pay': return <span className="font-bold text-blue-600 text-lg">GPay</span>;
+                    case 'PhonePe': return <span className="font-bold text-purple-600 text-lg">Pe</span>;
+                    case 'Paytm': return <span className="font-bold text-cyan-500 text-lg">Paytm</span>;
+                    case 'UPI': return <span className="font-bold text-orange-500 text-lg">UPI</span>;
+                    default: return <Banknote className="w-6 h-6 text-emerald-500" />;
                 }
             };
 
             return (
-                <div className="min-h-screen bg-slate-950 text-white relative font-sans pb-10 overflow-hidden">
+                <div className="min-h-screen text-slate-800 relative font-sans pb-10 overflow-hidden">
                     
-                    {/* Ambience */}
-                    <div className="fixed inset-0 pointer-events-none">
-                         <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[100px]"></div>
-                         <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[100px]"></div>
-                    </div>
-
-                    <div className="relative z-10 max-w-xl mx-auto px-4">
-                        
-                        {/* Header */}
-                        <div className="pt-6 pb-6 flex items-center justify-between">
+                    {/* Sticky Header */}
+                    <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm px-4 py-4">
+                        <div className="max-w-2xl mx-auto flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <button onClick={handleBack} className="p-2 rounded-full glass hover:bg-slate-800 transition-colors">
-                                    <ArrowLeft className="w-5 h-5 text-gray-300" />
+                                <button onClick={handleBack} className="w-10 h-10 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-slate-100 transition-colors shadow-sm border border-slate-100">
+                                    <ArrowLeft className="w-5 h-5" />
                                 </button>
-                                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                                    {view === 'add_account' ? 'Add New Account' : 'Withdraw Funds'}
+                                <h1 className="text-xl font-black text-slate-800 tracking-tight">
+                                    {view === 'add_account' ? 'Add Account' : 'Withdraw Funds'}
                                 </h1>
                             </div>
                             
-                            {/* Top Right: Add Account Button (Only on Main View) */}
                             {view === 'main' && !activeModalMethod && (
                                 <button 
                                     onClick={() => setView('add_account')}
-                                    className="flex items-center gap-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
+                                    className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg active:scale-95 transition-all"
                                 >
                                     <Plus className="w-3.5 h-3.5" /> ADD
                                 </button>
                             )}
                         </div>
+                    </div>
 
+                    <div className="relative z-10 max-w-xl mx-auto px-4 pt-6">
+                        
                         {/* ================= VIEW: MAIN LIST ================= */}
                         {view === 'main' && !activeModalMethod && (
-                            <div className="fade-in space-y-8">
+                            <div className="fade-in space-y-6">
                                 
                                 {/* Balance Card */}
-                                <div className="glass rounded-2xl p-6 relative overflow-hidden group">
-                                    <div className="absolute inset-0 premium-gradient opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                                <div className="premium-card rounded-3xl p-6 relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full -mr-8 -mt-8 blur-2xl opacity-60"></div>
                                     <div className="relative z-10">
-                                        <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Available Balance</p>
+                                        <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Available Balance</p>
                                         <div className="flex items-baseline gap-1">
-                                            <span className="text-3xl font-mono font-bold text-white">₹{userBalance.toLocaleString('en-IN')}</span>
+                                            <span className="text-4xl font-black text-slate-800 tracking-tight">₹{userBalance.toLocaleString('en-IN')}</span>
                                         </div>
                                     </div>
-                                    <Wallet className="absolute right-4 bottom-4 w-16 h-16 text-slate-800 rotate-12" />
+                                    <Wallet className="absolute right-6 bottom-6 w-12 h-12 text-blue-100 -rotate-12" />
                                 </div>
 
                                 {/* Methods Grid */}
                                 <div>
-                                    <p className="text-sm font-semibold text-slate-300 mb-4 px-1">Select Withdrawal Method</p>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 ml-1">Select Method</p>
+                                    <div className="grid grid-cols-2 gap-4">
                                         {['Google Pay', 'Paytm', 'PhonePe', 'UPI', 'Bank Transfer'].map(method => (
                                             <button 
                                                 key={method}
@@ -293,41 +338,41 @@
                                                     setActiveModalMethod(method);
                                                     setWithdrawAmount('');
                                                 }}
-                                                className="glass p-4 rounded-xl flex flex-col items-center justify-center gap-3 hover:bg-slate-800/50 hover:border-blue-500/50 transition-all active:scale-[0.98] group"
+                                                className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center gap-3 group"
                                             >
-                                                <div className="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                                                <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center group-hover:bg-blue-50 transition-colors">
                                                     <MethodIcon type={method} />
                                                 </div>
-                                                <span className="text-xs font-medium text-slate-300 group-hover:text-white">{method === 'Bank Transfer' ? 'Bank Account' : method}</span>
+                                                <span className="text-xs font-bold text-slate-600 group-hover:text-blue-600">{method === 'Bank Transfer' ? 'Bank Account' : method}</span>
                                             </button>
                                         ))}
                                     </div>
                                 </div>
 
                                 {/* Info & Policy Section */}
-                                <div className="space-y-4 pt-4 border-t border-slate-800/50">
+                                <div className="space-y-4 pt-6">
                                     
                                     {/* Tip */}
-                                    <div className="flex gap-3 bg-blue-500/5 border border-blue-500/10 p-4 rounded-xl">
-                                        <Info className="w-5 h-5 text-blue-400 shrink-0" />
-                                        <p className="text-xs text-blue-200 leading-relaxed">
-                                            <span className="font-bold text-blue-400">Tip:</span> Save your account details using the "ADD" button in the top-right corner for faster, one-click withdrawals in the future.
+                                    <div className="flex gap-3 bg-blue-50 border border-blue-100 p-4 rounded-2xl">
+                                        <Info className="w-5 h-5 text-blue-500 shrink-0" />
+                                        <p className="text-xs text-blue-700 leading-relaxed font-medium">
+                                            <span className="font-bold">Tip:</span> Save your account details using the "ADD" button above for faster, one-click withdrawals.
                                         </p>
                                     </div>
 
                                     {/* Policy Text */}
-                                    <div className="bg-slate-900/50 rounded-xl p-5 border border-slate-800">
+                                    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
                                         <div className="flex items-center gap-2 mb-3">
-                                            <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                                            <h3 className="text-sm font-bold text-white">Safe, Smooth & Secure</h3>
+                                            <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                                            <h3 className="text-sm font-bold text-slate-800">Safe, Smooth & Secure</h3>
                                         </div>
-                                        <p className="text-xs text-slate-400 leading-relaxed mb-4">
-                                            We strive to process withdrawals as fast as possible. However, security is our top priority. If a transaction takes longer than usual, it is to ensure your funds are transferred safely without any issues. Your patience allows us to maintain a secure environment.
+                                        <p className="text-xs text-slate-500 leading-relaxed mb-5 font-medium">
+                                            We strive to process withdrawals as fast as possible. If a transaction takes longer, it is to ensure your funds are transferred safely. Your patience is appreciated.
                                         </p>
                                         
                                         <button 
                                             onClick={() => window.location.href = 'help.html#/help'}
-                                            className="w-full flex items-center justify-center gap-2 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold text-slate-300 transition-colors"
+                                            className="w-full flex items-center justify-center gap-2 py-3 bg-slate-50 hover:bg-slate-100 rounded-xl text-xs font-bold text-slate-600 transition-colors"
                                         >
                                             <Headphones className="w-4 h-4" />
                                             Contact Help & Support
@@ -346,21 +391,21 @@
                                         <button 
                                             key={type}
                                             onClick={() => { setAddFormType(type); setAddFormData({...addFormData, qrImage: null}); }}
-                                            className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition-all ${addFormType === type ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}
+                                            className={`whitespace-nowrap px-5 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm ${addFormType === type ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 border border-slate-100'}`}
                                         >
                                             {type}
                                         </button>
                                     ))}
                                 </div>
 
-                                <div className="space-y-4">
+                                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-5">
                                     <div>
-                                        <label className="text-xs font-bold text-slate-500 uppercase ml-1">Account Name</label>
+                                        <label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1.5 block">Account Name</label>
                                         <input 
                                             type="text" 
                                             value={addFormData.name}
                                             onChange={e => setAddFormData({...addFormData, name: e.target.value})}
-                                            className="w-full mt-1 bg-slate-900 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none"
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all placeholder-slate-400"
                                             placeholder="Enter Account Holder Name"
                                         />
                                     </div>
@@ -368,32 +413,32 @@
                                     {addFormType === 'Bank Transfer' ? (
                                         <>
                                             <div>
-                                                <label className="text-xs font-bold text-slate-500 uppercase ml-1">Account Number</label>
+                                                <label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1.5 block">Account Number</label>
                                                 <input 
                                                     type="text" 
                                                     value={addFormData.identifier}
                                                     onChange={e => setAddFormData({...addFormData, identifier: e.target.value.replace(/\D/g, '')})}
-                                                    className="w-full mt-1 bg-slate-900 border border-slate-800 rounded-xl p-4 font-mono text-white focus:border-blue-500 outline-none"
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 font-mono font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all placeholder-slate-400"
                                                     placeholder="Enter Account No."
                                                 />
                                             </div>
                                             <div>
-                                                <label className="text-xs font-bold text-slate-500 uppercase ml-1">Confirm Account Number</label>
+                                                <label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1.5 block">Confirm Account Number</label>
                                                 <input 
                                                     type="text" 
                                                     value={addFormData.confirmIdentifier}
                                                     onChange={e => setAddFormData({...addFormData, confirmIdentifier: e.target.value.replace(/\D/g, '')})}
-                                                    className="w-full mt-1 bg-slate-900 border border-slate-800 rounded-xl p-4 font-mono text-white focus:border-blue-500 outline-none"
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 font-mono font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all placeholder-slate-400"
                                                     placeholder="Re-enter Account No."
                                                 />
                                             </div>
                                             <div>
-                                                <label className="text-xs font-bold text-slate-500 uppercase ml-1">IFSC Code</label>
+                                                <label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1.5 block">IFSC Code</label>
                                                 <input 
                                                     type="text" 
                                                     value={addFormData.secondary}
                                                     onChange={e => setAddFormData({...addFormData, secondary: e.target.value.toUpperCase()})}
-                                                    className="w-full mt-1 bg-slate-900 border border-slate-800 rounded-xl p-4 font-mono text-white focus:border-blue-500 outline-none uppercase"
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 font-mono font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all uppercase placeholder-slate-400"
                                                     placeholder="IFSC Code"
                                                 />
                                             </div>
@@ -401,22 +446,22 @@
                                     ) : (
                                         <>
                                             <div>
-                                                <label className="text-xs font-bold text-slate-500 uppercase ml-1">{addFormType === 'UPI' ? 'UPI ID' : 'Mobile Number / UPI ID'}</label>
+                                                <label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1.5 block">{addFormType === 'UPI' ? 'UPI ID' : 'Mobile Number / UPI ID'}</label>
                                                 <input 
                                                     type="text" 
                                                     value={addFormData.identifier}
                                                     onChange={e => setAddFormData({...addFormData, identifier: e.target.value})}
-                                                    className="w-full mt-1 bg-slate-900 border border-slate-800 rounded-xl p-4 font-mono text-white focus:border-blue-500 outline-none"
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all placeholder-slate-400"
                                                     placeholder="Enter Details"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="text-xs font-bold text-slate-500 uppercase ml-1">QR Code (Optional)</label>
-                                                <div className="relative mt-1">
+                                                <label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1.5 block">QR Code (Optional)</label>
+                                                <div className="relative">
                                                     <input type="file" id="qr" className="hidden" accept="image/*" onChange={e => e.target.files && setAddFormData({...addFormData, qrImage: e.target.files[0]})} />
-                                                    <label htmlFor="qr" className={`flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed rounded-xl cursor-pointer ${addFormData.qrImage ? 'border-green-500/50 text-green-400' : 'border-slate-800 text-slate-500'}`}>
+                                                    <label htmlFor="qr" className={`flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed rounded-xl cursor-pointer hover:bg-slate-50 transition-colors ${addFormData.qrImage ? 'border-emerald-500/50 bg-emerald-50 text-emerald-600' : 'border-slate-300 text-slate-500'}`}>
                                                         <UploadCloud className="w-5 h-5" />
-                                                        <span className="text-sm">{addFormData.qrImage ? "Image Selected" : "Tap to Upload"}</span>
+                                                        <span className="text-sm font-bold">{addFormData.qrImage ? "Image Selected" : "Tap to Upload"}</span>
                                                     </label>
                                                 </div>
                                             </div>
@@ -426,7 +471,7 @@
                                     <button 
                                         onClick={handleSaveAccount}
                                         disabled={addingAccount}
-                                        className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-white shadow-lg mt-4 flex justify-center items-center gap-2"
+                                        className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl font-bold text-white shadow-lg shadow-blue-500/30 flex justify-center items-center gap-2 transition-all active:scale-[0.98]"
                                     >
                                         {addingAccount ? <Loader2 className="animate-spin" /> : "Save Account"}
                                     </button>
@@ -436,50 +481,48 @@
 
                         {/* ================= MODAL: WITHDRAW ================= */}
                         {activeModalMethod && (
-                            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-slate-950/90 backdrop-blur-sm fade-in">
-                                <div className="w-full max-w-lg bg-slate-900 sm:rounded-3xl rounded-t-3xl border border-slate-800 shadow-2xl slide-up overflow-hidden max-h-[90vh] flex flex-col">
+                            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-slate-900/40 backdrop-blur-md fade-in">
+                                <div className="w-full max-w-lg bg-white sm:rounded-3xl rounded-t-3xl border border-slate-100 shadow-2xl slide-up overflow-hidden max-h-[90vh] flex flex-col">
                                     
                                     {/* Modal Header */}
-                                    <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900 sticky top-0 z-10">
+                                    <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-white sticky top-0 z-10">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
+                                            <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-700">
                                                 <MethodIcon type={activeModalMethod} />
                                             </div>
-                                            <h2 className="text-lg font-bold text-white">{activeModalMethod}</h2>
+                                            <h2 className="text-lg font-black text-slate-800">{activeModalMethod}</h2>
                                         </div>
-                                        <button onClick={() => setActiveModalMethod(null)} className="p-2 hover:bg-slate-800 rounded-full text-slate-400">
+                                        <button onClick={() => setActiveModalMethod(null)} className="p-2 hover:bg-slate-50 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
                                             <X className="w-6 h-6" />
                                         </button>
                                     </div>
 
                                     {/* Modal Body */}
-                                    <div className="p-6 overflow-y-auto">
+                                    <div className="p-6 overflow-y-auto bg-[#f8f9fc]">
                                         {successMsg ? (
-                                            <div className="text-center py-10 zoom-in">
-                                                <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
-                                                <h3 className="text-xl font-bold text-white">Success!</h3>
-                                                <p className="text-slate-400 text-sm">{successMsg}</p>
+                                            <div className="text-center py-12 zoom-in">
+                                                <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-600">
+                                                    <CheckCircle2 className="w-10 h-10" />
+                                                </div>
+                                                <h3 className="text-2xl font-black text-slate-800">Success!</h3>
+                                                <p className="text-slate-500 font-medium mt-1">{successMsg}</p>
                                             </div>
                                         ) : (
                                             <div className="space-y-6">
                                                 {/* Account Selection */}
                                                 <div>
-                                                    <p className="text-xs font-bold text-slate-500 uppercase mb-3">Select Saved Account</p>
+                                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Select Saved Account</p>
                                                     
                                                     {savedAccounts.filter(acc => acc.method_name === activeModalMethod).length > 0 ? (
                                                         <div className="space-y-3">
                                                             {savedAccounts.filter(acc => acc.method_name === activeModalMethod).map((acc) => (
-                                                                <div key={acc.id} className="group relative">
+                                                                <div key={acc.id} className="group relative bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all">
                                                                     <div 
-                                                                        onClick={() => {
-                                                                            // Auto-select and trigger withdraw flow UI
-                                                                            // Here we just keep this selected for visual, amount is below
-                                                                        }}
-                                                                        className="bg-slate-950 border border-slate-800 hover:border-blue-500/50 p-4 rounded-xl flex items-center justify-between cursor-pointer"
+                                                                        className="p-4 flex items-center justify-between cursor-pointer"
                                                                     >
                                                                         <div>
-                                                                            <p className="font-bold text-white">{acc.account_holder_name}</p>
-                                                                            <p className="text-xs font-mono text-slate-400">{acc.identifier}</p>
+                                                                            <p className="font-bold text-slate-800">{acc.account_holder_name}</p>
+                                                                            <p className="text-xs font-mono text-slate-500 font-medium">{acc.identifier}</p>
                                                                         </div>
                                                                         {/* Delete Action */}
                                                                         <button 
@@ -490,25 +533,28 @@
                                                                                     fetchUserData(userId);
                                                                                 }
                                                                             }}
-                                                                            className="p-2 text-slate-600 hover:text-red-400"
+                                                                            className="p-2 text-slate-400 hover:text-rose-500 transition-colors"
                                                                         >
                                                                             <Trash2 className="w-4 h-4" />
                                                                         </button>
                                                                     </div>
                                                                     
                                                                     {/* WITHDRAW FORM FOR THIS ACCOUNT */}
-                                                                    <div className="mt-2 pl-4 pr-1 border-l-2 border-blue-500/30">
+                                                                    <div className="bg-slate-50 p-4 border-t border-slate-100">
                                                                         <div className="flex items-center gap-2">
-                                                                            <input 
-                                                                                type="number" 
-                                                                                placeholder="Amount" 
-                                                                                className="w-full bg-slate-800 border-none rounded-lg p-3 text-white font-mono focus:ring-1 focus:ring-blue-500 outline-none"
-                                                                                onChange={(e) => setWithdrawAmount(e.target.value)}
-                                                                            />
+                                                                            <div className="relative flex-1">
+                                                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                                                                                <input 
+                                                                                    type="number" 
+                                                                                    placeholder="Amount" 
+                                                                                    className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-8 pr-4 text-slate-800 font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all placeholder-slate-400"
+                                                                                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                                                                                />
+                                                                            </div>
                                                                             <button 
                                                                                 onClick={() => handleWithdraw(acc)}
                                                                                 disabled={processing}
-                                                                                className="bg-blue-600 hover:bg-blue-500 px-4 py-3 rounded-lg text-sm font-bold text-white shadow-lg"
+                                                                                className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xl text-sm font-bold text-white shadow-lg shadow-blue-500/30 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                                                             >
                                                                                 {processing ? <Loader2 className="animate-spin" /> : "Withdraw"}
                                                                             </button>
@@ -518,15 +564,15 @@
                                                             ))}
                                                         </div>
                                                     ) : (
-                                                        <div className="text-center py-6 bg-slate-950/50 rounded-xl border border-dashed border-slate-800">
-                                                            <p className="text-sm text-slate-500 mb-3">No saved accounts found for {activeModalMethod}</p>
+                                                        <div className="text-center py-8 bg-white rounded-3xl border border-dashed border-slate-300">
+                                                            <p className="text-sm font-bold text-slate-500 mb-4">No saved accounts found for {activeModalMethod}</p>
                                                             <button 
                                                                 onClick={() => {
                                                                     setActiveModalMethod(null);
                                                                     setView('add_account');
                                                                     setAddFormType(activeModalMethod);
                                                                 }}
-                                                                className="px-4 py-2 bg-slate-800 text-blue-400 text-xs font-bold rounded-lg border border-slate-700"
+                                                                className="px-5 py-2.5 bg-slate-50 text-blue-600 text-xs font-bold rounded-full border border-slate-200 hover:bg-blue-50 hover:border-blue-200 transition-all"
                                                             >
                                                                 + Add New {activeModalMethod} Account
                                                             </button>
