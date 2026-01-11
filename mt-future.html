@@ -2,570 +2,242 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>M&T Future - AI Assistant</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        /* Premium Font Styling */
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            min-height: 100vh;
-            padding: 20px;
-            position: relative;
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f8f9fc;
+            color: #1e293b;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .back-btn {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: rgba(255,255,255,0.9);
-            border: none;
-            padding: 12px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            color: #333;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            z-index: 1000;
+        /* Hide Scrollbar */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Animations */
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .pulse-slow { animation: pulse 3s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        /* Chat Container Transition */
+        #chatContainer {
+            transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+            transform: translateY(110%);
+            box-shadow: 0 -10px 40px -10px rgba(0,0,0,0.1);
+        }
+        #chatContainer.active {
+            transform: translateY(0);
         }
 
-        .back-btn:hover {
-            background: white;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding-top: 80px;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .title {
-            font-size: 2.8rem;
-            color: white;
-            margin-bottom: 10px;
-            font-weight: 700;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        }
-
-        .subtitle {
-            color: rgba(255,255,255,0.9);
-            font-size: 1.2rem;
-            margin-bottom: 30px;
-        }
-
-        .ai-assistant-btn {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .ai-assistant-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 35px rgba(255, 107, 107, 0.4);
-        }
-
-        .ai-assistant-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: left 0.5s ease;
-        }
-
-        .ai-assistant-btn:hover::before {
-            left: 100%;
-        }
-
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            margin-top: 50px;
-        }
-
-        .feature-card {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            text-align: center;
-            transition: all 0.3s ease;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .feature-card:hover {
-            transform: translateY(-5px);
-            background: rgba(255,255,255,0.15);
-        }
-
-        .feature-icon {
-            font-size: 3rem;
-            color: #ff6b6b;
-            margin-bottom: 20px;
-        }
-
-        .feature-title {
-            color: white;
-            font-size: 1.3rem;
-            font-weight: 600;
-            margin-bottom: 15px;
-        }
-
-        .feature-desc {
-            color: rgba(255,255,255,0.8);
-            line-height: 1.6;
-        }
-
-        /* Chat Container */
-        .chat-container {
-            position: fixed;
-            bottom: -100%;
-            right: 30px;
-            width: 400px;
-            height: 600px;
-            background: white;
-            border-radius: 20px 20px 0 0;
-            box-shadow: 0 -10px 30px rgba(0,0,0,0.3);
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            z-index: 1000;
-            overflow: hidden;
-        }
-
-        .chat-container.active {
-            bottom: 0;
-        }
-
-        .chat-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .ai-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .ai-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            position: relative;
-        }
-
-        .ai-avatar::after {
-            content: '';
-            position: absolute;
-            bottom: 2px;
-            right: 2px;
-            width: 12px;
-            height: 12px;
-            background: #4CAF50;
-            border-radius: 50%;
-            border: 2px solid white;
-        }
-
-        .ai-details h3 {
-            font-size: 1.2rem;
-            margin-bottom: 5px;
-        }
-
-        .ai-details p {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-
-        .close-chat {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .close-chat:hover {
-            transform: scale(1.2);
-        }
-
-        .chat-messages {
-            height: 400px;
-            overflow-y: auto;
-            padding: 20px;
-            background: #f8f9fa;
-        }
-
-        .message {
-            margin-bottom: 15px;
-            animation: fadeInUp 0.3s ease;
-        }
-
-        .message.ai {
-            text-align: left;
-        }
-
-        .message.user {
-            text-align: right;
-        }
-
+        /* Message Bubbles */
         .message-bubble {
-            display: inline-block;
-            max-width: 80%;
-            padding: 12px 18px;
-            border-radius: 20px;
-            word-wrap: break-word;
             position: relative;
+            max-width: 85%;
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
-
+        
         .message.ai .message-bubble {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border-bottom-left-radius: 5px;
+            background-color: white;
+            color: #334155;
+            border-radius: 20px 20px 20px 4px;
+            border: 1px solid #f1f5f9;
         }
-
+        
         .message.user .message-bubble {
-            background: #e3f2fd;
-            color: #333;
-            border-bottom-right-radius: 5px;
+            background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+            color: white;
+            border-radius: 20px 20px 4px 20px;
+            margin-left: auto;
         }
 
-        .typing-indicator {
-            display: none;
-            text-align: left;
-            margin-bottom: 15px;
-        }
-
-        .typing-indicator .message-bubble {
-            background: #e0e0e0;
-            color: #666;
-            padding: 15px 20px;
-        }
-
-        .typing-dots {
-            display: inline-block;
-        }
-
+        /* Typing Indicator */
         .typing-dots span {
             display: inline-block;
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
-            background: #999;
+            background-color: #94a3b8;
             margin: 0 2px;
-            animation: typing 1.4s infinite;
+            animation: typing 1.4s infinite ease-in-out;
         }
-
+        .typing-dots span:nth-child(1) { animation-delay: 0s; }
         .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
         .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typing { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 
-        @keyframes typing {
-            0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-10px); }
-        }
-
-        .chat-input-container {
-            padding: 20px;
-            background: white;
-            border-top: 1px solid #eee;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .chat-input {
-            flex: 1;
-            border: 2px solid #e0e0e0;
-            border-radius: 25px;
-            padding: 12px 20px;
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-
-        .chat-input:focus {
-            border-color: #667eea;
-        }
-
-        .send-btn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-
-        .send-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .send-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .file-upload-container {
+        /* File Upload */
+        #fileUploadContainer {
             display: none;
-            margin-top: 10px;
-            padding: 15px;
-            background: #f0f7ff;
-            border: 2px dashed #667eea;
-            border-radius: 10px;
-            text-align: center;
+            animation: slideUp 0.3s ease-out;
         }
-
-        .file-upload-container.active {
+        #fileUploadContainer.active {
             display: block;
         }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .file-upload-btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
-        .quick-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .quick-action-btn {
-            background: #f1f3f4;
-            border: 1px solid #dadce0;
-            border-radius: 15px;
-            padding: 8px 15px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .quick-action-btn:hover {
-            background: #667eea;
-            color: white;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @media (max-width: 768px) {
-            .chat-container {
-                width: calc(100vw - 20px);
-                right: 10px;
-                left: 10px;
-                height: 80vh;
-            }
-
-            .title {
-                font-size: 2.2rem;
-            }
-
-            .feature-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .news-banner {
-            background: linear-gradient(45deg, #FFD700, #FFA500);
-            color: #333;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            text-align: center;
-            font-weight: 600;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-        }
-
-        .status-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-left: 10px;
-        }
-
-        .status-pending { background: #ff9800; }
-        .status-processing { background: #2196f3; }
-        .status-completed { background: #4caf50; }
+        /* Status Dots */
+        .status-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+        .status-pending { background-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2); }
+        .status-processing { background-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+        .status-completed { background-color: #10b981; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); }
     </style>
 </head>
-<body>
-    <button class="back-btn" onclick="goBack()">
-        <i class="fas fa-arrow-left"></i>
-        <span>Back</span>
-    </button>
+<body class="bg-[#f8f9fc] min-h-screen pb-10">
 
-    <div class="container">
-        <div class="header">
-            <h1 class="title">M&T Future</h1>
-            <p class="subtitle">Advanced AI Assistant & Testing Platform</p>
+    <!-- Header -->
+    <div class="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm px-4 py-4 flex items-center justify-between">
+        <button onclick="goBack()" class="w-10 h-10 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-slate-100 transition-colors shadow-sm border border-slate-100">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h1 class="text-lg font-black text-slate-800 tracking-tight">M&T Future</h1>
+        <div class="w-10"></div> <!-- Spacer -->
+    </div>
+
+    <div class="max-w-4xl mx-auto px-4 pt-8 container">
+        
+        <!-- Hero Section -->
+        <div class="text-center mb-10 fade-in">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white shadow-xl shadow-indigo-500/30 mb-6 transform hover:scale-105 transition-transform duration-500">
+                <i class="fas fa-brain text-4xl"></i>
+            </div>
+            <h1 class="text-3xl font-black text-slate-800 mb-2 tracking-tight">AI Future & Insights</h1>
+            <p class="text-slate-500 font-medium mb-8">Advanced assistance & next-gen features</p>
             
-            <div class="news-banner">
-                <i class="fas fa-bell"></i>
-                New functions will be announced here! Stay tuned for updates.
+            <!-- News Banner -->
+            <div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-2xl p-4 max-w-lg mx-auto flex items-center gap-3 shadow-sm mb-8">
+                <div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-500 shrink-0 pulse-slow">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <p class="text-xs font-bold text-amber-800 text-left">New functions will be announced here! Stay tuned for updates.</p>
             </div>
 
-            <button class="ai-assistant-btn" onclick="openAIChat()">
-                <i class="fas fa-robot"></i>
-                Talk to MEGHA TRUS AI
+            <!-- AI Button -->
+            <button class="ai-assistant-btn relative overflow-hidden bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 px-8 rounded-2xl shadow-xl shadow-slate-900/20 transition-all active:scale-95 group w-full max-w-sm" onclick="openAIChat()">
+                <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/10 to-indigo-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                <div class="flex items-center justify-center gap-3">
+                    <i class="fas fa-robot text-indigo-400 text-xl"></i>
+                    <span>Talk to MEGHA TRUS AI</span>
+                </div>
             </button>
         </div>
 
-        <div class="feature-grid">
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-brain"></i>
+        <!-- Feature Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 fade-in" style="animation-delay: 0.2s">
+            
+            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-lg shadow-slate-200/50 hover:-translate-y-1 transition-all duration-300 group">
+                <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-500 mb-4 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                    <i class="fas fa-headset text-xl"></i>
                 </div>
-                <h3 class="feature-title">AI Assistance</h3>
-                <p class="feature-desc">Get help with platform features, account issues, and trading guidance from our advanced AI assistant.</p>
+                <h3 class="text-lg font-bold text-slate-800 mb-2">AI Assistance</h3>
+                <p class="text-xs text-slate-500 leading-relaxed font-medium">Get 24/7 help with account issues, trading guidance, and feature explanations.</p>
             </div>
 
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-cogs"></i>
+            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-lg shadow-slate-200/50 hover:-translate-y-1 transition-all duration-300 group">
+                <div class="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-500 mb-4 group-hover:bg-purple-500 group-hover:text-white transition-colors">
+                    <i class="fas fa-flask text-xl"></i>
                 </div>
-                <h3 class="feature-title">Beta Testing</h3>
-                <p class="feature-desc">Test new exchange functions before they go live. Help us improve the platform with your feedback.</p>
+                <h3 class="text-lg font-bold text-slate-800 mb-2">Beta Testing</h3>
+                <p class="text-xs text-slate-500 leading-relaxed font-medium">Test exclusive new exchange functions before they go live globally.</p>
             </div>
 
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-chart-line"></i>
+            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-lg shadow-slate-200/50 hover:-translate-y-1 transition-all duration-300 group">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-500 mb-4 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                    <i class="fas fa-chart-line text-xl"></i>
                 </div>
-                <h3 class="feature-title">Future Insights</h3>
-                <p class="feature-desc">Get early access to upcoming features and trading tools that will enhance your experience.</p>
+                <h3 class="text-lg font-bold text-slate-800 mb-2">Future Insights</h3>
+                <p class="text-xs text-slate-500 leading-relaxed font-medium">Access early predictions and upcoming trading tools for smarter decisions.</p>
             </div>
+
         </div>
     </div>
 
     <!-- AI Chat Container -->
-    <div class="chat-container" id="chatContainer">
-        <div class="chat-header">
-            <div class="ai-info">
-                <div class="ai-avatar">
-                    <i class="fas fa-robot"></i>
+    <div id="chatContainer" class="fixed inset-x-0 bottom-0 z-50 h-[85vh] md:h-[600px] md:w-[450px] md:left-auto md:right-6 md:rounded-t-3xl bg-[#f8f9fa] flex flex-col shadow-2xl rounded-t-[2rem]">
+        
+        <!-- Chat Header -->
+        <div class="bg-white px-6 py-4 border-b border-slate-100 flex justify-between items-center rounded-t-[2rem]">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md relative">
+                    <i class="fas fa-robot text-sm"></i>
+                    <div class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></div>
                 </div>
-                <div class="ai-details">
-                    <h3>MEGHA TRUS AI</h3>
-                    <p>Your AI Assistant</p>
+                <div>
+                    <h3 class="text-sm font-bold text-slate-800">MEGHA TRUS AI</h3>
+                    <p class="text-[10px] font-bold text-emerald-500 uppercase tracking-wide">Online</p>
                 </div>
             </div>
-            <button class="close-chat" onclick="closeAIChat()">
+            <button onclick="closeAIChat()" class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 flex items-center justify-center transition-colors">
                 <i class="fas fa-times"></i>
             </button>
         </div>
 
-        <div class="chat-messages" id="chatMessages">
-            <div class="message ai">
-                <div class="message-bubble">
+        <!-- Chat Messages -->
+        <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 scrollbar-hide">
+            <div class="message ai flex flex-col items-start fade-in">
+                <div class="message-bubble bg-white text-slate-600 shadow-sm border border-slate-100">
+                    <p class="font-bold text-indigo-600 mb-2 text-xs uppercase tracking-wider">System</p>
                     Hello! I'm MEGHA TRUS AI, your personal assistant. I can help you with:
-                    <br><br>
-                    • Account & Security issues
-                    <br>• Deposit and Withdrawal support
-                    <br>• KYC Verification guidance
-                    <br>• P2P trading help
-                    <br>• Trading assistance
-                    <br>• Buy & Sell operations
-                    <br>• Live Chat requests
-                    <br>• Check your request status
-                    <br><br>
-                    How can I assist you today?
+                    <div class="mt-3 space-y-1 text-xs font-medium">
+                        <div class="flex items-center gap-2"><i class="fas fa-shield-alt text-indigo-400"></i> Account & Security</div>
+                        <div class="flex items-center gap-2"><i class="fas fa-wallet text-indigo-400"></i> Deposit & Withdrawal</div>
+                        <div class="flex items-center gap-2"><i class="fas fa-id-card text-indigo-400"></i> KYC Verification</div>
+                        <div class="flex items-center gap-2"><i class="fas fa-handshake text-indigo-400"></i> P2P Trading</div>
+                    </div>
+                    <p class="mt-3">How can I assist you today?</p>
                 </div>
             </div>
         </div>
 
-        <div class="typing-indicator" id="typingIndicator">
-            <div class="message-bubble">
-                <div class="typing-dots">
-                    <span></span>
-                    <span></span>
-                    <span></span>
+        <!-- Typing Indicator -->
+        <div id="typingIndicator" class="px-6 py-2 bg-slate-50 hidden">
+            <div class="bg-white border border-slate-100 rounded-full px-4 py-2 w-fit shadow-sm">
+                <div class="typing-dots flex gap-1">
+                    <span></span><span></span><span></span>
                 </div>
             </div>
         </div>
 
-        <div class="chat-input-container">
-            <input type="text" class="chat-input" id="chatInput" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
-            <button class="send-btn" id="sendBtn" onclick="sendMessage()">
-                <i class="fas fa-paper-plane"></i>
-            </button>
+        <!-- File Upload Area -->
+        <div id="fileUploadContainer" class="px-4 pb-2 bg-white border-t border-slate-50">
+            <div class="bg-blue-50 border border-blue-100 border-dashed rounded-xl p-3 text-center mt-2">
+                <p class="text-xs text-blue-600 font-bold mb-2">Upload Screenshot</p>
+                <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileUpload(event)">
+                <button onclick="document.getElementById('fileInput').click()" class="bg-white text-blue-600 border border-blue-200 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-blue-50 transition-colors">
+                    <i class="fas fa-camera mr-1"></i> Select File
+                </button>
+            </div>
         </div>
 
-        <div class="file-upload-container" id="fileUploadContainer">
-            <p>Upload an image to help explain your issue</p>
-            <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="handleFileUpload(event)">
-            <button class="file-upload-btn" onclick="document.getElementById('fileInput').click()">
-                <i class="fas fa-camera"></i> Choose Image
-            </button>
+        <!-- Input Area -->
+        <div class="p-4 bg-white border-t border-slate-100 pb-8 md:pb-4">
+            <div class="flex gap-2 items-center bg-slate-50 p-1.5 rounded-full border border-slate-200 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
+                <input type="text" id="chatInput" class="flex-1 bg-transparent border-none px-4 text-sm text-slate-700 placeholder-slate-400 focus:ring-0 outline-none" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+                <button id="sendBtn" onclick="sendMessage()" class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 shadow-md shadow-indigo-500/20 active:scale-95 transition-all">
+                    <i class="fas fa-paper-plane text-xs"></i>
+                </button>
+            </div>
         </div>
     </div>
 
+    <!-- Scripts (Logic Preserved Exactly) -->
     <script>
-        // Available help categories from help.html
+        // Available help categories
         const helpCategories = [
             'Account & Security',
             'Deposit and Withdrawal', 
@@ -631,13 +303,8 @@
         }
 
         function goBack() {
-            document.body.style.opacity = '0';
-            document.body.style.transform = 'scale(0.95)';
-            document.body.style.transition = 'all 0.3s ease';
-            
-            setTimeout(() => {
-                window.location.href = 'dashboard.html';
-            }, 300);
+            // Simple redirect
+            window.location.href = 'dashboard.html';
         }
 
         function handleKeyPress(event) {
@@ -666,10 +333,10 @@
         function addMessage(text, sender) {
             const messagesContainer = document.getElementById('chatMessages');
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${sender}`;
+            messageDiv.className = `message ${sender} flex flex-col ${sender === 'user' ? 'items-end' : 'items-start'}`;
             
             const bubbleDiv = document.createElement('div');
-            bubbleDiv.className = 'message-bubble';
+            bubbleDiv.className = 'message-bubble fade-in';
             bubbleDiv.innerHTML = text;
             
             messageDiv.appendChild(bubbleDiv);
@@ -731,7 +398,7 @@
         function handleCategoryHelp(category) {
             conversationContext.currentCategory = category;
             
-            const response = `I can help you with ${category}. I'll guide you to the right section in our help system. 
+            const response = `I can help you with <span class="font-bold text-indigo-600">${category}</span>. I'll guide you to the right section in our help system. 
             <br><br>Would you like me to:
             <br>• Direct you to the ${category} form
             <br>• Fill out the form for you with your details
@@ -760,7 +427,7 @@
 
             conversationContext.awaitingFormFill = true;
             
-            const response = `Perfect! I can help you fill out the ${conversationContext.currentCategory} form. I'll need the following information:
+            const response = `Perfect! I can help you fill out the <span class="font-bold">${conversationContext.currentCategory}</span> form. I'll need the following information:
             <br><br>• Full Name (legal name)
             <br>• Username (your platform login)
             <br>• UID (user ID from your profile)
@@ -784,16 +451,22 @@
         }
 
         function handleRequestStatusCheck() {
-            // Simulate request status (in real implementation, this would check actual database)
+            // Simulate request status
             const statuses = ['Pending', 'Processing', 'Completed'];
             const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
             
+            let statusClass = 'status-pending';
+            if(randomStatus === 'Processing') statusClass = 'status-processing';
+            if(randomStatus === 'Completed') statusClass = 'status-completed';
+
             const response = `Let me check your request status...
-            <br><br>📋 <strong>Your Recent Requests:</strong>
-            <br><br>Request #1234: ${conversationContext.currentCategory || 'General Support'}
-            <br>Status: <span class="status-indicator status-${randomStatus.toLowerCase()}"></span> ${randomStatus}
-            <br>Submitted: 2 hours ago
-            <br><br>${randomStatus === 'Completed' ? '✅ Reply: Our team has resolved your issue. Check your email for details.' : randomStatus === 'Processing' ? '⏳ Your request is being reviewed by our support team.' : '📤 Your request has been received and is in queue.'}
+            <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 my-2">
+                <div class="text-xs text-slate-400 font-bold uppercase mb-1">Recent Request</div>
+                <div class="text-sm font-bold text-slate-800">Request #1234: ${conversationContext.currentCategory || 'General Support'}</div>
+                <div class="flex items-center mt-1 text-sm"><span class="status-indicator ${statusClass}"></span> ${randomStatus}</div>
+                <div class="text-xs text-slate-400 mt-1">Submitted: 2 hours ago</div>
+            </div>
+            ${randomStatus === 'Completed' ? '✅ Reply: Our team has resolved your issue. Check your email for details.' : randomStatus === 'Processing' ? '⏳ Your request is being reviewed by our support team.' : '📤 Your request has been received and is in queue.'}
             <br><br>Need to submit a new request or check a different issue?`;
             
             addMessage(response, 'ai');
@@ -802,7 +475,7 @@
         function handleNewFunctionInquiry() {
             const response = `Great question! Here's how you'll be notified about new functions:
             <br><br>🔔 <strong>Update Notifications:</strong>
-            <br>• News banner on this page (like the one above)
+            <br>• News banner on this page
             <br>• Email notifications to registered users  
             <br>• In-app announcements on the dashboard
             <br><br>🎯 <strong>Join Our Platform:</strong>
@@ -846,7 +519,7 @@
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (file) {
-                const response = `✅ Image uploaded successfully! I can see you've shared: "${file.name}"
+                const response = `✅ Image uploaded successfully! I can see you've shared: <span class="font-mono text-xs bg-slate-100 px-1 rounded">${file.name}</span>
                 <br><br>This will be included with your support request to help our team better understand your issue.
                 <br><br>Would you like me to help you complete the rest of your support form now?`;
                 
@@ -854,18 +527,6 @@
                 document.getElementById('fileUploadContainer').classList.remove('active');
             }
         }
-
-        // Initialize page entrance animation
-        document.body.style.opacity = '0';
-        document.body.style.transform = 'scale(0.95)';
-        document.body.style.transition = 'all 0.3s ease';
-
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                document.body.style.opacity = '1';
-                document.body.style.transform = 'scale(1)';
-            }, 100);
-        });
     </script>
 </body>
 </html>
