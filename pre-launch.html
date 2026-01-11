@@ -2,676 +2,160 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pre-Launch Tokens - Early Access Trading</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pre-Launch Tokens - AvicnKnov Ex</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    
+    <!-- Supabase -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        /* Premium Font Styling */
         body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            min-height: 100vh;
-            color: white;
-            overflow-x: hidden;
-        }
-
-        /* Header with navigation icons */
-        .header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            background: rgba(0,0,0,0.3);
-            backdrop-filter: blur(10px);
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .nav-icon {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(45deg, #ff6b6b, #feca57);
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
-
-        .nav-icon:hover {
-            transform: translateY(-3px) scale(1.1);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
-        }
-
-        .nav-icon svg {
-            width: 28px;
-            height: 28px;
-            fill: white;
-        }
-
-        /* Main container */
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 100px 20px 40px;
-        }
-
-        .title {
-            text-align: center;
-            font-size: 3rem;
-            font-weight: bold;
-            margin-bottom: 15px;
-            background: linear-gradient(45deg, #fff, #ffd700, #ff6b6b);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 30px rgba(255,255,255,0.3);
-        }
-
-        .subtitle {
-            text-align: center;
-            opacity: 0.9;
-            margin-bottom: 40px;
-            font-size: 1.2rem;
-        }
-
-        /* Balance display */
-        .balance-container {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 40px;
-            border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-        }
-
-        .balance-label {
-            font-size: 1.1rem;
-            opacity: 0.8;
-            margin-bottom: 5px;
-        }
-
-        .balance-amount {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #ffd700;
-        }
-
-        /* Token Grid */
-        .token-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-
-        .token-card {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 25px;
-            border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .token-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-            border-color: #ffd700;
-        }
-
-        .token-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-            transition: all 0.5s ease;
-        }
-
-        .token-card:hover::before {
-            left: 100%;
-        }
-
-        .pre-launch-badge {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: linear-gradient(45deg, #ff6b6b, #feca57);
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            animation: pulse 2s infinite;
-        }
-
-        .token-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .token-icon {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            margin-right: 15px;
-        }
-
-        .token-info h3 {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #ffd700;
-            margin-bottom: 5px;
-        }
-
-        .token-symbol {
-            font-size: 0.9rem;
-            opacity: 0.8;
-            text-transform: uppercase;
-        }
-
-        .token-description {
-            font-size: 0.9rem;
-            opacity: 0.8;
-            margin-bottom: 20px;
-            line-height: 1.4;
-        }
-
-        .price-section {
-            background: rgba(0,0,0,0.2);
-            border-radius: 15px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-
-        .current-price {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: #fff;
-            margin-bottom: 5px;
-        }
-
-        .price-change {
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .price-up {
-            color: #2ed573;
-        }
-
-        .price-down {
-            color: #ff4757;
-        }
-
-        .launch-countdown {
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            padding: 10px;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .countdown-label {
-            font-size: 0.8rem;
-            opacity: 0.8;
-            margin-bottom: 5px;
-        }
-
-        .countdown-time {
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: #ffd700;
-        }
-
-        .quantity-input {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 10px;
-            padding: 12px;
-            color: white;
-            width: 100%;
-            margin-bottom: 15px;
-            font-size: 1rem;
-        }
-
-        .quantity-input:focus {
-            outline: none;
-            border-color: #ffd700;
-            box-shadow: 0 0 10px rgba(255,215,0,0.3);
-        }
-
-        .quantity-input::placeholder {
-            color: rgba(255,255,255,0.6);
-        }
-
-        .total-amount {
-            background: rgba(0,0,0,0.2);
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 15px;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        /* Action buttons */
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 1rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-buy {
-            background: linear-gradient(45deg, #2ed573, #1e90ff);
-            color: white;
-        }
-
-        .btn-sell {
-            background: linear-gradient(45deg, #ff6b6b, #feca57);
-            color: white;
-        }
-
-        .btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Portfolio Modal */
-        .portfolio-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(10px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .portfolio-content {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            padding: 30px;
-            border-radius: 25px;
-            max-width: 900px;
-            max-height: 80vh;
-            overflow-y: auto;
-            position: relative;
-            border: 2px solid rgba(255,255,255,0.3);
-            width: 90%;
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 15px;
-            right: 25px;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 2.5rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .close-btn:hover {
-            transform: scale(1.2);
-            color: #ff6b6b;
-        }
-
-        .portfolio-title {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 30px;
-            text-align: center;
-            color: #ffd700;
-        }
-
-        .portfolio-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: rgba(255,255,255,0.1);
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .stat-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #ffd700;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-
-        .portfolio-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
-
-        .portfolio-item {
-            background: rgba(255,255,255,0.1);
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid rgba(255,255,255,0.2);
-            transition: all 0.3s ease;
-        }
-
-        .portfolio-item:hover {
-            transform: translateY(-3px);
-            border-color: #ffd700;
-        }
-
-        .portfolio-token-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .portfolio-token-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 10px;
-        }
-
-        .portfolio-token-name {
-            font-weight: bold;
-            color: #ffd700;
-        }
-
-        .portfolio-quantity {
-            font-size: 1.2rem;
-            margin-bottom: 10px;
-        }
-
-        .portfolio-value {
-            font-size: 1.1rem;
-            color: #2ed573;
-            margin-bottom: 15px;
-        }
-
-        .portfolio-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .portfolio-sell-input {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 8px;
-            padding: 8px;
-            color: white;
-            width: 100%;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-        }
-
-        /* No tokens state */
-        .no-tokens {
-            text-align: center;
-            padding: 60px 20px;
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-
-        .no-tokens-icon {
-            font-size: 5rem;
-            margin-bottom: 20px;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        .no-tokens-title {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #ffd700;
-        }
-
-        .no-tokens-text {
-            font-size: 1.1rem;
-            opacity: 0.8;
-            line-height: 1.6;
-        }
-
-        /* Toast notifications */
-        .toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: linear-gradient(45deg, #ff6b6b, #feca57);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            z-index: 3000;
-            opacity: 0;
-            transform: translateX(100%);
-            transition: all 0.3s ease;
-            max-width: 350px;
-            word-wrap: break-word;
-        }
-
-        .toast.show {
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        .toast.error {
-            background: linear-gradient(45deg, #ff4757, #ff3742);
-        }
-
-        .toast.success {
-            background: linear-gradient(45deg, #2ed573, #1e90ff);
-        }
-
-        /* Loading animation */
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-        }
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f8f9fc;
+            color: #1e293b;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Hide Scrollbar */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
         /* Animations */
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .scale-in { animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .pulse-soft { animation: pulseSoft 2s infinite; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        @keyframes pulseSoft { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
+
+        /* Modal Backdrop */
+        .modal-backdrop {
+            background-color: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
+        /* Gradient Text */
+        .text-gradient {
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-image: linear-gradient(to right, #ef4444, #f97316);
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        /* Input Premium */
+        .input-premium {
+            background-color: #f1f5f9;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
         }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .title {
-                font-size: 2.2rem;
-            }
-            
-            .token-grid {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-            
-            .container {
-                padding: 100px 15px 40px;
-            }
-            
-            .portfolio-content {
-                padding: 20px;
-                margin: 10px;
-            }
-            
-            .portfolio-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .portfolio-stats {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.1);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(45deg, #ff6b6b, #feca57);
-            border-radius: 4px;
+        .input-premium:focus {
+            background-color: white;
+            border-color: #fb923c;
+            box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.1);
         }
     </style>
 </head>
-<body>
-    <!-- Header with navigation icons -->
-    <div class="header">
-        <!-- Back button -->
-        <div class="nav-icon" onclick="goToDashboard()">
-            <svg viewBox="0 0 24 24">
-                <path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" />
-            </svg>
-        </div>
-        
-        <!-- Portfolio button -->
-        <div class="nav-icon" onclick="showPortfolio()">
-            <svg viewBox="0 0 24 24">
-                <path d="M19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M19,19H5V5H19V19M17,17H7V16H17V17M17,15H7V14H17V15M17,12H7V7H17V12Z" />
-            </svg>
-        </div>
+<body class="bg-[#f8f9fc] min-h-screen pb-20">
+
+    <!-- Sticky Header -->
+    <div class="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-gray-100 shadow-sm px-4 py-3 flex justify-between items-center">
+        <button onclick="goToDashboard()" class="w-10 h-10 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-slate-100 transition-colors shadow-sm border border-slate-100">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h1 class="text-lg font-black text-slate-800 tracking-tight">Pre-Launch Tokens</h1>
+        <button onclick="showPortfolio()" class="w-10 h-10 rounded-full bg-gradient-to-r from-red-500 to-orange-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/30 hover:scale-105 transition-transform active:scale-95">
+            <i class="fas fa-briefcase"></i>
+        </button>
     </div>
 
-    <!-- Main container -->
-    <div class="container">
-        <h1 class="title">🚀 Pre-Launch Tokens</h1>
-        <p class="subtitle">Get early access to the most promising tokens before they launch!</p>
-
-        <!-- Balance display -->
-        <div class="balance-container">
-            <div class="balance-label">Your Wallet Balance</div>
-            <div class="balance-amount" id="userBalance">₹0</div>
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 pt-6">
+        
+        <!-- Balance Card -->
+        <div class="bg-white rounded-3xl p-8 shadow-xl shadow-slate-200/50 border border-slate-100 mb-8 relative overflow-hidden group text-center fade-in">
+            <!-- Decorative Background -->
+            <div class="absolute top-0 right-0 w-64 h-64 bg-red-50 rounded-full -mr-20 -mt-20 blur-3xl opacity-60 group-hover:opacity-100 transition-opacity"></div>
+            <div class="absolute bottom-0 left-0 w-40 h-40 bg-orange-50 rounded-full -ml-10 -mb-10 blur-3xl opacity-60"></div>
+            
+            <div class="relative z-10">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Available Balance</p>
+                <h2 class="text-5xl font-black text-slate-800 tracking-tighter" id="userBalance">₹0</h2>
+                <p class="text-sm text-slate-500 mt-2 font-medium">Early access to revolutionary tokens</p>
+            </div>
         </div>
 
         <!-- Token Grid -->
-        <div class="token-grid" id="tokenGrid">
-            <!-- Tokens will be loaded here -->
+        <div id="tokenGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-10">
+            <!-- Tokens injected by JS -->
+            <div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-400">
+                <i class="fas fa-circle-notch fa-spin text-3xl mb-3 text-orange-500"></i>
+                <span class="text-sm font-medium">Loading Tokens...</span>
+            </div>
         </div>
     </div>
 
     <!-- Portfolio Modal -->
-    <div class="portfolio-modal" id="portfolioModal">
-        <div class="portfolio-content">
-            <button class="close-btn" onclick="closePortfolio()">&times;</button>
-            <h2 class="portfolio-title">🚀 Your Pre-Launch Portfolio</h2>
+    <div id="portfolioModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 modal-backdrop transition-opacity" onclick="closePortfolio()"></div>
+        <div class="absolute bottom-0 inset-x-0 md:top-1/2 md:bottom-auto md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-2xl w-full bg-[#f8f9fc] h-[85vh] md:h-[600px] rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden scale-in">
             
+            <!-- Modal Header -->
+            <div class="bg-white px-6 py-4 border-b border-slate-100 flex justify-between items-center shadow-sm z-10">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Your Portfolio</h2>
+                        <p class="text-xs text-slate-400">Pre-Launch Assets</p>
+                    </div>
+                </div>
+                <button class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 flex items-center justify-center transition-colors" onclick="closePortfolio()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
             <!-- Portfolio Stats -->
-            <div class="portfolio-stats" id="portfolioStats">
-                <div class="stat-card">
-                    <div class="stat-value" id="totalTokens">0</div>
-                    <div class="stat-label">Total Tokens</div>
+            <div class="grid grid-cols-3 gap-2 p-4 bg-white border-b border-slate-100">
+                <div class="text-center p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tokens</p>
+                    <p class="text-lg font-black text-slate-800 mt-1" id="totalTokens">0</p>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="totalValue">₹0</div>
-                    <div class="stat-label">Portfolio Value</div>
+                <div class="text-center p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Current Value</p>
+                    <p class="text-lg font-black text-emerald-500 mt-1" id="totalValue">₹0</p>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="totalInvested">₹0</div>
-                    <div class="stat-label">Total Invested</div>
+                <div class="text-center p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Invested</p>
+                    <p class="text-lg font-black text-slate-800 mt-1" id="totalInvested">₹0</p>
                 </div>
             </div>
-            
+
             <!-- Portfolio Grid -->
-            <div class="portfolio-grid" id="portfolioGrid">
+            <div id="portfolioGrid" class="flex-1 overflow-y-auto p-4 space-y-4">
                 <!-- User's tokens will be loaded here -->
             </div>
         </div>
     </div>
 
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[70] transition-all duration-300 opacity-0 translate-y-10 pointer-events-none">
+        <!-- Injected via JS -->
+    </div>
+
     <script>
         // Supabase configuration
-        const SUPA_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
-        const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
-        
-        const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+        var SUPA_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+        var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+        var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
         
         let currentUser = null;
         let userBalance = 0;
@@ -694,8 +178,8 @@
                 await loadTokens();
                 await loadUserPortfolio();
                 
-                // Start price updates every hour
-                priceUpdateInterval = setInterval(updatePrices, 3600000); // 1 hour
+                // Start price updates every hour (as per original logic)
+                priceUpdateInterval = setInterval(updatePrices, 3600000); 
                 
                 // Update countdown timers every second
                 setInterval(updateCountdowns, 1000);
@@ -796,7 +280,7 @@
             }
         }
 
-        // Render tokens
+        // Render tokens (Premium Tailwind UI)
         function renderTokens() {
             const grid = document.getElementById('tokenGrid');
             grid.innerHTML = '';
@@ -807,78 +291,83 @@
             });
         }
 
-        // Create token card
+        // Create token card HTML
         function createTokenCard(token) {
             const card = document.createElement('div');
-            card.className = 'token-card';
-            
-            const priceChange = Math.random() > 0.5 ? 
-                { direction: 'up', value: (Math.random() * 5).toFixed(2) } :
-                { direction: 'down', value: (Math.random() * 3).toFixed(2) };
+            card.className = 'bg-white rounded-3xl p-5 shadow-xl shadow-slate-200/50 border border-slate-100 relative group overflow-hidden hover:-translate-y-1 transition-all duration-300 fade-in';
             
             const launchDate = new Date(token.launch_date);
             const now = new Date();
             const isLaunched = now >= launchDate;
+            const badgeClass = isLaunched ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100';
+            const badgeText = isLaunched ? 'LAUNCHED' : 'PRE-LAUNCH';
+
+            const priceChange = Math.random() > 0.5 ? 
+                { direction: 'up', value: (Math.random() * 5).toFixed(2), class: 'text-emerald-500 bg-emerald-50' } :
+                { direction: 'down', value: (Math.random() * 3).toFixed(2), class: 'text-rose-500 bg-rose-50' };
             
             card.innerHTML = `
-                <div class="pre-launch-badge">${isLaunched ? 'LAUNCHED' : 'PRE-LAUNCH'}</div>
+                <div class="absolute top-4 right-4 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${badgeClass} shadow-sm">
+                    ${badgeText}
+                </div>
                 
-                <div class="token-header">
-                    <div class="token-icon">${getTokenEmoji(token.token_name)}</div>
-                    <div class="token-info">
-                        <h3>${token.token_name}</h3>
-                        <div class="token-symbol">${token.token_symbol}</div>
+                <div class="flex items-center gap-4 mb-5">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-100 to-white flex items-center justify-center text-3xl shadow-inner border border-slate-100">
+                        ${getTokenEmoji(token.token_name)}
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black text-slate-800 leading-tight">${token.token_name}</h3>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">${token.token_symbol}</span>
                     </div>
                 </div>
                 
-                <div class="token-description">${token.description || 'Revolutionary blockchain token with amazing potential'}</div>
+                <p class="text-xs text-slate-500 font-medium mb-5 line-clamp-2 min-h-[2.5em] leading-relaxed">
+                    ${token.description || 'Revolutionary blockchain token with amazing potential for early investors.'}
+                </p>
                 
-                <div class="price-section">
-                    <div class="current-price">₹${Number(token.current_price).toLocaleString()}</div>
-                    <div class="price-change price-${priceChange.direction}">
-                        ${priceChange.direction === 'up' ? '↗' : '↘'} ${priceChange.value}%
+                <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100 mb-4">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Current Price</span>
+                        <div class="flex items-center gap-1">
+                            <span class="${priceChange.class} px-1.5 py-0.5 rounded text-[10px] font-bold">
+                                ${priceChange.direction === 'up' ? '+' : '-'}${priceChange.value}%
+                            </span>
+                        </div>
+                    </div>
+                    <div class="text-2xl font-black text-slate-800">₹${Number(token.current_price).toLocaleString()}</div>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase mb-1">
+                        <span>Launch Countdown</span>
+                        <span class="text-orange-500 countdown-time" data-launch-date="${token.launch_date}">Loading...</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                        <div class="bg-gradient-to-r from-orange-400 to-red-500 h-full rounded-full w-2/3 pulse-soft"></div>
                     </div>
                 </div>
                 
-                <div class="launch-countdown" id="countdown-${token.id}">
-                    <div class="countdown-label">${isLaunched ? 'Launched' : 'Launches in'}</div>
-                    <div class="countdown-time" data-launch-date="${token.launch_date}">
-                        ${isLaunched ? 'Available Now!' : 'Loading...'}
+                <div class="space-y-3">
+                    <div class="relative">
+                        <input type="number" id="quantity-${token.id}" placeholder="Qty" min="1" step="1" 
+                            class="input-premium w-full rounded-xl px-4 py-3 text-sm font-bold text-slate-700 outline-none"
+                            oninput="calculateTotal(${token.id})">
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Tokens</span>
                     </div>
-                </div>
-                
-                <input type="number" class="quantity-input" id="quantity-${token.id}" 
-                       placeholder="Enter quantity" min="1" step="1" 
-                       oninput="calculateTotal(${token.id})">
-                
-                <div class="total-amount" id="total-${token.id}">
-                    Total: ₹0 (Min: ₹100)
-                </div>
-                
-                <div class="action-buttons">
-                    <button class="btn btn-buy" onclick="buyToken(${token.id})">
-                        🛒 Buy Token
+                    
+                    <div class="flex justify-between items-center px-2">
+                        <span class="text-xs font-bold text-slate-400">Total:</span>
+                        <span class="text-sm font-black text-slate-800" id="total-${token.id}">₹0</span>
+                    </div>
+
+                    <button class="w-full bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-slate-900/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2" onclick="buyToken(${token.id})">
+                        <span>Buy Now</span>
+                        <i class="fas fa-arrow-right text-xs"></i>
                     </button>
                 </div>
             `;
             
             return card;
-        }
-
-        // Get emoji for token
-        function getTokenEmoji(tokenName) {
-            const emojiMap = {
-                'FutureCoin': '🚀',
-                'NextGen': '⚡',
-                'InnovateCoin': '💡',
-                'TechToken': '🔮',
-                'SmartCoin': '🧠',
-                'QuantumCoin': '⚛️',
-                'CyberToken': '🤖',
-                'MetaToken': '🌐'
-            };
-            
-            return emojiMap[tokenName] || '🪙';
         }
 
         // Calculate total amount
@@ -892,13 +381,10 @@
             const quantity = parseInt(quantityInput.value) || 0;
             const total = quantity * Number(token.current_price);
             
-            totalElement.innerHTML = `Total: ₹${total.toLocaleString()} (Min: ₹100)`;
+            totalElement.textContent = `₹${total.toLocaleString()}`;
             
-            if (total >= 100) {
-                totalElement.style.color = '#2ed573';
-            } else {
-                totalElement.style.color = '#ff4757';
-            }
+            if (total >= 100) totalElement.classList.add('text-emerald-600');
+            else totalElement.classList.remove('text-emerald-600');
         }
 
         // Buy token
@@ -925,65 +411,41 @@
                     return;
                 }
                 
-                // Show loading state
-                const button = event.target;
-                const originalText = button.innerHTML;
-                button.innerHTML = '<span class="loading"></span> Buying...';
+                const button = event.currentTarget;
+                const originalContent = button.innerHTML;
+                button.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i>`;
                 button.disabled = true;
                 
-                // Record transaction
-                const { error: historyError } = await supabase
-                    .from('pre_launch_history')
-                    .insert({
-                        user_id: currentUser.id,
-                        token_id: tokenId,
-                        transaction_type: 'BUY',
-                        quantity: quantity,
-                        price_per_token: Number(token.current_price),
-                        total_amount: totalAmount,
-                        transaction_date: new Date().toISOString()
-                    });
+                const { error: historyError } = await supabase.from('pre_launch_history').insert({
+                    user_id: currentUser.id, token_id: tokenId, transaction_type: 'BUY',
+                    quantity: quantity, price_per_token: Number(token.current_price),
+                    total_amount: totalAmount, transaction_date: new Date().toISOString()
+                });
                 
-                if (historyError) {
-                    throw historyError;
-                }
+                if (historyError) throw historyError;
                 
-                // Update user balance
                 const newBalance = userBalance - totalAmount;
-                const { error: balanceError } = await supabase
-                    .from('user_wallets')
-                    .update({ balance: newBalance })
-                    .eq('uid', currentUser.id);
+                const { error: balanceError } = await supabase.from('user_wallets').update({ balance: newBalance }).eq('uid', currentUser.id);
                 
-                if (balanceError) {
-                    throw balanceError;
-                }
+                if (balanceError) throw balanceError;
                 
-                // Update local balance
                 userBalance = newBalance;
                 document.getElementById('userBalance').textContent = `₹${userBalance.toLocaleString()}`;
                 
-                // Clear input
                 quantityInput.value = '';
-                document.getElementById(`total-${tokenId}`).innerHTML = 'Total: ₹0 (Min: ₹100)';
+                document.getElementById(`total-${tokenId}`).textContent = '₹0';
                 
-                // Reload portfolio
                 await loadUserPortfolio();
-                
                 showToast(`Successfully purchased ${quantity} ${token.token_symbol}!`, 'success');
                 
-                // Reset button
-                button.innerHTML = originalText;
+                button.innerHTML = originalContent;
                 button.disabled = false;
                 
             } catch (error) {
                 console.error('Error buying token:', error);
                 showToast('Failed to purchase token', 'error');
-                
-                // Reset button
-                const button = event.target;
-                button.innerHTML = '🛒 Buy Token';
-                button.disabled = false;
+                const btn = event.target.closest('button');
+                if(btn) { btn.innerHTML = '<span>Buy Now</span><i class="fas fa-arrow-right text-xs"></i>'; btn.disabled = false; }
             }
         }
 
@@ -999,63 +461,40 @@
                 const token = portfolioItem.token;
                 const totalAmount = sellQuantity * Number(token.current_price);
                 
-                // Show loading state
-                const button = event.target;
-                const originalText = button.innerHTML;
-                button.innerHTML = '<span class="loading"></span> Selling...';
+                const button = event.currentTarget;
+                const originalContent = button.innerHTML;
+                button.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i>`;
                 button.disabled = true;
                 
-                // Record transaction
-                const { error: historyError } = await supabase
-                    .from('pre_launch_history')
-                    .insert({
-                        user_id: currentUser.id,
-                        token_id: tokenId,
-                        transaction_type: 'SELL',
-                        quantity: sellQuantity,
-                        price_per_token: Number(token.current_price),
-                        total_amount: totalAmount,
-                        transaction_date: new Date().toISOString()
-                    });
+                const { error: historyError } = await supabase.from('pre_launch_history').insert({
+                    user_id: currentUser.id, token_id: tokenId, transaction_type: 'SELL',
+                    quantity: sellQuantity, price_per_token: Number(token.current_price),
+                    total_amount: totalAmount, transaction_date: new Date().toISOString()
+                });
                 
-                if (historyError) {
-                    throw historyError;
-                }
+                if (historyError) throw historyError;
                 
-                // Update user balance
                 const newBalance = userBalance + totalAmount;
-                const { error: balanceError } = await supabase
-                    .from('user_wallets')
-                    .update({ balance: newBalance })
-                    .eq('uid', currentUser.id);
+                const { error: balanceError } = await supabase.from('user_wallets').update({ balance: newBalance }).eq('uid', currentUser.id);
                 
-                if (balanceError) {
-                    throw balanceError;
-                }
+                if (balanceError) throw balanceError;
                 
-                // Update local balance
                 userBalance = newBalance;
                 document.getElementById('userBalance').textContent = `₹${userBalance.toLocaleString()}`;
                 
-                // Reload portfolio
                 await loadUserPortfolio();
                 renderPortfolio();
                 updatePortfolioStats();
                 
-                showToast(`Successfully sold ${sellQuantity} ${token.token_symbol} for ₹${totalAmount.toLocaleString()}!`, 'success');
-                
-                // Reset button
-                button.innerHTML = originalText;
+                showToast(`Sold ${sellQuantity} ${token.token_symbol}!`, 'success');
+                button.innerHTML = originalContent;
                 button.disabled = false;
                 
             } catch (error) {
                 console.error('Error selling token:', error);
                 showToast('Failed to sell token', 'error');
-                
-                // Reset button
-                const button = event.target;
-                button.innerHTML = '💰 Sell';
-                button.disabled = false;
+                const btn = event.target.closest('button');
+                if(btn) { btn.innerHTML = 'Sell'; btn.disabled = false; }
             }
         }
 
@@ -1068,39 +507,33 @@
                 
                 if (diff <= 0) {
                     element.textContent = 'Launched!';
-                    element.parentElement.querySelector('.countdown-label').textContent = 'Status';
+                    element.className = 'text-emerald-500 font-bold countdown-time';
                 } else {
                     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
                     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                    
                     element.textContent = `${days}d ${hours}h ${minutes}m`;
                 }
             });
         }
 
-        // Update prices (simulate market fluctuation)
+        // Update prices (DB Sync)
         function updatePrices() {
             tokenList.forEach(async (token) => {
                 const basePrice = Number(token.base_price);
-                const maxChange = 0.1; // ±10% max change
+                const maxChange = 0.1; // ±10%
                 const change = (Math.random() - 0.5) * 2 * maxChange;
                 const newPrice = basePrice * (1 + change);
                 
-                // Update in database
-                await supabase
-                    .from('pre_launch_token')
-                    .update({ 
-                        current_price: newPrice,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', token.id);
+                await supabase.from('pre_launch_token').update({ 
+                    current_price: newPrice, updated_at: new Date().toISOString()
+                }).eq('id', token.id);
                 
                 token.current_price = newPrice;
             });
             
             renderTokens();
-            if (document.getElementById('portfolioModal').style.display === 'flex') {
+            if (!document.getElementById('portfolioModal').classList.contains('hidden')) {
                 renderPortfolio();
                 updatePortfolioStats();
             }
@@ -1110,22 +543,20 @@
         function showPortfolio() {
             renderPortfolio();
             updatePortfolioStats();
-            document.getElementById('portfolioModal').style.display = 'flex';
+            document.getElementById('portfolioModal').classList.remove('hidden');
         }
 
-        // Render portfolio
+        // Render portfolio items
         function renderPortfolio() {
             const grid = document.getElementById('portfolioGrid');
             grid.innerHTML = '';
             
             if (userPortfolio.length === 0) {
                 grid.innerHTML = `
-                    <div style="text-align: center; grid-column: 1/-1; opacity: 0.7; padding: 40px;">
-                        <div style="font-size: 3rem; margin-bottom: 15px;">🚀</div>
-                        <div>No pre-launch tokens yet!</div>
-                        <div style="margin-top: 10px; opacity: 0.8;">Start investing in the future of blockchain</div>
-                    </div>
-                `;
+                    <div class="text-center py-10 opacity-50">
+                        <i class="fas fa-rocket text-4xl text-slate-300 mb-2"></i>
+                        <p class="text-sm font-bold text-slate-400">No assets yet</p>
+                    </div>`;
                 return;
             }
             
@@ -1134,53 +565,48 @@
                 const quantity = item.quantity;
                 const currentValue = quantity * Number(token.current_price);
                 
-                const portfolioCard = document.createElement('div');
-                portfolioCard.className = 'portfolio-item';
+                const card = document.createElement('div');
+                card.className = 'bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between';
                 
-                portfolioCard.innerHTML = `
-                    <div class="portfolio-token-header">
-                        <div class="portfolio-token-icon">${getTokenEmoji(token.token_name)}</div>
-                        <div>
-                            <div class="portfolio-token-name">${token.token_name}</div>
-                            <div style="font-size: 0.8rem; opacity: 0.8;">${token.token_symbol}</div>
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-lg">
+                                    ${getTokenEmoji(token.token_name)}
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-sm leading-tight">${token.token_name}</h4>
+                                    <span class="text-[10px] text-slate-400 font-bold">${token.token_symbol}</span>
+                                </div>
+                            </div>
+                            <span class="bg-indigo-50 text-indigo-600 text-[10px] font-bold px-2 py-0.5 rounded-full">x${quantity}</span>
+                        </div>
+                        <p class="text-xs text-slate-500 font-medium mb-3">Value: <span class="text-emerald-600 font-bold">₹${currentValue.toLocaleString()}</span></p>
+                        
+                        <div class="flex gap-2">
+                            <input type="number" class="input-premium w-full rounded-lg px-2 py-1.5 text-xs font-bold" placeholder="Qty" id="sell-qty-${token.id}" min="1" max="${quantity}">
+                            <button class="bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold px-4 py-1.5 rounded-lg text-xs transition-colors" onclick="sellFromPortfolio(${token.id})">
+                                Sell
+                            </button>
                         </div>
                     </div>
-                    
-                    <div class="portfolio-quantity">Quantity: ${quantity.toLocaleString()}</div>
-                    <div class="portfolio-value">Current Value: ₹${currentValue.toLocaleString()}</div>
-                    <div style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 15px;">
-                        Price: ₹${Number(token.current_price).toLocaleString()} per token
-                    </div>
-                    
-                    <input type="number" class="portfolio-sell-input" 
-                           placeholder="Quantity to sell" min="1" max="${quantity}" 
-                           id="sell-qty-${token.id}">
-                    
-                    <div class="portfolio-actions">
-                        <button class="btn btn-sell" onclick="sellFromPortfolio(${token.id})">
-                            💰 Sell Tokens
-                        </button>
-                    </div>
                 `;
-                
-                grid.appendChild(portfolioCard);
+                grid.appendChild(card);
             });
         }
 
-        // Sell from portfolio
         function sellFromPortfolio(tokenId) {
             const sellInput = document.getElementById(`sell-qty-${tokenId}`);
             const sellQuantity = parseInt(sellInput.value);
             
             if (!sellQuantity || sellQuantity <= 0) {
-                showToast('Please enter a valid quantity to sell', 'error');
+                showToast('Enter quantity', 'error');
                 return;
             }
-            
             sellToken(tokenId, sellQuantity);
         }
 
-        // Update portfolio stats
         function updatePortfolioStats() {
             let totalTokens = 0;
             let totalValue = 0;
@@ -1197,51 +623,45 @@
             document.getElementById('totalInvested').textContent = `₹${Math.max(0, totalInvested).toLocaleString()}`;
         }
 
-        // Close portfolio
         function closePortfolio() {
-            document.getElementById('portfolioModal').style.display = 'none';
+            document.getElementById('portfolioModal').classList.add('hidden');
         }
 
-        // Show no tokens state
         function showNoTokens() {
             const grid = document.getElementById('tokenGrid');
             grid.innerHTML = `
-                <div class="no-tokens">
-                    <div class="no-tokens-icon">🚀</div>
-                    <div class="no-tokens-title">No Pre-Launch Tokens Available</div>
-                    <div class="no-tokens-text">
-                        We're working on bringing you the most exciting pre-launch opportunities.<br>
-                        Check back soon for exclusive early access to revolutionary tokens!
-                    </div>
+                <div class="col-span-full text-center py-16 bg-white rounded-3xl border border-dashed border-slate-300">
+                    <i class="fas fa-rocket text-4xl text-slate-200 mb-3"></i>
+                    <h3 class="text-slate-500 font-bold">No Pre-Launch Tokens</h3>
+                    <p class="text-xs text-slate-400 mt-1">Check back soon for new listings!</p>
                 </div>
             `;
         }
 
-        // Show toast notification
         function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.textContent = message;
+            const toast = document.getElementById('toast');
+            const bgClass = type === 'error' ? 'bg-rose-500' : 'bg-emerald-500';
+            const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
             
-            document.body.appendChild(toast);
+            toast.className = `fixed bottom-10 left-1/2 -translate-x-1/2 z-[70] transition-all duration-300 flex items-center gap-3 px-6 py-3 rounded-full shadow-2xl text-white font-bold text-sm min-w-[200px] justify-center ${bgClass}`;
+            toast.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
             
-            setTimeout(() => toast.classList.add('show'), 100);
+            requestAnimationFrame(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translate(-50%, 0)';
+            });
             
             setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => document.body.removeChild(toast), 300);
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, 20px)';
             }, 3000);
         }
 
-        // Navigation functions
         function goToDashboard() {
-            if (priceUpdateInterval) {
-                clearInterval(priceUpdateInterval);
-            }
+            if (priceUpdateInterval) clearInterval(priceUpdateInterval);
             window.location.href = 'dashboard.html';
         }
 
-        // Initialize when page loads
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
