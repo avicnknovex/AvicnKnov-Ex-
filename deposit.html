@@ -2,381 +2,161 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deposit | AvicnKnov</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Deposit - AvicnKnov Ex</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
     
     <style>
-        :root {
-            --primary-bg: #0f172a; /* Deep Dark Blue */
-            --card-bg: #1e293b;
-            --text-color: #ffffff;
-            --text-muted: #94a3b8;
-            --accent-gold: #fbbf24;
-            --accent-blue: #3b82f6;
-            --accent-green: #10b981;
-            --gradient-upi: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-            --gradient-crypto: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            --gradient-p2p: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
-        }
-
+        /* Premium Font Styling */
         body {
-            background-color: var(--primary-bg);
-            color: var(--text-color);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f8f9fc;
+            color: #1e293b;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* Header Section */
-        .header {
-            display: flex;
-            align-items: center;
-            padding: 20px;
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(10px);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        /* Hide Scrollbar */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Animations */
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .slide-up { animation: slideUp 0.4s ease-out forwards; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { 
+            from { transform: translateY(15px); opacity: 0; } 
+            to { transform: translateY(0); opacity: 1; } 
         }
-
-        .back-btn {
-            color: var(--text-color);
-            font-size: 1.2rem;
-            text-decoration: none;
-            padding: 10px;
-            border-radius: 50%;
-            transition: background 0.3s ease;
-        }
-
-        .back-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .page-title {
-            flex-grow: 1;
-            text-align: center;
-            font-size: 1.2rem;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            margin-right: 34px; /* To center title perfectly */
-        }
-
-        /* Main Container */
-        .container {
-            padding: 20px;
-            flex: 1;
-            max-width: 600px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        /* Deposit Options Grid */
-        .deposit-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .deposit-card {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 20px;
-            border-radius: 16px;
-            text-decoration: none;
-            color: white;
-            transition: transform 0.2s, box-shadow 0.2s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .deposit-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .card-content {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            z-index: 1;
-        }
-
-        .icon-box {
-            width: 50px;
-            height: 50px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-        }
-
-        .card-text h3 {
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .card-text p {
-            font-size: 0.8rem;
-            opacity: 0.9;
-        }
-
-        .arrow-icon {
-            background: rgba(255, 255, 255, 0.2);
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-        }
-
-        /* Specific Gradients */
-        .card-upi { background: var(--gradient-upi); }
-        .card-crypto { background: var(--gradient-crypto); }
-        .card-p2p { background: var(--gradient-p2p); }
-
-        /* Info Section */
-        .info-section {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 16px;
-            margin-bottom: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .info-title {
-            color: var(--accent-gold);
-            font-size: 0.9rem;
-            margin-bottom: 10px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .info-text {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            line-height: 1.6;
-            margin-bottom: 10px;
-        }
-
-        /* Support Section */
-        .support-section {
-            text-align: center;
-            margin-top: 20px;
-            padding-bottom: 30px;
-        }
-
-        .support-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--accent-blue);
-            padding: 12px 25px;
-            border-radius: 30px;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 0.9rem;
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            transition: all 0.3s;
-            margin-bottom: 20px;
-        }
-
-        .support-btn:hover {
-            background: rgba(59, 130, 246, 0.1);
-        }
-
-        /* Email Box */
-        .email-box-container {
-            background: linear-gradient(to right, #2c3e50, #000000);
-            padding: 1px; /* Border gradient hack */
-            border-radius: 12px;
-            margin-top: 15px;
-            cursor: pointer;
-        }
-
-        .email-box {
-            background: var(--card-bg);
-            padding: 15px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .email-content {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .email-label {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-        }
-
-        .email-address {
-            font-size: 0.9rem;
-            color: var(--text-color);
-            font-weight: 500;
-            word-break: break-all;
-        }
-
-        .copy-icon {
-            color: var(--accent-gold);
-            font-size: 1.1rem;
-        }
-
-        /* Toast Notification */
-        .toast {
-            visibility: hidden;
-            min-width: 250px;
-            background-color: #10b981;
-            color: white;
-            text-align: center;
-            border-radius: 50px;
-            padding: 16px;
-            position: fixed;
-            z-index: 1000;
-            left: 50%;
-            bottom: 30px;
-            transform: translateX(-50%);
-            font-size: 0.9rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            opacity: 0;
-            transition: opacity 0.3s, bottom 0.3s;
-        }
-
-        .toast.show {
-            visibility: visible;
-            opacity: 1;
-            bottom: 50px;
-        }
-
     </style>
 </head>
-<body>
+<body class="bg-[#f8f9fc] pb-10">
 
-    <header class="header">
-        <a href="dashboard.html" onclick="handleBack(event)" class="back-btn">
-            <i class="fa-solid fa-arrow-left"></i>
-        </a>
-        <div class="page-title">Add Funds</div>
-    </header>
+    <!-- Sticky Header -->
+    <div class="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm px-4 py-4 flex items-center justify-between">
+        <button onclick="handleBack(event)" class="w-10 h-10 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-slate-100 transition-colors shadow-sm border border-slate-100">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h1 class="text-xl font-black text-slate-800 tracking-tight">Add Funds</h1>
+        <div class="w-10"></div> <!-- Spacer -->
+    </div>
 
-    <main class="container">
+    <!-- Main Content -->
+    <div class="max-w-2xl mx-auto px-4 pt-6">
         
-        <div class="deposit-grid">
-            <a href="deposit-upi.html" class="deposit-card card-upi">
-                <div class="card-content">
-                    <div class="icon-box">
-                        <i class="fa-solid fa-mobile-screen-button"></i>
+        <!-- Options Grid -->
+        <div class="grid grid-cols-1 gap-4 mb-8">
+            
+            <!-- UPI -->
+            <a href="deposit-upi.html" class="slide-up group bg-white p-5 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex items-center justify-between relative overflow-hidden" style="animation-delay: 0s;">
+                <div class="flex items-center gap-4 relative z-10">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl shadow-lg shadow-indigo-500/30">
+                        <i class="fas fa-mobile-screen-button"></i>
                     </div>
-                    <div class="card-text">
-                        <h3>UPI Payment</h3>
-                        <p>Instant Transfer</p>
-                    </div>
-                </div>
-                <div class="arrow-icon">
-                    <i class="fa-solid fa-chevron-right"></i>
-                </div>
-            </a>
-
-            <a href="deposit-crypto.html" class="deposit-card card-crypto">
-                <div class="card-content">
-                    <div class="icon-box">
-                        <i class="fa-brands fa-bitcoin"></i>
-                    </div>
-                    <div class="card-text">
-                        <h3>Deposit Crypto</h3>
-                        <p>USDT, BTC, ETH</p>
+                    <div>
+                        <h3 class="text-lg font-black text-slate-800 mb-0.5 group-hover:text-indigo-600 transition-colors">UPI Payment</h3>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Instant Transfer</p>
                     </div>
                 </div>
-                <div class="arrow-icon">
-                    <i class="fa-solid fa-chevron-right"></i>
+                <div class="w-10 h-10 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-colors">
+                    <i class="fas fa-chevron-right"></i>
                 </div>
             </a>
 
-            <a href="deposit-p2p.html" class="deposit-card card-p2p">
-                <div class="card-content">
-                    <div class="icon-box">
-                        <i class="fa-solid fa-users"></i>
+            <!-- Crypto -->
+            <a href="deposit-crypto.html" class="slide-up group bg-white p-5 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex items-center justify-between relative overflow-hidden" style="animation-delay: 0.1s;">
+                <div class="flex items-center gap-4 relative z-10">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-white text-2xl shadow-lg shadow-orange-500/30">
+                        <i class="fab fa-bitcoin"></i>
                     </div>
-                    <div class="card-text">
-                        <h3>P2P Trading</h3>
-                        <p>Zero Fees</p>
+                    <div>
+                        <h3 class="text-lg font-black text-slate-800 mb-0.5 group-hover:text-amber-600 transition-colors">Deposit Crypto</h3>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">USDT, BTC, ETH</p>
                     </div>
                 </div>
-                <div class="arrow-icon">
-                    <i class="fa-solid fa-chevron-right"></i>
+                <div class="w-10 h-10 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-amber-50 group-hover:text-amber-500 transition-colors">
+                    <i class="fas fa-chevron-right"></i>
                 </div>
             </a>
+
+            <!-- P2P -->
+            <a href="deposit-p2p.html" class="slide-up group bg-white p-5 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex items-center justify-between relative overflow-hidden" style="animation-delay: 0.2s;">
+                <div class="flex items-center gap-4 relative z-10">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-400 to-green-600 flex items-center justify-center text-white text-2xl shadow-lg shadow-emerald-500/30">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black text-slate-800 mb-0.5 group-hover:text-emerald-600 transition-colors">P2P Trading</h3>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Zero Fees</p>
+                    </div>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-emerald-50 group-hover:text-emerald-500 transition-colors">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </a>
+
         </div>
 
-        <div class="info-section">
-            <div class="info-title">
-                <i class="fa-solid fa-shield-halved"></i> 
-                Secure Payments by AvicnKnov
+        <!-- Info Section -->
+        <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm mb-8 fade-in" style="animation-delay: 0.3s;">
+            <div class="flex items-center gap-2 mb-3">
+                <i class="fas fa-shield-halved text-blue-500 text-lg"></i>
+                <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wide">Secure Payments by AvicnKnov</h3>
             </div>
-            <p class="info-text">
+            <p class="text-sm text-slate-500 leading-relaxed mb-4">
                 Experience fast and seamless payment support on <strong>AvicnKnov</strong>. Your funds are deposited safely into your account. You can use any of the options above to make a deposit.
             </p>
-            <p class="info-text">
-                <strong>Note:</strong> Occasionally, our payment processor might be slightly slow. Please do not panic. Your payment will be successfully transferred if you have followed the deposit process correctly.
-            </p>
+            <div class="bg-amber-50 rounded-xl p-3 border border-amber-100 flex gap-3 items-start">
+                <i class="fas fa-info-circle text-amber-500 mt-0.5"></i>
+                <p class="text-xs text-amber-800 font-medium leading-relaxed">
+                    <strong>Note:</strong> Occasionally, our payment processor might be slightly slow. Please do not panic. Your payment will be successfully transferred if you have followed the deposit process correctly.
+                </p>
+            </div>
         </div>
 
-        <div class="support-section">
-            <p class="info-text" style="text-align: center; margin-bottom: 15px;">
-                Facing any issues with your deposit or payment? <br>
-                Visit our support center immediately for a quick resolution.
+        <!-- Support Section -->
+        <div class="text-center fade-in" style="animation-delay: 0.4s;">
+            <p class="text-sm text-slate-500 font-medium mb-4">
+                Facing any issues with your deposit or payment?<br>
+                Visit our support center immediately.
             </p>
             
-            <a href="help.html" class="support-btn">
-                <i class="fa-solid fa-headset"></i> Help & Support
+            <a href="help.html" class="inline-flex items-center gap-2 bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600 px-6 py-3 rounded-full text-sm font-bold transition-all mb-6">
+                <i class="fas fa-headset"></i> Help & Support
             </a>
 
-            <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
-                <p class="info-text" style="text-align: center;">
-                    Or contact us directly via email. Share your problem, and we will get back to you shortly.
-                </p>
+            <div class="border-t border-slate-200 pt-6">
+                <p class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-4">Direct Support Email</p>
 
-                <div class="email-box-container" onclick="copyEmail()">
-                    <div class="email-box">
-                        <div class="email-content">
-                            <span class="email-label">Official Support Email</span>
-                            <span class="email-address">help.avicnkvonteam@gmail.com</span>
+                <div onclick="copyEmail()" class="bg-slate-900 text-white p-1 rounded-2xl cursor-pointer group active:scale-95 transition-transform max-w-sm mx-auto">
+                    <div class="bg-slate-800 rounded-xl p-4 flex items-center justify-between border border-slate-700 group-hover:border-slate-600 transition-colors">
+                        <div class="text-left">
+                            <span class="block text-[10px] text-slate-400 uppercase font-bold mb-1">Official Support</span>
+                            <span class="block text-sm font-mono font-bold text-white break-all">help.avicnkvonteam@gmail.com</span>
                         </div>
-                        <i class="fa-regular fa-copy copy-icon"></i>
+                        <div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                            <i class="far fa-copy"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-    </main>
+    </div>
 
-    <div id="toast" class="toast">Email Copied Successfully!</div>
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 opacity-0 translate-y-10 pointer-events-none bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 w-max max-w-[90%]">
+        <i class="fas fa-check-circle text-emerald-400"></i>
+        <span class="text-sm font-bold">Email Copied Successfully!</span>
+    </div>
 
     <script>
-        // --- Added handleBack function to fix navigation ---
+        // --- Navigation Logic ---
         function handleBack(event) {
             if (event) event.preventDefault();
             if (window.history.length > 1 && document.referrer !== "") {
@@ -386,13 +166,12 @@
             }
         }
 
+        // --- Copy Logic ---
         function copyEmail() {
             const email = "help.avicnkvonteam@gmail.com";
             
-            // Copy to clipboard
             navigator.clipboard.writeText(email).then(() => {
                 showToast();
-                // Optional: Open Mail client after delay
                 setTimeout(() => {
                     window.location.href = "mailto:" + email;
                 }, 1000);
@@ -401,10 +180,14 @@
             });
         }
 
+        // --- Toast Logic ---
         function showToast() {
-            var toast = document.getElementById("toast");
-            toast.className = "toast show";
-            setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+            const toast = document.getElementById("toast");
+            toast.classList.remove("opacity-0", "translate-y-10");
+            
+            setTimeout(() => {
+                toast.classList.add("opacity-0", "translate-y-10");
+            }, 3000);
         }
     </script>
 
