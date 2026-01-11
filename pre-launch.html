@@ -370,6 +370,16 @@
             return card;
         }
 
+        // Get emoji for token
+        function getTokenEmoji(tokenName) {
+            const emojiMap = {
+                'FutureCoin': '🚀', 'NextGen': '⚡', 'InnovateCoin': '💡',
+                'TechToken': '🔮', 'SmartCoin': '🧠', 'QuantumCoin': '⚛️',
+                'CyberToken': '🤖', 'MetaToken': '🌐'
+            };
+            return emojiMap[tokenName] || '🪙';
+        }
+
         // Calculate total amount
         function calculateTotal(tokenId) {
             const quantityInput = document.getElementById(`quantity-${tokenId}`);
