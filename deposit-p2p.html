@@ -2,20 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>P2P Deposit - AvicnKnov Exchange</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>P2P Deposit - AvicnKnov Ex</title>
     
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- Fonts -->
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-      @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
-
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+      
       body {
-        font-family: 'Inter', sans-serif;
-        background-color: #020617; /* Slate 950 */
-        color: white;
+        font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        background-color: #f8f9fc;
+        color: #1e293b;
+        -webkit-font-smoothing: antialiased;
       }
+      
       .font-mono { font-family: 'JetBrains Mono', monospace; }
 
       /* Animations */
@@ -25,38 +28,22 @@
       @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
       @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-      /* Glassmorphism */
-      .glass-panel {
-        background: rgba(15, 23, 42, 0.6);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(51, 65, 85, 0.5);
+      /* Premium Shine Animation for Button */
+      @keyframes shine {
+        0% { transform: translateX(-100%); }
+        20% { transform: translateX(100%); }
+        100% { transform: translateX(100%); }
       }
-
-      /* Premium Purple Glow Button */
-      .premium-p2p-btn {
-        position: relative;
-        overflow: hidden;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      .premium-p2p-btn:hover {
-        box-shadow: 0 0 25px rgba(168, 85, 247, 0.4);
-        transform: translateY(-3px);
-      }
-      .premium-p2p-btn::after {
+      .shine-effect::after {
         content: '';
         position: absolute;
-        top: -50%;
-        left: -100%;
+        top: 0;
+        left: 0;
         width: 100%;
-        height: 200%;
+        height: 100%;
         background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-        transform: rotate(25deg);
-        animation: premium-shine 4s infinite;
-      }
-      @keyframes premium-shine {
-        0% { left: -100%; }
-        20% { left: 100%; }
-        100% { left: 100%; }
+        transform: translateX(-100%);
+        animation: shine 3s infinite;
       }
     </style>
 
@@ -72,7 +59,7 @@
     
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body>
+<body class="bg-[#f8f9fc] pb-12">
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
@@ -87,21 +74,14 @@
             const [copied, setCopied] = useState(false);
             const supportEmail = "help.avicnkvonteam@gmail.com";
 
-            // --- Navigation ---
-const handleBack = () => {
-    /**
-     * window.history.length > 1 check karta hai ki kya pichhe jaane ke liye koi page hai.
-     * document.referrer check karta hai ki user kisi link se aaya hai ya direct URL se.
-     */
-    if (window.history.length > 1 && document.referrer !== "") {
-        // User jahan se aaya tha (Trade, Assets, ya Dashboard), wahi wapas bhej dega 
-        // Isse Main HTML ke icons aur state disturb nahi honge.
-        window.history.back();
-    } else {
-        // Agar koi history nahi milti (rare case), to default dashboard par bhej dega.
-        window.location.href = 'dashboard.html';
-    }
-};
+            // --- Navigation Logic (Preserved) ---
+            const handleBack = () => {
+                if (window.history.length > 1 && document.referrer !== "") {
+                    window.history.back();
+                } else {
+                    window.location.href = 'dashboard.html';
+                }
+            };
 
             const handleSupport = () => {
                 window.location.href = 'help.html#/help';
@@ -118,70 +98,65 @@ const handleBack = () => {
             };
 
             return (
-                <div className="min-h-screen bg-slate-950 text-white relative overflow-hidden pb-12">
+                <div className="min-h-screen text-slate-800 relative overflow-hidden">
                     
-                    {/* Background Ambience */}
-                    <div className="fixed inset-0 pointer-events-none">
-                        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px]"></div>
-                        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px]"></div>
-                    </div>
-
-                    <div className="relative z-10 max-w-2xl mx-auto px-4 sm:px-6">
-                        
-                        {/* Header */}
-                        <header className="pt-6 pb-8 flex items-center fade-in">
+                    {/* Sticky Header */}
+                    <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm px-4 py-4">
+                        <div className="max-w-2xl mx-auto flex items-center justify-between">
                             <button 
                                 onClick={handleBack} 
-                                className="p-2.5 rounded-full bg-slate-900 border border-slate-700 hover:bg-slate-800 transition-all group"
+                                className="w-10 h-10 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-slate-100 transition-colors shadow-sm border border-slate-100"
                             >
-                                <ArrowLeft className="w-5 h-5 text-gray-400 group-hover:text-white" />
+                                <ArrowLeft className="w-5 h-5" />
                             </button>
-                            <h1 className="ml-4 text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-300">
+                            <h1 className="text-xl font-black text-slate-800 tracking-tight">
                                 P2P Deposit
                             </h1>
-                        </header>
+                            <div className="w-10"></div>
+                        </div>
+                    </div>
 
+                    <div className="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 pt-6">
+                        
                         {/* AI & Features Section */}
                         <section className="space-y-6 slide-up">
-                            <div className="glass-panel p-6 rounded-2xl relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl group-hover:bg-purple-500/30 transition-all"></div>
+                            <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden">
+                                {/* Decorative Blur */}
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-50 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
                                 
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg shadow-lg shadow-purple-900/20">
-                                        <Bot className="w-6 h-6 text-white" />
+                                <div className="flex items-center gap-4 mb-4 relative z-10">
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/20 text-white">
+                                        <Bot className="w-6 h-6" />
                                     </div>
-                                    <h2 className="text-xl font-bold text-white">AI-Powered P2P Trading</h2>
+                                    <h2 className="text-lg font-black text-slate-800">AI-Powered P2P</h2>
                                 </div>
 
-                                <p className="text-slate-300 text-sm leading-relaxed mb-6">
-                                    We have built this P2P system to be highly safe and secure. Transactions here are incredibly fast. 
-                                    For your benefit, we have integrated an <span className="text-purple-400 font-bold">AI Assistant</span> 
-                                    that helps you buy and sell orders efficiently. This allows you to trade with ease and significantly 
-                                    reduces the chance of scams.
+                                <p className="text-slate-500 text-sm leading-relaxed mb-6 font-medium relative z-10">
+                                    Our P2P system is built for speed and security. We have integrated an <span className="text-purple-600 font-bold">AI Assistant</span> that helps facilitate trades efficiently, reducing the chance of scams and ensuring smooth transactions.
                                 </p>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="flex items-center gap-2 text-xs text-slate-400">
-                                        <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                                <div className="grid grid-cols-2 gap-4 relative z-10">
+                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                                        <ShieldCheck className="w-4 h-4 text-emerald-500" />
                                         <span>Scam Protection</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-xs text-slate-400">
-                                        <Zap className="w-4 h-4 text-yellow-400" />
+                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                                        <Zap className="w-4 h-4 text-amber-500" />
                                         <span>Fast Transactions</span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* SPECIFIC DISCLAIMER FOR DEPOSIT */}
-                            <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-5">
+                            {/* Safety Notice */}
+                            <div className="bg-amber-50 border border-amber-100 rounded-3xl p-5 shadow-sm">
                                 <div className="flex items-start gap-3">
-                                    <AlertTriangle className="w-6 h-6 text-amber-500 shrink-0 mt-1" />
+                                    <div className="bg-amber-100 p-2 rounded-full shrink-0">
+                                        <AlertTriangle className="w-5 h-5 text-amber-600" />
+                                    </div>
                                     <div>
-                                        <h3 className="text-base font-bold text-amber-500 mb-1">Safety Notice</h3>
-                                        <p className="text-xs text-slate-300 leading-relaxed">
-                                            You can deposit funds here using P2P. However, please be aware that 
-                                            <span className="text-white font-semibold"> some transactions are safe, and some may not be. </span> 
-                                            It is your choice to proceed. Our team will not be responsible for any issues.
+                                        <h3 className="text-sm font-bold text-amber-800 mb-1">Safety Notice</h3>
+                                        <p className="text-xs text-amber-700/80 leading-relaxed font-medium">
+                                            You can deposit funds via P2P. Please be aware that while we strive for safety, P2P transactions involve counterparties. <span className="font-bold">Trade responsibly.</span>
                                         </p>
                                     </div>
                                 </div>
@@ -189,38 +164,36 @@ const handleBack = () => {
                         </section>
 
                         {/* Help & Support Section */}
-                        <section className="mt-10 slide-up" style={{ animationDelay: '0.1s' }}>
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-semibold text-white">Need Help?</h3>
+                        <section className="mt-8 slide-up" style={{ animationDelay: '0.1s' }}>
+                            <div className="flex items-center justify-between mb-4 px-1">
+                                <h3 className="text-lg font-bold text-slate-800">Need Help?</h3>
                                 <button 
                                     onClick={handleSupport}
-                                    className="flex items-center gap-2 text-xs font-bold text-purple-400 hover:text-purple-300 transition-colors bg-purple-500/10 px-3 py-1.5 rounded-full"
+                                    className="flex items-center gap-2 text-xs font-bold text-purple-600 hover:text-purple-700 transition-colors bg-purple-50 hover:bg-purple-100 px-4 py-2 rounded-full"
                                 >
                                     <Headphones className="w-3.5 h-3.5" />
                                     Help Center
                                 </button>
                             </div>
 
-                            <div className="glass-panel p-6 rounded-2xl">
-                                <p className="text-sm text-slate-400 mb-6 leading-relaxed">
-                                    If you face any problems with the P2P system, you can visit our Help & Support section. 
-                                    We are ready to assist you with any P2P-related issues. For the fastest response, 
-                                    please contact us directly via email.
+                            <div className="bg-white rounded-3xl border border-slate-100 p-5 shadow-sm">
+                                <p className="text-slate-500 text-sm mb-5 leading-relaxed font-medium">
+                                    Facing issues with P2P? Our support team is ready to assist. Contact us directly for the fastest response.
                                 </p>
 
-                                {/* Premium Email Box */}
+                                {/* Email Copy Box (Dark Contrast for Emphasis) */}
                                 <div 
                                     onClick={handleCopyEmail}
-                                    className="group cursor-pointer relative overflow-hidden rounded-xl border border-slate-700 bg-slate-900/80 p-4 transition-all duration-300 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10"
+                                    className="group cursor-pointer relative overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 p-1 transition-transform active:scale-95 duration-200"
                                 >
-                                    <div className="flex items-center justify-between relative z-10">
+                                    <div className="bg-slate-800 rounded-xl p-4 flex items-center justify-between border border-slate-700 group-hover:border-slate-600 transition-colors">
                                         <div className="flex items-center gap-4 overflow-hidden">
-                                            <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center group-hover:bg-purple-600 transition-colors duration-300">
-                                                <Mail className="w-5 h-5 text-slate-300 group-hover:text-white" />
+                                            <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center group-hover:bg-purple-600 text-slate-300 group-hover:text-white transition-colors duration-300">
+                                                <Mail className="w-5 h-5" />
                                             </div>
                                             <div className="flex flex-col overflow-hidden">
-                                                <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-0.5">Direct Support Email</span>
-                                                <span className="text-sm sm:text-base font-mono font-medium text-white truncate group-hover:text-purple-100 transition-colors">
+                                                <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-0.5">Direct Support Email</span>
+                                                <span className="text-sm font-mono font-bold text-white truncate">
                                                     {supportEmail}
                                                 </span>
                                             </div>
@@ -235,11 +208,10 @@ const handleBack = () => {
                                         </div>
                                     </div>
                                     
-                                    {/* Success Toast */}
                                     {copied && (
-                                        <div className="absolute inset-0 bg-emerald-500/10 flex items-center justify-center backdrop-blur-[2px] z-20">
-                                            <div className="bg-emerald-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg flex items-center gap-1">
-                                                <CheckCircle2 className="w-3 h-3" /> Copied!
+                                        <div className="absolute inset-0 bg-slate-900/90 flex items-center justify-center backdrop-blur-[1px] z-20 rounded-2xl">
+                                            <div className="flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-full font-bold shadow-lg text-xs">
+                                                <CheckCircle2 className="w-4 h-4" /> Copied!
                                             </div>
                                         </div>
                                     )}
@@ -248,27 +220,27 @@ const handleBack = () => {
                         </section>
 
                         {/* NEW PREMIUM P2P MARKET BUTTON */}
-                        <div className="mt-10 slide-up" style={{ animationDelay: '0.2s' }}>
+                        <div className="mt-8 mb-8 slide-up" style={{ animationDelay: '0.2s' }}>
                             <button 
                                 onClick={handleOpenP2PMarket}
-                                className="premium-p2p-btn w-full bg-gradient-to-r from-purple-700 via-purple-600 to-indigo-700 p-[1.5px] rounded-2xl shadow-2xl shadow-purple-900/30 group"
+                                className="w-full relative overflow-hidden bg-gradient-to-r from-violet-600 to-indigo-600 rounded-3xl p-1 shadow-xl shadow-indigo-500/30 group transition-transform active:scale-95 shine-effect"
                             >
-                                <div className="bg-slate-950/40 group-hover:bg-transparent transition-all duration-300 rounded-[15px] py-4 px-6 flex items-center justify-between">
+                                <div className="bg-white/10 backdrop-blur-sm rounded-[20px] p-5 flex items-center justify-between">
                                     <div className="flex items-center gap-4">
-                                        <div className="bg-purple-500/20 p-2.5 rounded-xl group-hover:bg-white/20 transition-all">
-                                            <ShoppingCart className="w-6 h-6 text-purple-300 group-hover:text-white" />
+                                        <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-white shadow-inner">
+                                            <ShoppingCart className="w-6 h-6" />
                                         </div>
                                         <div className="text-left">
-                                            <h4 className="text-white font-extrabold text-lg leading-none mb-1 group-hover:translate-x-1 transition-transform">Buy via P2P Market</h4>
-                                            <span className="text-purple-300/80 text-[10px] font-bold uppercase tracking-[0.15em] group-hover:text-white transition-colors">Start Fast Deposit</span>
+                                            <h4 className="text-white font-black text-lg leading-tight mb-1">Buy via P2P Market</h4>
+                                            <span className="text-indigo-100 text-[10px] font-bold uppercase tracking-widest">Start Fast Deposit</span>
                                         </div>
                                     </div>
-                                    <Sparkles className="w-5 h-5 text-purple-400 group-hover:text-white animate-pulse" />
+                                    <Sparkles className="w-6 h-6 text-yellow-300 animate-pulse" />
                                 </div>
                             </button>
                             <div className="mt-4 flex items-center justify-center gap-2">
-                                <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-ping"></span>
-                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Secure AI Verification Active</p>
+                                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Secure AI Verification Active</p>
                             </div>
                         </div>
 
@@ -282,4 +254,3 @@ const handleBack = () => {
     </script>
 </body>
 </html>
-
