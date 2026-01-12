@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transactions - AvicnKnov Exchange</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Transactions - AvicnKnov Ex</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,18 +13,18 @@
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
       
       body {
-        font-family: 'Inter', sans-serif;
-        background-color: #020617; /* Slate 950 */
-        color: white;
+        font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        background-color: #f8f9fc;
+        color: #1e293b;
+        -webkit-font-smoothing: antialiased;
       }
       
       /* Mono font for IDs and Numbers */
       .font-mono { font-family: 'JetBrains Mono', monospace; }
 
       /* Custom scrollbar */
-      ::-webkit-scrollbar { width: 5px; }
-      ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+      .scrollbar-hide::-webkit-scrollbar { display: none; }
+      .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       
       /* Animations */
       .fade-in { animation: fadeIn 0.4s ease-out forwards; }
@@ -42,8 +42,7 @@
       }
       .tx-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
-        border-color: rgba(59, 130, 246, 0.3);
+        box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.05);
       }
     </style>
 
@@ -62,7 +61,7 @@
     <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body>
+<body class="bg-[#f8f9fc] pb-10">
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
@@ -72,7 +71,7 @@
         import { 
             ArrowLeft, Search, Filter, ArrowDownLeft, ArrowUpRight, 
             Copy, CheckCircle2, Clock, XCircle, Loader2, AlertCircle, 
-            HelpCircle, Calendar, RefreshCw
+            HelpCircle, Calendar, RefreshCw, FileText
         } from 'lucide-react';
 
         // --- Supabase Configuration ---
@@ -105,20 +104,13 @@
             const [filter, setFilter] = useState('all'); 
 
             // --- Navigation ---
-const handleBack = () => {
-    /**
-     * window.history.length > 1 check karta hai ki kya pichhe jaane ke liye koi page hai.
-     * document.referrer check karta hai ki user kisi link se aaya hai ya direct URL se.
-     */
-    if (window.history.length > 1 && document.referrer !== "") {
-        // User jahan se aaya tha (Trade, Assets, ya Dashboard), wahi wapas bhej dega 
-        // Isse Main HTML ke icons aur state disturb nahi honge.
-        window.history.back();
-    } else {
-        // Agar koi history nahi milti (rare case), to default dashboard par bhej dega.
-        window.location.href = 'dashboard.html';
-    }
-};
+            const handleBack = () => {
+                if (window.history.length > 1 && document.referrer !== "") {
+                    window.history.back();
+                } else {
+                    window.location.href = 'dashboard.html';
+                }
+            };
 
             const handleReport = () => {
                 window.location.href = 'help.html#/help';
@@ -149,10 +141,7 @@ const handleBack = () => {
                         let needsUpdate = false;
                         let updatePayload = {};
 
-                        // REMOVED: Order ID generation
-                        // REMOVED: Description DB updates
-
-                        // A. Check 24 Hour Expiry for Pending (KEEP)
+                        // Check 24 Hour Expiry for Pending (KEEP)
                         const createdTime = new Date(updatedTx.created_at).getTime();
                         const currentTime = Date.now();
                         const hoursDiff = (currentTime - createdTime) / (1000 * 60 * 60);
@@ -202,64 +191,59 @@ const handleBack = () => {
             });
 
             return (
-                <div className="min-h-screen bg-slate-950 text-white relative overflow-x-hidden pb-10">
+                <div className="min-h-screen text-slate-800 relative">
                     
-                    {/* Background Ambience */}
-                    <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-                        <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-blue-600/5 rounded-full blur-[120px]"></div>
-                        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-emerald-600/5 rounded-full blur-[120px]"></div>
-                    </div>
-
-                    <div className="relative z-10 max-w-2xl mx-auto px-4 sm:px-6">
-                        
-                        {/* Header Section */}
-                        <div className="sticky top-0 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50 z-30 pt-6 pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6 mb-6">
+                    {/* Sticky Header */}
+                    <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm px-4 py-4">
+                        <div className="max-w-2xl mx-auto">
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
                                     <button 
                                         onClick={handleBack} 
-                                        className="p-2.5 rounded-full bg-slate-900 border border-slate-700 hover:bg-slate-800 hover:border-slate-600 transition-all active:scale-95 group"
+                                        className="w-10 h-10 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-slate-100 transition-colors shadow-sm border border-slate-100"
                                     >
-                                        <ArrowLeft className="w-5 h-5 text-slate-400 group-hover:text-white" />
+                                        <ArrowLeft className="w-5 h-5" />
                                     </button>
-                                    <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                                        Transactions
-                                    </h1>
+                                    <h1 className="text-xl font-black text-slate-800 tracking-tight">Transactions</h1>
                                 </div>
                                 <button 
                                     onClick={processAndFetchTransactions} 
-                                    className="p-2 text-slate-500 hover:text-blue-400 hover:bg-slate-900 rounded-full transition-all"
+                                    className="w-10 h-10 rounded-full bg-slate-50 text-slate-500 hover:text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-all shadow-sm border border-slate-100"
                                 >
                                     <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
                                 </button>
                             </div>
 
                             {/* Filter Tabs */}
-                            <div className="flex p-1 bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden">
+                            <div className="flex p-1 bg-slate-100 rounded-xl overflow-hidden shadow-inner">
                                 <FilterTab label="All" active={filter === 'all'} onClick={() => setFilter('all')} />
                                 <FilterTab label="Deposits" active={filter === 'deposit'} onClick={() => setFilter('deposit')} />
                                 <FilterTab label="Withdrawals" active={filter === 'withdrawal'} onClick={() => setFilter('withdrawal')} />
                             </div>
                         </div>
+                    </div>
 
+                    <div className="max-w-2xl mx-auto px-4 mt-6 pb-20">
                         {/* Content Area */}
                         {loading ? (
                             <div className="flex flex-col items-center justify-center py-20 animate-pulse">
-                                <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-4" />
-                                <p className="text-slate-400 text-sm">Syncing with blockchain...</p>
+                                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                                    <Loader2 className="w-8 h-8 text-slate-400 animate-spin" />
+                                </div>
+                                <p className="text-slate-400 text-sm font-bold">Syncing history...</p>
                             </div>
                         ) : filteredData.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-24 text-center px-6 fade-in">
-                                <div className="w-20 h-20 bg-slate-900/50 rounded-full flex items-center justify-center mb-6 border border-slate-800 shadow-inner">
-                                    <Search className="w-9 h-9 text-slate-600" />
+                                <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-xl shadow-slate-200/50 border border-slate-50">
+                                    <FileText className="w-10 h-10 text-slate-300" />
                                 </div>
-                                <h3 className="text-lg font-semibold text-white mb-2">No Transactions Found</h3>
-                                <p className="text-slate-500 text-sm max-w-xs leading-relaxed">
-                                    Your {filter !== 'all' ? filter : ''} history will appear here once you make a transaction.
+                                <h3 className="text-lg font-black text-slate-800 mb-2">No Transactions</h3>
+                                <p className="text-slate-400 text-sm max-w-xs font-medium">
+                                    Your {filter !== 'all' ? filter : ''} history is currently empty.
                                 </p>
                             </div>
                         ) : (
-                            <div className="space-y-4 pb-8 fade-in">
+                            <div className="space-y-4 fade-in">
                                 {filteredData.map((tx, index) => (
                                     <TransactionCard 
                                         key={tx.id || index} 
@@ -278,10 +262,10 @@ const handleBack = () => {
         const FilterTab = ({ label, active, onClick }) => (
             <button 
                 onClick={onClick}
-                className={`flex-1 py-2.5 text-xs sm:text-sm font-medium transition-all duration-300 rounded-lg ${
+                className={`flex-1 py-2.5 text-xs sm:text-sm font-bold transition-all duration-300 rounded-lg ${
                     active 
-                    ? 'bg-slate-800 text-white shadow-lg shadow-black/20' 
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                    ? 'bg-white text-slate-800 shadow-sm' 
+                    : 'text-slate-400 hover:text-slate-600'
                 }`}
             >
                 {label}
@@ -298,42 +282,42 @@ const handleBack = () => {
                     case 'successful':
                     case 'success':
                         return {
-                            color: 'text-emerald-400',
-                            bg: 'bg-emerald-500/10',
-                            border: 'border-emerald-500/20',
+                            color: 'text-emerald-600',
+                            bg: 'bg-emerald-50',
+                            border: 'border-emerald-100',
                             icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-                            label: 'Successful'
+                            label: 'Success'
                         };
                     case 'pending':
                         return {
-                            color: 'text-amber-400',
-                            bg: 'bg-amber-500/10',
-                            border: 'border-amber-500/20',
+                            color: 'text-amber-600',
+                            bg: 'bg-amber-50',
+                            border: 'border-amber-100',
                             icon: <Clock className="w-3.5 h-3.5" />,
                             label: 'Pending'
                         };
                     case 'processing':
                         return {
-                            color: 'text-blue-400',
-                            bg: 'bg-blue-500/10',
-                            border: 'border-blue-500/20',
+                            color: 'text-blue-600',
+                            bg: 'bg-blue-50',
+                            border: 'border-blue-100',
                             icon: <Loader2 className="w-3.5 h-3.5 animate-spin" />,
                             label: 'Processing'
                         };
                     case 'canceled':
                     case 'cancelled':
                         return {
-                            color: 'text-red-400',
-                            bg: 'bg-red-500/10',
-                            border: 'border-red-500/20',
+                            color: 'text-rose-600',
+                            bg: 'bg-rose-50',
+                            border: 'border-rose-100',
                             icon: <XCircle className="w-3.5 h-3.5" />,
                             label: 'Canceled'
                         };
                     default:
                         return {
-                            color: 'text-slate-400',
-                            bg: 'bg-slate-800',
-                            border: 'border-slate-700',
+                            color: 'text-slate-500',
+                            bg: 'bg-slate-100',
+                            border: 'border-slate-200',
                             icon: <AlertCircle className="w-3.5 h-3.5" />,
                             label: status
                         };
@@ -362,58 +346,55 @@ const handleBack = () => {
                 : generateDescription(tx.type, tx.status);
 
             return (
-                <div className="tx-card slide-up bg-slate-900/60 backdrop-blur-md border border-slate-800 rounded-2xl p-5 relative overflow-hidden group" style={style}>
+                <div className="tx-card slide-up bg-white rounded-3xl p-5 shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden group" style={style}>
                     
-                    {/* Decoration Line */}
-                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${isDeposit ? 'bg-emerald-500/50' : 'bg-red-500/50'}`}></div>
-
                     {/* Top Row: Type & Amount */}
-                    <div className="flex justify-between items-start mb-4 pl-3">
-                        <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-inner ${isDeposit ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                                {isDeposit ? <ArrowDownLeft className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-4">
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-105 ${isDeposit ? 'bg-gradient-to-tr from-emerald-400 to-teal-500 text-white shadow-emerald-500/30' : 'bg-gradient-to-tr from-rose-400 to-pink-500 text-white shadow-rose-500/30'}`}>
+                                {isDeposit ? <ArrowDownLeft className="w-6 h-6" /> : <ArrowUpRight className="w-6 h-6" />}
                             </div>
                             <div>
-                                <h3 className="font-semibold text-white capitalize">{tx.type}</h3>
-                                <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">{tx.method || 'Unknown'}</p>
+                                <h3 className="font-black text-slate-800 capitalize text-lg">{tx.type}</h3>
+                                <p className="text-xs text-slate-400 uppercase tracking-wider font-bold">{tx.method || 'Standard'}</p>
                             </div>
                         </div>
                         <div className="text-right">
-                            <span className={`block text-lg font-bold font-mono tracking-tight ${isDeposit ? 'text-emerald-400' : 'text-white'}`}>
+                            <span className={`block text-lg font-black font-mono tracking-tight ${isDeposit ? 'text-emerald-500' : 'text-slate-800'}`}>
                                 {isDeposit ? '+' : '-'} ₹{Number(tx.amount).toLocaleString('en-IN')}
                             </span>
                         </div>
                     </div>
 
                     {/* Middle Row: Order ID & Date */}
-                    <div className="bg-slate-950/50 rounded-xl p-3 mb-4 border border-slate-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ml-3">
+                    <div className="bg-slate-50 rounded-2xl p-4 mb-4 border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         {/* Order ID */}
                         <div className="flex flex-col gap-1">
-                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Order ID</span>
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Order ID</span>
                             <button 
                                 onClick={handleCopy}
-                                className="flex items-center gap-2 text-sm font-mono text-slate-300 hover:text-white transition-colors group/copy"
+                                className="flex items-center gap-2 text-xs font-mono font-bold text-slate-600 hover:text-blue-600 transition-colors group/copy"
                             >
                                 {tx.order_id || '---'}
                                 {tx.order_id && (
-                                    copied ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-slate-600 group-hover/copy:text-blue-400" />
+                                    copied ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-slate-400 group-hover/copy:text-blue-500" />
                                 )}
                             </button>
                         </div>
 
                         {/* Date/Time */}
-                        <div className="flex items-center gap-2 sm:justify-end border-t sm:border-t-0 sm:border-l border-slate-800 pt-2 sm:pt-0 sm:pl-3">
-                             <Calendar className="w-3.5 h-3.5 text-slate-600" />
-                             <div className="text-xs text-slate-400 font-mono">
-                                <span>{dateStr}</span> <span className="text-slate-600">|</span> <span>{timeStr}</span>
+                        <div className="flex items-center gap-2 sm:justify-end border-t sm:border-t-0 sm:border-l border-slate-200 pt-2 sm:pt-0 sm:pl-3">
+                             <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                             <div className="text-xs text-slate-500 font-bold">
+                                <span>{dateStr}</span> <span className="text-slate-300 mx-1">|</span> <span>{timeStr}</span>
                              </div>
                         </div>
                     </div>
 
                     {/* Bottom Row: Status & Actions */}
-                    <div className="flex items-center justify-between pl-3 pt-1">
+                    <div className="flex items-center justify-between pt-1">
                         {/* Status Badge */}
-                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border shadow-sm ${statusStyle.bg} ${statusStyle.border} ${statusStyle.color}`}>
+                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border ${statusStyle.bg} ${statusStyle.border} ${statusStyle.color}`}>
                             {statusStyle.icon}
                             <span className="uppercase tracking-wider">{statusStyle.label}</span>
                         </div>
@@ -421,7 +402,7 @@ const handleBack = () => {
                         {/* Report Issue */}
                         <button 
                             onClick={onReport}
-                            className="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-red-400 transition-colors px-2 py-1"
+                            className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-rose-500 transition-colors px-2 py-1 bg-slate-50 hover:bg-rose-50 rounded-lg"
                         >
                             <AlertCircle className="w-3.5 h-3.5" />
                             <span>Report Issue</span>
@@ -430,9 +411,9 @@ const handleBack = () => {
 
                     {/* Description Section */}
                     {displayDescription && (
-                        <div className="mt-4 ml-3 pt-3 border-t border-slate-800/50 flex items-start gap-2 animate-in fade-in">
-                            <HelpCircle className="w-3.5 h-3.5 text-blue-500/70 mt-0.5 shrink-0" />
-                            <p className="text-xs text-slate-400 italic leading-relaxed">
+                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-start gap-2 animate-in fade-in">
+                            <HelpCircle className="w-3.5 h-3.5 text-blue-400 mt-0.5 shrink-0" />
+                            <p className="text-xs text-slate-500 font-medium leading-relaxed">
                                 {displayDescription}
                             </p>
                         </div>
