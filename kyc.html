@@ -5,13 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>KYC Verification - AvicnKnov Ex</title>
   
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   
-  <!-- Supabase Library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -76,7 +73,6 @@
 </head>
 <body class="bg-[#f8f9fc] min-h-screen pb-10">
 
-  <!-- Header -->
   <div class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 py-4 flex items-center shadow-sm">
     <button onclick="window.location.href='profile.html'" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors">
       <i class="fas fa-arrow-left"></i>
@@ -86,7 +82,6 @@
 
   <div class="max-w-md mx-auto px-4 mt-6">
     
-    <!-- Progress Bar (Visual) -->
     <div class="flex justify-between items-center mb-8 px-2">
       <div class="flex flex-col items-center">
         <div id="p1" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-lg shadow-blue-500/30">1</div>
@@ -106,10 +101,8 @@
       </div>
     </div>
 
-    <!-- Main Card Container -->
     <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 p-6 border border-slate-100 min-h-[400px]">
 
-      <!-- STEP 1: ID Details -->
       <div id="step1" class="step-container active">
         <div class="text-center mb-6">
           <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-3 text-blue-500">
@@ -144,7 +137,6 @@
         </div>
       </div>
 
-      <!-- STEP 2: Document Upload -->
       <div id="step2" class="step-container">
         <div class="text-center mb-6">
           <div class="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-3 text-indigo-500">
@@ -171,7 +163,6 @@
         </div>
       </div>
 
-      <!-- STEP 3: Selfie Video -->
       <div id="step3" class="step-container">
         <div class="text-center mb-6">
           <div class="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-3 text-rose-500">
@@ -194,7 +185,6 @@
         </div>
       </div>
 
-      <!-- STEP 4: Completed (Initial View) -->
       <div id="step4" class="step-container text-center py-4">
         <div class="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 text-green-500 animate-bounce">
           <i class="fas fa-shield-check text-4xl"></i>
@@ -220,9 +210,9 @@
   </div>
 
   <script>
-    const supabaseUrl = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    var SUPA_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+    var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+    var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
     const kycData = {
       id_type: '',
@@ -263,13 +253,15 @@
     }
 
     async function uploadFile(file, bucket) {
-      const fileName = `${Date.now()}-${file.name}`;
+      // Fix: sanitize filename to avoid errors with spaces
+      const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
       const { data, error } = await supabase.storage.from(bucket).upload(fileName, file);
       if (error) {
         console.error('Upload failed:', error.message);
         return null;
       }
-      return `${supabaseUrl}/storage/v1/object/public/${bucket}/${fileName}`;
+      // FIXED: Used SUPA_URL instead of undefined 'supabaseUrl'
+      return `${SUPA_URL}/storage/v1/object/public/${bucket}/${fileName}`;
     }
 
     async function submitStep2() {
@@ -339,7 +331,7 @@
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle(); // FIXED: Changed .single() to .maybeSingle() to fix 406 error
 
       if (error || !data) return;
 
