@@ -833,8 +833,8 @@
                 transition: opacity 0.2s; display: flex; align-items: center; justify-content: center;
                 text-transform: uppercase; letter-spacing: 0.5px;
             }
-            .avx-btn-coinm.buy { background: linear-gradient(to right, #6366f1, #4f46e5); box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25); }
-            .avx-btn-coinm.sell { background: linear-gradient(to right, #f43f5e, #e11d48); box-shadow: 0 4px 10px rgba(244, 63, 94, 0.25); }
+            .avx-btn-coinm.buy { background: linear-gradient(to right, #0f172a, #1e3a8a); box-shadow: 0 4px 10px rgba(30, 58, 138, 0.25); }
+            .avx-btn-coinm.sell { background: linear-gradient(to right, #b91c1c, #ef4444); box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25); }
             .avx-btn-coinm:active { opacity: 0.9; transform: scale(0.98); }
 
             /* FOOTER (MATCHING SPOT LAYOUT BUT WITH COIN-M COLORS) */
