@@ -833,8 +833,8 @@
                 transition: opacity 0.2s; display: flex; align-items: center; justify-content: center;
                 text-transform: uppercase; letter-spacing: 0.5px;
             }
-            .avx-btn-usdm.buy { background: linear-gradient(to right, #2562eb, #2562eb); box-shadow: 0 4px 10px rgba(6, 182, 212, 0.25); }
-            .avx-btn-usdm.sell { background: linear-gradient(to right, #f43f5e, #e11d48); box-shadow: 0 4px 10px rgba(244, 63, 94, 0.25); }
+            .avx-btn-usdm.buy { background: linear-gradient(to right, #0f172a, #1e3a8a); box-shadow: 0 4px 10px rgba(30, 58, 138, 0.25); }
+            .avx-btn-usdm.sell { background: linear-gradient(to right, #b91c1c, #ef4444); box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25); }
             .avx-btn-usdm:active { opacity: 0.9; transform: scale(0.98); }
 
             /* FOOTER (MATCHING SPOT/COIN-M LAYOUT) */
