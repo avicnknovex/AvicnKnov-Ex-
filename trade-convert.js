@@ -1,9 +1,9 @@
 
 /* ==========================================================
-   trade-convert.js – Ultimate Token Conversion Engine
-   • Auto-Retry Connection (Fixes "Not Loaded" error)
-   • Strict UI Refresh (No stale icons/holdings)
-   • Bi-Directional Real-time Math
+   trade-convert.js – Ultimate Token Conversion Engine (Final Fix)
+   • Fix 1: Database Actions are now 'Buying' / 'Selling'
+   • Fix 2: Real Live API Fetching for market tokens
+   • Auto-Retry Connection & Strict UI Refresh
    ========================================================== */
 (function() {
 
@@ -12,7 +12,7 @@
         SUPA_URL: 'https://hwrvqyipozrsxyjdpqag.supabase.co',
         SUPA_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM',
         TARGET_ID: 'convert', 
-        REFRESH_RATE: 3000,
+        REFRESH_RATE: 4000, // 4 Seconds for Price Updates
         TABLES: {
             CONTROL: 'crypto_token_control',
             HISTORY: 'crypto_token_histry'
@@ -43,17 +43,17 @@
         el.innerHTML = `
             <div class="cv-loader">
                 <div class="cv-spin"></div>
-                <span>Connecting to Exchange...</span>
+                <span>Connecting Exchange...</span>
             </div>`;
 
-        // 1. Robust Supabase Connection
-        connectSupabase(0, el).then(async (client) => {
+        // 1. Robust Supabase Connection (Auto-Retry)
+        connectSupabase(0).then(async (client) => {
             State.supa = client;
             
             // 2. Auth Check
             const { data: { user } } = await State.supa.auth.getUser();
             if (!user) {
-                el.innerHTML = `<div class="cv-empty"><h3>Login Required</h3><p>Please login to access conversion.</p></div>`;
+                el.innerHTML = `<div class="cv-empty"><h3>Login Required</h3><p>Please login to convert assets.</p></div>`;
                 return;
             }
             State.user = user;
@@ -61,42 +61,40 @@
             // 3. Load Data
             await loadMarketData();
 
-            // 4. Setup Default Selection
+            // 4. Setup Defaults
             if(State.tokens.length > 0) {
                 State.from.sym = State.tokens[0].symbol;
                 State.to.sym = State.tokens.length > 1 ? State.tokens[1].symbol : State.tokens[0].symbol;
-                
-                // Set default chains
                 setDefaultChain('from');
                 setDefaultChain('to');
             }
 
             // 5. Start App
             renderUI();
-            startLivePrices();
+            startPriceEngine();
 
         }).catch(err => {
             console.error(err);
             el.innerHTML = `<div class="cv-error">
-                <h3>Connection Failed</h3>
-                <p>Could not load database.</p>
-                <button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;border-radius:8px;border:none;background:#4f46e5;color:#fff;cursor:pointer;">Retry</button>
+                <h3>Connection Error</h3>
+                <p>Database not responding.</p>
+                <button onclick="location.reload()" class="cv-retry-btn">Retry Connection</button>
             </div>`;
         });
     }
 
-    /* Retry Logic for Supabase */
-    function connectSupabase(attempt, el) {
+    /* Retry Logic */
+    function connectSupabase(attempt) {
         return new Promise((resolve, reject) => {
             if (window.supabase) {
                 resolve(window.supabase.createClient(CONFIG.SUPA_URL, CONFIG.SUPA_KEY));
             } else if (window.parent && window.parent.supabase) {
                 resolve(window.parent.supabase.createClient(CONFIG.SUPA_URL, CONFIG.SUPA_KEY));
             } else {
-                if (attempt < 5) {
-                    setTimeout(() => connectSupabase(attempt + 1, el).then(resolve).catch(reject), 500);
+                if (attempt < 10) {
+                    setTimeout(() => connectSupabase(attempt + 1).then(resolve).catch(reject), 500);
                 } else {
-                    reject("Supabase SDK not found after 5 attempts");
+                    reject("Supabase SDK missing");
                 }
             }
         });
@@ -133,10 +131,11 @@
                 const q = Number(r.qty);
                 if (!h[s]) h[s] = 0;
                 
-                if (r.action === 'Buying' || r.action === 'Conversion In') h[s] += q;
-                else if (r.action === 'Selling' || r.action === 'Conversion Out') h[s] -= q;
+                // Logic strictly matches Buying/Selling now
+                if (r.action === 'Buying') h[s] += q;
+                else if (r.action === 'Selling') h[s] -= q;
             });
-            // Clean
+            // Clean zeros
             Object.keys(h).forEach(k => {
                 if (h[k] <= 0.0000001) delete h[k];
             });
@@ -154,42 +153,76 @@
         }
     }
 
-    /* ---------- LIVE PRICES ---------- */
-    function startLivePrices() {
+    /* ---------- PRICE ENGINE (FIXED: LIVE API + MANUAL) ---------- */
+    function startPriceEngine() {
         // Clear existing
         State.intervals.forEach(i => clearInterval(i));
         
+        // Initial Fetch
+        fetchPrices();
+
+        // Loop
         const interval = setInterval(() => {
-            State.tokens.forEach(t => {
-                const oldP = State.prices[t.symbol].val;
-                let newP = oldP;
-
-                // Simulate if not API (Add API logic here if needed)
-                const vol = oldP * 0.001; 
-                newP = oldP + (Math.random() - 0.5) * vol;
-                
-                // Bounds
-                if (t.manual_min_price && newP < t.manual_min_price) newP = t.manual_min_price;
-                if (t.manual_max_price && newP > t.manual_max_price) newP = t.manual_max_price;
-
-                State.prices[t.symbol] = { val: newP, prev: oldP };
-                
-                // Update UI Counter
-                updatePriceUI(t.symbol, newP, oldP);
-            });
-
-            // Auto-Calculate if user has input
-            if(document.getElementById('inp-from') && document.getElementById('inp-from').value !== '') {
-                calculateLogic();
-            }
-
+            fetchPrices();
         }, CONFIG.REFRESH_RATE);
         
         State.intervals.push(interval);
     }
 
+    async function fetchPrices() {
+        // We use a map of promises for live tokens to fetch concurrently
+        const updates = State.tokens.map(async (t) => {
+            const oldP = State.prices[t.symbol]?.val || 0;
+            let newP = oldP;
+
+            if (t.is_live_api && t.api_url) {
+                // --- LIVE API FETCH ---
+                try {
+                    const res = await fetch(t.api_url);
+                    const json = await res.json();
+                    // Assumes Structure: { "bitcoin": { "inr": 5000000 } }
+                    const key = Object.keys(json)[0]; 
+                    if(key && json[key] && json[key].inr) {
+                        newP = Number(json[key].inr);
+                    }
+                } catch (e) { 
+                    // If fetch fails, keep old price or slightly flutter it
+                    // console.log('API Error', t.symbol); 
+                }
+            } else {
+                // --- MANUAL SIMULATION ---
+                const base = Number(t.manual_price || 0);
+                const volatility = base * 0.002; 
+                const change = (Math.random() - 0.5) * volatility;
+                newP = oldP === 0 ? base : oldP + change; // Drift from current simulated price
+                
+                // Keep it near manual base to avoid infinite drift
+                if(Math.abs(newP - base) > (base * 0.05)) {
+                    newP = base; 
+                }
+
+                // Bounds
+                if (t.manual_min_price && newP < t.manual_min_price) newP = t.manual_min_price;
+                if (t.manual_max_price && newP > t.manual_max_price) newP = t.manual_max_price;
+            }
+
+            // Update State
+            State.prices[t.symbol] = { val: newP, prev: oldP };
+            
+            // Update UI
+            updatePriceUI(t.symbol, newP, oldP);
+        });
+
+        await Promise.all(updates);
+
+        // Auto-Calculate inputs if user has typed something
+        if(document.getElementById('inp-from') && document.getElementById('inp-from').value !== '') {
+            calculateLogic();
+        }
+    }
+
     function updatePriceUI(sym, newP, oldP) {
-        // Only update if currently displayed
+        // Only update DOM if the token is currently selected in UI
         if (State.from.sym === sym) {
             const el = document.getElementById('live-price-from');
             if(el) animatePrice(el, newP, oldP);
@@ -202,9 +235,12 @@
 
     function animatePrice(el, newP, oldP) {
         el.textContent = `1 = ${fmtMoney(newP)}`;
-        el.style.color = newP >= oldP ? '#10b981' : '#f43f5e';
-        // Reset color after flash
-        setTimeout(() => { if(el) el.style.color = '#64748b'; }, 800);
+        // Color update based on change
+        if (newP > oldP) el.style.color = '#10b981'; // Green
+        else if (newP < oldP) el.style.color = '#f43f5e'; // Red
+        
+        // Reset color slightly after
+        // setTimeout(() => { if(el) el.style.color = '#64748b'; }, 1500); 
     }
 
     /* ---------- UI RENDERER ---------- */
@@ -212,7 +248,7 @@
         const root = document.getElementById(CONFIG.TARGET_ID);
         if(!root) return;
 
-        // Get Current Tokens
+        // Get Current Tokens Data
         const tFrom = State.tokens.find(t => t.symbol === State.from.sym);
         const tTo = State.tokens.find(t => t.symbol === State.to.sym);
 
@@ -222,42 +258,42 @@
         root.innerHTML = `
             <div class="cv-wrapper">
                 
-                <!-- TOP CARD -->
+                <!-- TOP CARD (Convert From / Selling) -->
                 <div class="cv-card top">
                     <div class="cv-header">
                         <span class="cv-lbl">You Convert</span>
-                        <span class="cv-bal">Holding: <b>${fmtQty(State.holdings[tFrom.symbol] || 0)}</b></span>
+                        <span class="cv-bal">Available: <b>${fmtQty(State.holdings[tFrom.symbol] || 0)}</b></span>
                     </div>
                     <div class="cv-row">
                         ${renderSelector('from', tFrom)}
                         <div class="cv-input-box">
                             <input type="number" id="inp-from" placeholder="0.00" value="${State.from.qty}" oninput="AVX_CV.handleInput('from', this.value)">
-                            <div class="cv-live-p" id="live-price-from">1 = ${fmtMoney(State.prices[tFrom.symbol].val)}</div>
+                            <div class="cv-live-p" id="live-price-from">1 = ${fmtMoney(State.prices[tFrom.symbol]?.val)}</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- SWAP BTN -->
+                <!-- SWAP BUTTON -->
                 <div class="cv-swap-circle" onclick="AVX_CV.swap()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
                 </div>
 
-                <!-- BOTTOM CARD -->
+                <!-- BOTTOM CARD (Convert To / Buying) -->
                 <div class="cv-card bottom">
                     <div class="cv-header">
                         <span class="cv-lbl">You Receive</span>
-                        <span class="cv-bal">Holding: <b>${fmtQty(State.holdings[tTo.symbol] || 0)}</b></span>
+                        <span class="cv-bal">Balance: <b>${fmtQty(State.holdings[tTo.symbol] || 0)}</b></span>
                     </div>
                     <div class="cv-row">
                         ${renderSelector('to', tTo)}
                         <div class="cv-input-box">
                             <input type="number" id="inp-to" placeholder="0.00" value="${State.to.qty}" oninput="AVX_CV.handleInput('to', this.value)">
-                            <div class="cv-live-p" id="live-price-to">1 = ${fmtMoney(State.prices[tTo.symbol].val)}</div>
+                            <div class="cv-live-p" id="live-price-to">1 = ${fmtMoney(State.prices[tTo.symbol]?.val)}</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- ACTION -->
+                <!-- ACTION BUTTON -->
                 <button class="cv-btn-action" onclick="AVX_CV.execute()">
                     CONVERT NOW
                 </button>
@@ -279,7 +315,7 @@
     }
 
     function renderSelector(side, token) {
-        // Exclude the other side's token from list
+        // Filter list: Don't show the token selected in the other box
         const otherSym = side === 'from' ? State.to.sym : State.from.sym;
         const list = State.tokens.filter(t => t.symbol !== otherSym);
         
@@ -314,7 +350,7 @@
         `;
     }
 
-    /* ---------- LOGIC (THE BRAIN) ---------- */
+    /* ---------- LOGIC & CALCULATION ---------- */
     
     function changeToken(side, newSym) {
         if (side === 'from') {
@@ -325,41 +361,33 @@
             setDefaultChain('to');
         }
         
-        // REFRESH EVERYTHING - Logic:
-        // Clear inputs because price ratio changed drastically.
-        // User asked "ek bar sab kuchh refresh ho jaega"
+        // RESET INPUTS (Strict Refresh)
         State.from.qty = '';
         State.to.qty = '';
         
-        // Re-render to show correct icon, chains, holdings for new token
         renderUI();
     }
 
     function changeChain(side, newChain) {
         if(side === 'from') State.from.chain = newChain;
         else State.to.chain = newChain;
-        // Just re-render to reflect state if needed
+        // No need to clear inputs just for chain change, but re-render needed
         renderUI(); 
     }
 
     function swap() {
-        // Swap Syms
         const tSym = State.from.sym;
         State.from.sym = State.to.sym;
         State.to.sym = tSym;
 
-        // Swap Chains
         const tChain = State.from.chain;
         State.from.chain = State.to.chain;
         State.to.chain = tChain;
 
-        // Swap Qty (Visual only, need recalc)
-        const tQty = State.from.qty;
-        State.from.qty = State.to.qty;
-        State.to.qty = tQty;
+        // Clear values to force fresh calculation
+        State.from.qty = '';
+        State.to.qty = '';
 
-        // Recalculate logic based on new directions
-        calculateLogic();
         renderUI();
     }
 
@@ -374,13 +402,13 @@
         const pFrom = State.prices[State.from.sym]?.val || 0;
         const pTo = State.prices[State.to.sym]?.val || 0;
 
-        if (pFrom <= 0 || pTo <= 0) return; // Wait for price
+        if (pFrom <= 0 || pTo <= 0) return; 
 
         if (State.lastEdited === 'from') {
             const qty = parseFloat(State.from.qty);
             if (!qty) { State.to.qty = ''; updateInputDOM('inp-to', ''); return; }
             
-            // Calc
+            // Formula: (Qty * PriceFrom) / PriceTo
             const totalVal = qty * pFrom;
             const res = totalVal / pTo;
             
@@ -391,6 +419,7 @@
             const qty = parseFloat(State.to.qty);
             if (!qty) { State.from.qty = ''; updateInputDOM('inp-from', ''); return; }
             
+            // Formula: (Qty * PriceTo) / PriceFrom
             const totalVal = qty * pTo;
             const res = totalVal / pFrom;
             
@@ -404,7 +433,7 @@
         if(el) el.value = val;
     }
 
-    /* ---------- EXECUTION ---------- */
+    /* ---------- EXECUTION (FIXED ACTIONS) ---------- */
     async function execute() {
         const btn = document.querySelector('.cv-btn-action');
         const fQty = parseFloat(State.from.qty);
@@ -417,25 +446,26 @@
         const pTo = State.prices[symTo].val;
 
         // Validations
-        if(!pFrom || !pTo) return toast("Price Loading...", "err");
-        if(!fQty || fQty <= 0) return toast("Enter Amount", "err");
+        if(!pFrom || !pTo) return toast("Fetching Price...", "err");
+        if(!fQty || fQty <= 0) return toast("Enter Valid Amount", "err");
         
-        // Holding Check
-        const bal = State.holdings[symFrom] || 0;
-        if(fQty > bal) return toast(`Insufficient ${symFrom}`, "err");
+        // Check Funds
+        const owned = State.holdings[symFrom] || 0;
+        if(fQty > owned) return toast(`Insufficient ${symFrom}`, "err");
 
         // Lock UI
-        btn.innerHTML = '<div class="cv-spin" style="width:20px;height:20px;border-width:2px;"></div> Converting...';
+        btn.innerHTML = '<div class="cv-spin" style="width:20px;height:20px;border-width:2px;"></div> Processing...';
         btn.disabled = true;
 
         try {
             const totalINR = fQty * pFrom;
 
-            // 1. OUT (-Qty)
+            // 1. SELL Source Token (Reduces Qty)
+            // Using 'Selling' so other files recognize it as a deduction
             const { error: e1 } = await State.supa.from(CONFIG.TABLES.HISTORY).insert({
                 user_id: State.user.id,
                 symbol: symFrom,
-                action: 'Conversion Out',
+                action: 'Selling', 
                 qty: fQty,
                 price_at_transaction: pFrom,
                 total_amount: totalINR,
@@ -444,11 +474,12 @@
             });
             if(e1) throw e1;
 
-            // 2. IN (+Qty)
+            // 2. BUY Target Token (Adds Qty)
+            // Using 'Buying' so other files recognize it as an addition
             const { error: e2 } = await State.supa.from(CONFIG.TABLES.HISTORY).insert({
                 user_id: State.user.id,
                 symbol: symTo,
-                action: 'Conversion In',
+                action: 'Buying',
                 qty: tQty,
                 price_at_transaction: pTo,
                 total_amount: totalINR,
@@ -458,7 +489,9 @@
             if(e2) throw e2;
 
             // Success
-            toast(`Converted ${fQty} ${symFrom} to ${tQty.toFixed(4)} ${symTo}`);
+            toast(`Success: ${fQty} ${symFrom} -> ${tQty} ${symTo}`);
+            
+            // Clear inputs & Refresh
             State.from.qty = '';
             State.to.qty = '';
             await refreshHoldings();
@@ -466,7 +499,7 @@
 
         } catch (e) {
             console.error(e);
-            toast("Conversion Failed", "err");
+            toast("Transaction Failed", "err");
         }
 
         btn.disabled = false;
@@ -491,7 +524,7 @@
 
             .cv-row { display:flex; gap:15px; align-items:center; }
             
-            /* TOKEN SELECTOR AREA */
+            /* SELECTOR */
             .cv-sel-col { width:45%; }
             .cv-tok-display { display:flex; gap:10px; align-items:flex-start; }
             .cv-icon-box { width:42px; height:42px; border-radius:12px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #e2e8f0; flex-shrink:0; font-size:18px; color:#4f46e5; font-weight:800; }
@@ -499,21 +532,20 @@
             
             .cv-tok-info { display:flex; flex-direction:column; gap:4px; flex:1; }
             .cv-select-tok { font-size:18px; font-weight:800; color:#0f172a; border:none; background:transparent; width:100%; outline:none; cursor:pointer; padding:0; margin:0; appearance:none; }
-            
             .cv-chain-sel select { font-size:10px; font-weight:700; color:#64748b; background:#e2e8f0; border:none; padding:2px 6px; border-radius:6px; outline:none; cursor:pointer; max-width:100%; }
 
-            /* INPUT AREA */
+            /* INPUTS */
             .cv-input-box { flex:1; text-align:right; }
             .cv-input-box input { width:100%; border:none; background:transparent; text-align:right; font-size:24px; font-weight:700; color:#0f172a; outline:none; padding:0; font-family:'Outfit', sans-serif; }
             .cv-input-box input::placeholder { color:#cbd5e1; }
-            .cv-live-p { font-size:11px; font-weight:600; color:#94a3b8; margin-top:4px; transition:color 0.3s; }
+            .cv-live-p { font-size:11px; font-weight:600; color:#64748b; margin-top:4px; transition:color 0.3s; }
 
             /* SWAP BUTTON */
             .cv-swap-circle { width:44px; height:44px; border-radius:50%; background:#4f46e5; color:#fff; border:4px solid #f8fafc; position:relative; margin:0 auto; z-index:10; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 5px 15px rgba(79, 70, 229, 0.3); transition:0.2s; }
-            .cv-swap-circle svg { width:20px; height:20px; }
             .cv-swap-circle:active { transform:rotate(180deg) scale(0.95); }
+            .cv-swap-circle svg { width:20px; height:20px; }
 
-            /* MAIN BUTTON */
+            /* ACTION BTN */
             .cv-btn-action { width:100%; margin-top:25px; padding:18px; border-radius:18px; background:linear-gradient(135deg, #4f46e5, #4338ca); color:#fff; border:none; font-size:16px; font-weight:800; cursor:pointer; box-shadow:0 10px 25px -5px rgba(79, 70, 229, 0.4); text-transform:uppercase; letter-spacing:1px; transition:transform 0.1s; display:flex; align-items:center; justify-content:center; gap:8px; }
             .cv-btn-action:active { transform:scale(0.98); }
             .cv-btn-action:disabled { background:#94a3b8; box-shadow:none; cursor:not-allowed; }
@@ -526,6 +558,7 @@
             .cv-spin { width:30px; height:30px; border:3px solid #e2e8f0; border-top-color:#4f46e5; border-radius:50%; animation:cvspin 0.8s linear infinite; margin-bottom:15px; }
             @keyframes cvspin { to { transform:rotate(360deg); } }
             .cv-error { color:#ef4444; text-align:center; padding:30px; }
+            .cv-retry-btn { margin-top:10px; padding:8px 16px; background:#4f46e5; color:white; border:none; border-radius:8px; font-weight:700; cursor:pointer; }
 
             /* TOAST */
             #avx-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #fff; padding: 12px 24px; border-radius: 50px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 10px; opacity: 0; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 99999; pointer-events: none; }
