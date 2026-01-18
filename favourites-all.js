@@ -278,16 +278,16 @@
             return `
             <div class="avx-card-premium" id="card-${t.symbol}">
                 
-                <!-- TOP SECTION: Icon, Name, Price -->
+                <!-- TOP SECTION: Icon Left, Name Middle, Price Right -->
                 <div class="avx-cp-top">
                     <div class="avx-cp-icon">
                         ${iconHTML}
                     </div>
                     <div class="avx-cp-details">
-                        <div class="avx-cp-header">
-                            <span class="avx-cp-sym">${t.symbol}</span>
-                            <span class="avx-cp-full">${t.full_name || t.name}</span>
-                        </div>
+                        <span class="avx-cp-sym">${t.symbol}</span>
+                        <span class="avx-cp-full">${t.full_name || t.name}</span>
+                    </div>
+                    <div class="avx-cp-price-box">
                         <div class="avx-cp-price" id="price-${t.symbol}">
                             ${fmtINR(p.current)}
                         </div>
@@ -835,7 +835,7 @@
             .avx-card-premium:active { transform: scale(0.99); }
             
             /* TOP: Icon, Name, Price */
-            .avx-cp-top { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+            .avx-cp-top { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
             .avx-cp-icon { 
                 width: 56px; height: 56px; border-radius: 20px; background: #fff; 
                 box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; align-items: center; justify-content: center; 
@@ -846,20 +846,23 @@
             
             .avx-cp-details { flex: 1; display:flex; flex-direction:column; justify-content:center; }
             .avx-cp-header { display:flex; align-items:baseline; gap:8px; margin-bottom:2px; }
-            .avx-cp-sym { font-weight: 800; font-size: 20px; color: var(--p-text); letter-spacing: -0.5px; }
-            .avx-cp-full { font-weight: 500; font-size: 14px; color: #64748b; }
-            .avx-cp-price { font-weight: 700; font-size: 22px; color: #1e293b; transition: color 0.3s; letter-spacing: -0.5px; }
+            .avx-cp-sym { font-weight: 800; font-size: 20px; color: var(--p-text); letter-spacing: -0.5px; line-height: 1.2; }
+            .avx-cp-full { font-weight: 500; font-size: 13px; color: #64748b; }
+            
+            .avx-cp-price-box { text-align: right; }
+            .avx-cp-price { font-weight: 700; font-size: 20px; color: #1e293b; transition: color 0.3s; font-family: 'Outfit', monospace; }
 
-            /* ACTIONS: Buy Left, Sell Right */
+            /* ACTIONS: Buy Left, Sell Right (UPDATED TO MATCH ALPHA STYLE) */
             .avx-cp-actions { display: flex; gap: 14px; margin-bottom: 20px; }
             .avx-btn-p { 
-                flex: 1; border: none; padding: 14px; border-radius: 18px; 
-                font-weight: 700; font-size: 15px; cursor: pointer; color: white;
+                flex: 1; border: none; padding: 10px 16px; border-radius: 12px; 
+                font-weight: 700; font-size: 12px; cursor: pointer; color: white;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: opacity 0.2s, transform 0.1s;
                 display: flex; align-items: center; justify-content: center;
+                text-transform: uppercase; letter-spacing: 0.5px;
             }
-            .buy-btn { background: linear-gradient(135deg, #6366f1, #3b82f6); box-shadow: 0 6px 15px -3px rgba(99, 102, 241, 0.4); }
-            .sell-btn { background: linear-gradient(135deg, #f43f5e, #e11d48); box-shadow: 0 6px 15px -3px rgba(244, 63, 94, 0.4); }
+            .buy-btn { background: linear-gradient(to right, #0f172a, #1e3a8a); box-shadow: 0 4px 10px rgba(30, 58, 138, 0.25); }
+            .sell-btn { background: linear-gradient(to right, #b91c1c, #ef4444); box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25); }
             .avx-btn-p:active { opacity: 0.9; transform: scale(0.98); }
 
             /* FOOTER: Graph Left, Info Right */
@@ -938,13 +941,23 @@
             .avx-link-chip { background: #e0e7ff; color: var(--p-acc); padding: 8px 16px; border-radius: 30px; text-decoration: none; font-size: 12px; font-weight: 700; transition: background 0.2s; }
             .avx-link-chip:hover { background: #c7d2fe; }
 
-            /* GRAPH MODAL */
-            .avx-modal.full-screen .avx-modal-card { height: 85vh; display: flex; flex-direction: column; }
+            /* GRAPH MODAL FIX - WHITE SPACE REMOVAL */
+            .avx-modal.full-screen .avx-modal-card { 
+                height: 85vh; 
+                display: flex; 
+                flex-direction: column;
+                overflow: hidden; 
+            }
             .avx-graph-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
             .avx-graph-ctrls { display: flex; gap: 6px; margin-bottom: 20px; background: #f1f5f9; padding: 6px; border-radius: 16px; width: fit-content; }
             .avx-graph-ctrls button { padding: 8px 16px; border-radius: 12px; border: none; background: transparent; font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer; transition: all 0.2s; }
             .avx-graph-ctrls button.active { background: #fff; color: #0f172a; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-            .avx-canvas-container { flex: 1; width: 100%; position: relative; }
+            .avx-canvas-container { 
+                flex: 1; 
+                width: 100%; 
+                position: relative; 
+                min-height: 0;
+            }
             .avx-hint { text-align: center; font-size: 12px; color: #cbd5e1; margin-top: 15px; font-weight: 500; }
             .avx-btn-close-icon { font-size: 28px; background: none; border: none; cursor: pointer; color: #94a3b8; transition: color 0.2s; }
             .avx-btn-close-icon:hover { color: #64748b; }
