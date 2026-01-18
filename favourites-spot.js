@@ -1,8 +1,8 @@
 /* ==========================================================
-   favourites-spot.js – Premium Spot Market Engine (Supabase Linked)
+   favourites-spot.js â€“ Premium Spot Market Engine (Supabase Linked)
    Features: Hybrid Price (API/Manual), Live Trading, 
    Interactive Graph (Candle/Line), Auto-Holdings
-   Refined for Premium Aesthetics & Spot User Layout
+   Refined for Premium Aesthetics & Specific User Layout
    ========================================================== */
 (function() {
 
@@ -11,7 +11,7 @@
         SUPA_URL: 'https://hwrvqyipozrsxyjdpqag.supabase.co',
         SUPA_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM',
         CURRENT_FILE: 'favourites-spot.js', 
-        TARGET_CONTAINER: 'spot', // Targeted to Spot div
+        TARGET_CONTAINER: 'spot', // Matches HTML ID <div id="spot">
         REFRESH_RATE: 2000, 
         AUTO_CLOSE_SEC: 40,
         TABLES: {
@@ -35,7 +35,7 @@
     /* ---------- SUPABASE INIT ---------- */
     const supaLib = window.supabase || (window.parent && window.parent.supabase);
     if (!supaLib) {
-        console.error("❌ Supabase Library Missing");
+        console.error("âŒ Supabase Library Missing");
         const el = document.getElementById(CONFIG.TARGET_CONTAINER);
         if(el) el.innerHTML = '<div style="color:red;padding:20px;">Error: Supabase SDK not found.</div>';
         return;
@@ -117,7 +117,6 @@
             return;
         }
 
-        // Filter for Spot specific file
         State.tokens = data.filter(t => {
             if (!t.nosupported_js) return true;
             return !t.nosupported_js.includes(CONFIG.CURRENT_FILE);
@@ -203,8 +202,8 @@
             change: currentChange 
         };
 
-        // DOM Update - Using UNIQUE Spot IDs
-        const el = document.getElementById(`spot-price-${sym}`); 
+        // DOM Update - UNIQUE IDs for Spot Market
+        const el = document.getElementById(`spot-price-${sym}`);
         const card = document.getElementById(`spot-card-${sym}`);
         
         if (el && card) {
@@ -250,7 +249,7 @@
     
     function renderError(msg) {
         const app = document.getElementById(CONFIG.TARGET_CONTAINER);
-        if (app) app.innerHTML = `<div class="avx-error">⚠️ ${msg}</div>`;
+        if (app) app.innerHTML = `<div class="avx-error">âš ï¸ ${msg}</div>`;
     }
 
     function renderTokenList() {
@@ -260,7 +259,7 @@
         if (State.tokens.length === 0) {
             app.innerHTML = `
                 <div class="avx-empty">
-                    <h2>🚀 Spot Market Empty</h2>
+                    <h2>ðŸš€ Spot Market Empty</h2>
                     <p>Assets are being listed.</p>
                 </div>`;
             return;
@@ -279,27 +278,26 @@
                 iconHTML = `<span class="avx-icon-text">${t.symbol.substring(0,2)}</span>`;
             }
 
-            // Using unique IDs 'spot-card-' and 'spot-price-' to fix freeze issue
             return `
             <div class="avx-card-premium" id="spot-card-${t.symbol}">
                 
-                <!-- TOP SECTION -->
+                <!-- TOP SECTION: Icon Left, Name Middle, Price Right -->
                 <div class="avx-cp-top">
                     <div class="avx-cp-icon">
                         ${iconHTML}
                     </div>
                     <div class="avx-cp-details">
-                        <div class="avx-cp-header">
-                            <span class="avx-cp-sym">${t.symbol}</span>
-                            <span class="avx-cp-full">${t.full_name || t.name}</span>
-                        </div>
+                        <span class="avx-cp-sym">${t.symbol}</span>
+                        <span class="avx-cp-full">${t.full_name || t.name}</span>
+                    </div>
+                    <div class="avx-cp-price-box">
                         <div class="avx-cp-price" id="spot-price-${t.symbol}">
                             ${fmtINR(p.current)}
                         </div>
                     </div>
                 </div>
 
-                <!-- BUTTONS SECTION -->
+                <!-- ACTIONS: Buy Left / Sell Right -->
                 <div class="avx-cp-actions">
                     <button class="avx-btn-p buy-btn" onclick="AVX.openTrade('buy', '${t.symbol}')">
                         BUY
@@ -309,7 +307,7 @@
                     </button>
                 </div>
 
-                <!-- FOOTER SECTION -->
+                <!-- FOOTER SECTION: Graph Left / Info Right -->
                 <div class="avx-cp-footer">
                     <div class="avx-foot-btn" onclick="AVX.openGraph('${t.symbol}')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
@@ -326,6 +324,7 @@
 
     /* ---------- MODALS ---------- */
     
+    // --- TRADE MODAL ---
     function buildTradeModal() {
         if(document.getElementById('avx-trade-modal')) return;
 
@@ -340,14 +339,14 @@
                         <span id="avx-m-sym" class="avx-title">BTC</span>
                     </div>
                     <div class="avx-mh-right">
-                        <div id="avx-m-live-price" class="avx-price-tag">₹0.00</div>
+                        <div id="avx-m-live-price" class="avx-price-tag">â‚¹0.00</div>
                     </div>
                 </div>
                 
                 <div class="avx-stat-row">
                     <div class="avx-stat-pill">
                         <small>Balance</small>
-                        <span id="avx-m-bal">₹0.00</span>
+                        <span id="avx-m-bal">â‚¹0.00</span>
                     </div>
                     <div class="avx-stat-pill">
                         <small>Holding</small>
@@ -356,7 +355,7 @@
                 </div>
 
                 <div id="avx-price-warning" class="avx-warning-box" style="display:none;">
-                    ⚠️ Price loading... please wait.
+                    âš ï¸ Price loading... please wait.
                 </div>
 
                 <div class="avx-input-group">
@@ -411,7 +410,7 @@
              if(qty.value) amt.value = (parseFloat(qty.value) * price).toFixed(2);
              else amt.value = '';
         });
-
+        
         m.querySelector('#avx-confirm-btn').onclick = executeTrade;
     }
 
@@ -431,13 +430,13 @@
         
         const typeEl = document.getElementById('avx-m-type');
         typeEl.textContent = type.toUpperCase();
+        // Badge color logic for modal
         typeEl.className = type === 'buy' ? 'avx-badge buy' : 'avx-badge sell';
         
         document.getElementById('avx-m-sym').textContent = sym;
         const btn = document.getElementById('avx-confirm-btn');
         btn.textContent = `${type.toUpperCase()} ${sym}`;
         btn.className = type === 'buy' ? 'avx-btn-main buy' : 'avx-btn-main sell';
-        btn.disabled = false;
 
         document.getElementById('avx-m-bal').textContent = fmtINR(State.walletBal);
         const holding = State.holdings[sym] || 0;
@@ -478,7 +477,7 @@
             if(amt > State.walletBal) { toast("Insufficient Balance", "err"); return; }
         } else {
             const currentHold = State.holdings[sym] || 0;
-            if(qty > currentHold) { toast(`Insufficient ${sym}`, "err"); return; }
+            if(qty > currentHold) { toast(`Only hold ${currentHold.toFixed(4)} ${sym}`, "err"); return; }
         }
 
         const btn = document.getElementById('avx-confirm-btn');
@@ -572,7 +571,7 @@
         linksDiv.innerHTML = '';
         if(t.social_links) {
             Object.entries(t.social_links).forEach(([key, url]) => {
-                linksDiv.innerHTML += `<a href="${url}" target="_blank" class="avx-link-chip">${key} ↗</a>`;
+                linksDiv.innerHTML += `<a href="${url}" target="_blank" class="avx-link-chip">${key} â†—</a>`;
             });
         }
         openModal(m);
@@ -589,9 +588,9 @@
                 <div class="avx-graph-top">
                     <div>
                         <span id="avx-g-sym">BTC</span>
-                        <span id="avx-g-price">₹00.00</span>
+                        <span id="avx-g-price">â‚¹00.00</span>
                     </div>
-                    <button class="avx-btn-close-icon" onclick="AVX.closeModals()">×</button>
+                    <button class="avx-btn-close-icon" onclick="AVX.closeModals()">Ã—</button>
                 </div>
                 <div class="avx-graph-ctrls">
                     <button class="active" onclick="AVX.setGraphType('line')">Line</button>
@@ -669,13 +668,14 @@
 
         const getY = (val) => h - pad - ((val - minVal) / range) * (h - 2*pad);
 
-        // Chart Styling for Spot
+        // Gradient Background
         const grd = ctx.createLinearGradient(0, 0, 0, h);
         grd.addColorStop(0, "rgba(255, 255, 255, 0)");
         grd.addColorStop(1, "rgba(255, 255, 255, 0)");
         ctx.fillStyle = grd;
         ctx.fillRect(0,0,w,h);
 
+        // Grid Lines
         ctx.strokeStyle = 'rgba(0,0,0,0.05)';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -685,7 +685,7 @@
 
         if(chartCtx.type === 'line') {
             ctx.beginPath();
-            ctx.strokeStyle = '#2563eb'; // Blue for line
+            ctx.strokeStyle = '#3b82f6';
             ctx.lineWidth = 3;
             ctx.lineJoin = 'round';
             slice.forEach((d, i) => {
@@ -695,11 +695,12 @@
             });
             ctx.stroke();
 
+            // Area Gradient
             ctx.lineTo(w - ((slice.length-1)*step), h);
             ctx.lineTo(w, h);
             const gradFill = ctx.createLinearGradient(0, 0, 0, h);
-            gradFill.addColorStop(0, "rgba(37, 99, 235, 0.2)");
-            gradFill.addColorStop(1, "rgba(37, 99, 235, 0)");
+            gradFill.addColorStop(0, "rgba(59, 130, 246, 0.2)");
+            gradFill.addColorStop(1, "rgba(59, 130, 246, 0)");
             ctx.fillStyle = gradFill;
             ctx.fill();
         } else {
@@ -707,7 +708,7 @@
             slice.forEach((d, i) => {
                 const x = w - (i * step) - (step/2);
                 const isGreen = d.close >= d.open;
-                ctx.fillStyle = isGreen ? '#10b981' : '#f43f5e'; // Green/Red
+                ctx.fillStyle = isGreen ? '#00e396' : '#ff4560';
                 
                 ctx.fillRect(x-1, getY(d.high), 2, getY(d.low) - getY(d.high));
                 const yOpen = getY(d.open);
@@ -717,6 +718,7 @@
         }
         
         if(data[0]) document.getElementById('avx-g-price').textContent = fmtINR(data[0].close);
+        
         if(document.getElementById('avx-graph-modal').classList.contains('show')) {
             requestAnimationFrame(drawChart);
         }
@@ -741,6 +743,7 @@
         c.addEventListener('touchstart', e => { isDrag = true; startX = e.touches[0].clientX; });
         c.addEventListener('touchmove', e => {
             if(!isDrag) return;
+            // e.preventDefault(); // allow page scroll if vertical
             const dx = e.touches[0].clientX - startX;
             if(Math.abs(dx) > 5) {
                 chartCtx.offset -= Math.sign(dx);
@@ -765,132 +768,203 @@
         });
     }
 
-    /* ---------- PREMIUM STYLES INJECTION (SPOT SPECIFIC) ---------- */
+    /* ---------- PREMIUM STYLES INJECTION ---------- */
     function injectStyles() {
-        if(document.getElementById('avx-spot-css')) return;
+        if(document.getElementById('avx-premium-css')) return;
         const css = `
             @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
             
-            /* SPOT THEME VARIABLES */
-            .avx-card-premium {
-                --spot-bg: #ffffff;
-                --spot-text: #0f172a;
-                --spot-acc: #0ea5e9; /* Sky Blue */
-                --spot-green: #10b981;
-                --spot-red: #f43f5e;
+            :root { 
+                --p-bg: #f1f5f9; 
+                --p-card: #ffffff; 
+                --p-text: #1e293b; 
+                --p-acc: #6366f1;
+                --p-green: #10b981; 
+                --p-red: #f43f5e;
+                --p-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+                --p-glow: 0 0 15px rgba(99, 102, 241, 0.2);
             }
+            
+            body { font-family: 'Outfit', sans-serif !important; background: var(--p-bg); color: var(--p-text); -webkit-font-smoothing: antialiased; }
+            
+            /* LOADER */
+            .avx-loader { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:50px; }
+            .avx-spinner-premium { width: 40px; height: 40px; border: 3px solid rgba(99, 102, 241, 0.1); border-top-color: var(--p-acc); border-radius: 50%; animation: spin 0.8s ease-in-out infinite; margin-bottom: 15px; }
+            @keyframes spin { to { transform: rotate(360deg); } }
+            
+            /* EMPTY STATE */
+            .avx-empty { text-align:center; padding:40px; color:#94a3b8; opacity:0.8; }
 
-            /* CARD LAYOUT - Same Premium Feel */
+            /* TOAST */
+            #avx-toast { 
+                position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-20px); 
+                background: #fff; padding: 12px 24px; border-radius: 50px; 
+                box-shadow: 0 20px 40px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; 
+                opacity: 0; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10000; pointer-events: none; 
+            }
+            #avx-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+            .avx-toast-icon { font-size:18px; }
+            .avx-toast-msg { font-size:14px; font-weight:600; color:#1e293b; }
+            
+            /* PREMIUM CARD LAYOUT */
             .avx-card-premium {
-                background: var(--spot-bg);
+                background: var(--p-card);
                 border-radius: 28px;
                 padding: 24px;
                 margin-bottom: 24px;
-                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+                box-shadow: var(--p-shadow);
                 border: 1px solid rgba(255,255,255,0.7);
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 position: relative;
                 overflow: hidden;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
-            .avx-card-premium:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
-            }
-
-            /* HEADER */
-            .avx-cp-top { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+            .avx-card-premium:hover { transform: translateY(-3px); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08); }
+            .avx-card-premium:active { transform: scale(0.99); }
             
+            /* TOP: Icon, Name, Price */
+            .avx-cp-top { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
             .avx-cp-icon { 
-                width: 56px; height: 56px; border-radius: 20px; 
-                background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.03); 
-                display: flex; align-items: center; justify-content: center; 
+                width: 56px; height: 56px; border-radius: 20px; background: #fff; 
+                box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; align-items: center; justify-content: center; 
                 font-size: 24px; overflow: hidden; border: 1px solid #f1f5f9;
             }
             .avx-icon-img { width: 100%; height: 100%; object-fit: cover; }
+            .avx-icon-text { font-weight:700; color:var(--p-acc); font-size:20px; text-transform:uppercase; }
             
             .avx-cp-details { flex: 1; display:flex; flex-direction:column; justify-content:center; }
             .avx-cp-header { display:flex; align-items:baseline; gap:8px; margin-bottom:2px; }
-            .avx-cp-sym { font-weight: 800; font-size: 20px; color: #1e293b; letter-spacing: -0.5px; }
-            .avx-cp-full { font-weight: 500; font-size: 14px; color: #64748b; }
-            .avx-cp-price { font-weight: 700; font-size: 22px; color: #1e293b; transition: color 0.3s; letter-spacing: -0.5px; }
+            .avx-cp-sym { font-weight: 800; font-size: 20px; color: var(--p-text); letter-spacing: -0.5px; line-height: 1.2; }
+            .avx-cp-full { font-weight: 500; font-size: 13px; color: #64748b; }
+            
+            .avx-cp-price-box { text-align: right; }
+            .avx-cp-price { font-weight: 700; font-size: 20px; color: #1e293b; transition: color 0.3s; font-family: 'Outfit', monospace; }
 
-            /* ACTIONS */
+            /* ACTIONS: Buy Left, Sell Right (UPDATED TO MATCH ALPHA STYLE) */
             .avx-cp-actions { display: flex; gap: 14px; margin-bottom: 20px; }
-            .avx-btn-p {
-                flex: 1; border: none; padding: 14px; border-radius: 18px;
-                font-weight: 700; font-size: 15px; color: white; cursor: pointer;
-                transition: opacity 0.2s; display: flex; align-items: center; justify-content: center;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            .avx-btn-p { 
+                flex: 1; border: none; padding: 10px 16px; border-radius: 12px; 
+                font-weight: 700; font-size: 12px; cursor: pointer; color: white;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: opacity 0.2s, transform 0.1s;
+                display: flex; align-items: center; justify-content: center;
+                text-transform: uppercase; letter-spacing: 0.5px;
             }
-            .buy-btn { background: linear-gradient(135deg, #6366f1, #3b82f6); box-shadow: 0 6px 15px -3px rgba(99, 102, 241, 0.4); }
-            .sell-btn { background: linear-gradient(135deg, #f43f5e, #e11d48); box-shadow: 0 6px 15px -3px rgba(244, 63, 94, 0.4); }
+            .buy-btn { background: linear-gradient(to right, #0f172a, #1e3a8a); box-shadow: 0 4px 10px rgba(30, 58, 138, 0.25); }
+            .sell-btn { background: linear-gradient(to right, #b91c1c, #ef4444); box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25); }
             .avx-btn-p:active { opacity: 0.9; transform: scale(0.98); }
 
-            /* FOOTER */
+            /* FOOTER: Graph Left, Info Right */
             .avx-cp-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 16px; margin-top: 5px; }
-            .avx-foot-btn { display: flex; align-items: center; gap: 8px; color: #94a3b8; cursor: pointer; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 12px; transition: 0.2s; }
-            .avx-foot-btn:hover { color: #6366f1; background: #f8fafc; }
+            .avx-foot-btn { 
+                display: flex; align-items: center; gap: 8px; color: #94a3b8; 
+                cursor: pointer; font-size: 13px; font-weight: 600; transition: color 0.2s; padding: 4px 8px; border-radius: 8px;
+            }
+            .avx-foot-btn:hover { color: var(--p-acc); background: #f8fafc; }
             .avx-foot-btn svg { width: 18px; height: 18px; stroke-width: 2.5; }
-
-            /* LOADER & COMMON */
-            .avx-spinner-premium { width: 40px; height: 40px; border: 3px solid rgba(99, 102, 241, 0.1); border-top-color: #6366f1; border-radius: 50%; animation: spin 0.8s ease-in-out infinite; margin-bottom: 15px; }
-            .avx-loader { display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 50px; }
-            @keyframes spin { to { transform: rotate(360deg); } }
-
-            /* TOAST (Shared) */
-            #avx-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #fff; padding: 12px 24px; border-radius: 50px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; opacity: 0; transition: 0.4s; z-index: 10001; pointer-events: none; }
-            #avx-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
             
-            /* MODALS (Shared Styles, can coexist) */
-            .avx-modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(12px); z-index: 9999; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+            /* MODALS PREMIUM */
+            .avx-modal {
+                position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(12px);
+                z-index: 9999; display: none; align-items: center; justify-content: center;
+                opacity: 0; transition: opacity 0.3s ease;
+            }
             .avx-modal.show { opacity: 1; }
-            .avx-modal-card { background: #fff; width: 90%; max-width: 440px; border-radius: 32px; padding: 30px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); border: 1px solid #fff; }
+            
+            .avx-modal-card {
+                background: #fff; width: 90%; max-width: 440px; border-radius: 32px;
+                padding: 30px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+                transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                border: 1px solid #fff;
+            }
             .avx-modal.show .avx-modal-card { transform: scale(1); }
             
+            .avx-modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
             .avx-mh-left { display: flex; flex-direction: column; gap: 5px; }
             .avx-title { font-size: 28px; font-weight: 800; letter-spacing: -1px; line-height: 1; color: #0f172a; }
             .avx-badge { font-size: 11px; font-weight: 800; padding: 6px 10px; border-radius: 8px; display: inline-block; width: fit-content; text-transform: uppercase; letter-spacing: 0.5px; }
-            .avx-badge.buy { background: #e0e7ff; color: #6366f1; }
-            .avx-badge.sell { background: #fee2e2; color: #f43f5e; }
+            .avx-badge.buy { background: #e0e7ff; color: var(--p-acc); }
+            .avx-badge.sell { background: #fee2e2; color: var(--p-red); }
+            .avx-price-tag { font-family: 'Outfit', monospace; font-size: 18px; font-weight: 700; color: #334155; background: #f1f5f9; padding: 6px 12px; border-radius: 12px; }
+
+            .avx-stat-row { display: flex; gap: 12px; margin-bottom: 24px; }
+            .avx-stat-pill { flex: 1; background: #f8fafc; padding: 12px; border-radius: 16px; text-align: center; border: 1px solid #e2e8f0; }
+            .avx-stat-pill small { display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; text-transform: uppercase; }
+            .avx-stat-pill span { font-weight: 700; font-size: 14px; color: #0f172a; }
+
+            .avx-warning-box { background: #fffbeb; color: #b45309; font-size: 13px; padding: 12px; border-radius: 12px; margin-bottom: 20px; text-align: center; border: 1px solid #fcd34d; font-weight: 600; }
+
+            .avx-input-group label, .avx-inp-cont label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 8px; display: block; letter-spacing: 0.5px; }
+            .avx-select-wrapper select { width: 100%; padding: 14px; border-radius: 16px; border: 2px solid #f1f5f9; background: #fff; font-weight: 600; outline: none; margin-bottom: 20px; color: #334155; font-size: 14px; }
             
             .avx-trade-inputs { display: flex; gap: 16px; margin-bottom: 30px; }
             .avx-inp-cont { flex: 1; }
-            .avx-inp-cont label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 8px; display: block; letter-spacing: 0.5px; }
-            .avx-inp-cont input { width: 100%; padding: 16px; border-radius: 18px; border: 2px solid #f1f5f9; font-size: 20px; font-weight: 700; text-align: center; outline: none; transition: border 0.2s, box-shadow 0.2s; color: #0f172a; background: #fff; }
-            .avx-inp-cont input:focus { border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
+            .avx-inp-cont input { 
+                width: 100%; padding: 16px; border-radius: 18px; border: 2px solid #f1f5f9; 
+                font-size: 20px; font-weight: 700; text-align: center; outline: none; transition: border 0.2s, box-shadow 0.2s; 
+                color: #0f172a; background: #fff;
+            }
+            .avx-inp-cont input:focus { border-color: var(--p-acc); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
             
             .avx-btn-main { width: 100%; padding: 18px; border: none; border-radius: 20px; font-weight: 700; font-size: 16px; color: white; cursor: pointer; margin-bottom: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2); transition: transform 0.1s; }
             .avx-btn-main:active { transform: scale(0.98); }
-            .avx-btn-main.buy { background: #6366f1; }
-            .avx-btn-main.sell { background: #f43f5e; }
-            .avx-btn-text { width: 100%; padding: 12px; background: none; border: none; color: #94a3b8; font-weight: 600; cursor: pointer; transition: color 0.2s; }
+            .avx-btn-main.buy { background: var(--p-acc); }
+            .avx-btn-main.sell { background: var(--p-red); }
+            .avx-btn-text { background: none; border: none; width: 100%; padding: 12px; color: #94a3b8; font-weight: 600; cursor: pointer; font-size: 14px; transition: color 0.2s; }
             .avx-btn-text:hover { color: #64748b; }
-            
-            /* GRAPH */
+
+            /* INFO MODAL */
+            .avx-info-header { text-align: center; margin-bottom: 30px; }
+            .avx-glow-icon { 
+                width: 80px; height: 80px; margin: 0 auto 16px; border-radius: 28px; 
+                background: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.06); 
+                display: flex; align-items: center; justify-content: center; font-size: 36px; border: 1px solid #f1f5f9;
+            }
+            .avx-glow-icon img { width: 100%; height: 100%; border-radius: 28px; object-fit: cover; }
+            .avx-info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+            .avx-ig-item { background: #f8fafc; padding: 16px 8px; border-radius: 18px; text-align: center; border: 1px solid #e2e8f0; }
+            .avx-ig-item span { display: block; font-size: 10px; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; font-weight: 700; }
+            .avx-ig-item b { font-size: 14px; color: #0f172a; font-weight: 700; }
+            .avx-desc-box { font-size: 14px; line-height: 1.6; color: #475569; background: #f8fafc; padding: 18px; border-radius: 20px; margin-bottom: 24px; max-height: 140px; overflow-y: auto; border: 1px solid #e2e8f0; }
+            .avx-links-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 15px; }
+            .avx-link-chip { background: #e0e7ff; color: var(--p-acc); padding: 8px 16px; border-radius: 30px; text-decoration: none; font-size: 12px; font-weight: 700; transition: background 0.2s; }
+            .avx-link-chip:hover { background: #c7d2fe; }
+
+            /* GRAPH MODAL FIX - WHITE SPACE REMOVAL */
+            .avx-modal.full-screen .avx-modal-card { 
+                height: 85vh; 
+                display: flex; 
+                flex-direction: column;
+                overflow: hidden; 
+            }
             .avx-graph-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
             .avx-graph-ctrls { display: flex; gap: 6px; margin-bottom: 20px; background: #f1f5f9; padding: 6px; border-radius: 16px; width: fit-content; }
             .avx-graph-ctrls button { padding: 8px 16px; border-radius: 12px; border: none; background: transparent; font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer; transition: all 0.2s; }
             .avx-graph-ctrls button.active { background: #fff; color: #0f172a; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+            .avx-canvas-container { 
+                flex: 1; 
+                width: 100%; 
+                position: relative; 
+                min-height: 0;
+            }
+            .avx-hint { text-align: center; font-size: 12px; color: #cbd5e1; margin-top: 15px; font-weight: 500; }
+            .avx-btn-close-icon { font-size: 28px; background: none; border: none; cursor: pointer; color: #94a3b8; transition: color 0.2s; }
+            .avx-btn-close-icon:hover { color: #64748b; }
         `;
-        const s = document.createElement('style'); s.id = 'avx-spot-css'; s.textContent = css; document.head.appendChild(s);
+        const style = document.createElement('style');
+        style.id = 'avx-premium-css';
+        style.textContent = css;
+        document.head.appendChild(style);
     }
 
-    /* ---------- EXPOSE TO WINDOW (AVX NAMESPACE) ---------- */
-    window.AVX = window.AVX || {};
-    // Merge functions into global AVX object
-    Object.assign(window.AVX, {
+    /* ---------- EXPOSE TO WINDOW ---------- */
+    window.AVX = {
         openTrade,
         closeModals,
         openInfo,
         openGraph,
         setGraphType
-    });
+    };
 
     /* ---------- BOOTSTRAP ---------- */
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initApp);
-    } else {
-        initApp();
-    }
+    document.addEventListener('DOMContentLoaded', initApp);
 
 })();
