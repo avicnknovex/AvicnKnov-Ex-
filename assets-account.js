@@ -1,5 +1,6 @@
+
 /* ==========================================================
-   favourites-holdings.js – Premium Portfolio & Holdings Manager
+   assets-account.js – Premium Portfolio & Holdings Manager
    Features: Real-time Holdings Sync, Net Quantity Calculation,
    Instant UI Updates, Premium "8K" Aesthetics
    ========================================================== */
@@ -11,7 +12,7 @@
         SUPA_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM',
         TARGET_CONTAINER: 'account',           
         CURRENT_FILE: 'assets-account.js', 
-        REFRESH_RATE: 2000,
+        REFRESH_RATE: 3000, // 3 Seconds for Live Update
         TABLES: {
             WALLET: 'user_wallets',
             CONTROL: 'crypto_token_control',
@@ -96,13 +97,35 @@
                 fetchHoldings()
             ]);
 
-            startPriceEngine();
+            // Render list first, then start engine
             renderHoldingsList();
+            startPriceEngine();
+            startAutoRefresh(); // <--- Added Auto Refresh System
 
         } catch (err) {
             console.error(err);
             app.innerHTML = `<div class="avx-error">⚠️ Connection Error. Refresh page.</div>`;
         }
+    }
+
+    /* ---------- AUTO REFRESH SYSTEM (NEW) ---------- */
+    function startAutoRefresh() {
+        // Runs every 5 seconds to sync holdings from DB
+        // This ensures if user buys in Spot/CoinM, it appears here automatically.
+        setInterval(async () => {
+            if(!State.user) return;
+            
+            // Silently fetch latest data
+            await Promise.all([
+                fetchWallet(),
+                fetchHoldings()
+            ]);
+            
+            // Re-render list to show added/removed tokens or updated quantities
+            // Note: We don't stop the price engine, it runs independently.
+            renderHoldingsList(); 
+            
+        }, 5000); 
     }
 
     /* ---------- DATA FETCHING ---------- */
@@ -152,18 +175,51 @@
         }
     }
 
-    /* ---------- PRICE ENGINE (FIXED & ROBUST) ---------- */
+    /* ---------- PRICE ENGINE (FIXED: LIVE + MANUAL) ---------- */
     function startPriceEngine() {
-        // Run immediately first
-        runPriceUpdates();
-        // Then loop
-        setInterval(runPriceUpdates, CONFIG.REFRESH_RATE);
-    }
-
-    function runPriceUpdates() {
         if(!State.tokens || State.tokens.length === 0) return;
 
-        State.tokens.forEach(t => {
+        // 1. Immediate Execution
+        fetchLivePrices();
+        simulateManualPrices();
+
+        // 2. Set Intervals
+        // Live Prices (API)
+        setInterval(fetchLivePrices, CONFIG.REFRESH_RATE);
+        
+        // Manual Prices (Simulation)
+        setInterval(simulateManualPrices, 2000); 
+    }
+
+    // Function to handle Real API Tokens
+    async function fetchLivePrices() {
+        const apiTokens = State.tokens.filter(t => t.is_live_api && t.api_url);
+        if (apiTokens.length === 0) return;
+
+        // Fetch all concurrently
+        apiTokens.forEach(async (t) => {
+            try {
+                const res = await fetch(t.api_url);
+                const json = await res.json();
+                
+                // Flexible parsing: looks for first key, then 'inr'
+                const key = Object.keys(json)[0]; 
+                if(key && json[key] && json[key].inr) {
+                     const price = Number(json[key].inr);
+                     updatePriceUI(t.symbol, price);
+                }
+            } catch (e) {
+                // Silent fail or retry logic
+            }
+        });
+    }
+
+    // Function to handle Manual / Table set Tokens
+    function simulateManualPrices() {
+        const manualTokens = State.tokens.filter(t => !t.is_live_api);
+        if (manualTokens.length === 0) return;
+
+        manualTokens.forEach(t => {
             const currentObj = State.prices[t.symbol] || { current: Number(t.manual_price) };
             const current = currentObj.current;
             
@@ -190,11 +246,13 @@
         if (el) {
             el.textContent = fmtINR(newPrice);
             // Flash Effect
-            el.style.color = newPrice >= old ? '#00e396' : '#ff4560';
-            setTimeout(() => { if(el) el.style.color = '#1e293b'; }, 800);
+            if (newPrice !== old) {
+                el.style.color = newPrice >= old ? '#00e396' : '#ff4560';
+                setTimeout(() => { if(el) el.style.color = '#1e293b'; }, 800);
+            }
         }
 
-        // 2. Update Total Value in Badge (Optional, added for premium feel)
+        // 2. Update Total Value in Badge
         const holdQty = State.holdings[sym] || 0;
         const valEl = document.getElementById(`hold-val-${sym}`);
         if (valEl && holdQty > 0) {
@@ -213,9 +271,19 @@
              // Auto-calc inputs in real-time
              const qtyIn = document.getElementById('avx-t-qty');
              const amtIn = document.getElementById('avx-t-amt');
+             
+             // If user is focused on Qty, update Amount
              if(document.activeElement === qtyIn && qtyIn.value){
                  amtIn.value = (Number(qtyIn.value) * newPrice).toFixed(2);
              }
+             // If user is focused on Amount, update Qty
+             // Note: Usually we don't update qty while typing amount to avoid cursor jumping, 
+             // but strictly following price updates:
+             /* 
+             else if(document.activeElement === amtIn && amtIn.value) {
+                 qtyIn.value = (Number(amtIn.value) / newPrice).toFixed(6);
+             } 
+             */
         }
     }
 
