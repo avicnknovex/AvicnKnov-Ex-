@@ -1,1384 +1,1278 @@
-/* ==========================================================
-   flash-plqn.js – PLQN Flash Trading with Advanced AI
-   Ultra-Attractive Trading System + PLQN AI Assistant
-   ========================================================== */
-(function(){
 
-  /* ---------- CONFIG ---------- */
-  const SUPA_URL  = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
-  const SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+/* ==========================================================================
+   flach-plqn.js
+   --------------------------------------------------------------------------
+   PREMIUM FLASH PLQN MARKET ENGINE (v2.0 - REAL WORKING)
+   
+   Target Container: <div id="plqn"></div>
+   Dependencies: Supabase Client (window.supabase)
+   
+   FEATURES:
+   1. Hybrid Price Engine (Live API + Manual Simulation)
+   2. PLQN Holding System (1 to 60 Days Selection)
+   3. Daily Bonus Calculation (0.0002% or via plqn_control)
+   4. Specific Order Selling (Select which holding to sell)
+   5. Premium History Dashboard with Admin Messages
+   6. Real-time Wallet & Portfolio Sync
+   7. Auto-Recovery & Error Handling
+   
+   AUTHOR: AI Developer
+   DATE: 2024
+   ========================================================================== */
 
-  const MODE              = 'local';
-  const MIN_INR           = 100;
-  const PRICE_REFRESH_MS  = 25000; // More frequent updates for flash trading
-  const HOLD_KEY          = 'AVX_plqn_holdings';
+(function() {
+    'use strict';
 
-  /* ---------- PLQN FLASH TOKENS (High-Performance Trading) ---------- */
-  const PLQN_TOKENS = [
-    ['BTC','Bitcoin','bitcoin'],
-    ['ETH','Ethereum','ethereum'],
-    ['BNB','BNB','binancecoin'],
-    ['SOL','Solana','solana'],
-    ['XRP','XRP','ripple'],
-    ['ADA','Cardano','cardano'],
-    ['DOGE','Dogecoin','dogecoin'],
-    ['MATIC','Polygon','matic-network'],
-    ['DOT','Polkadot','polkadot'],
-    ['AVAX','Avalanche','avalanche-2'],
-    ['SHIB','Shiba Inu','shiba-inu'],
-    ['ATOM','Cosmos','cosmos'],
-    ['LINK','Chainlink','chainlink'],
-    ['UNI','Uniswap','uniswap'],
-    ['LTC','Litecoin','litecoin'],
-    ['TRX','TRON','tron'],
-    ['NEAR','NEAR Protocol','near'],
-    ['APT','Aptos','aptos'],
-    ['SAND','The Sandbox','the-sandbox'],
-    ['AAVE','Aave','aave'],
-    ['MKR','Maker','maker'],
-    ['ALGO','Algorand','algorand'],
-    ['FTM','Fantom','fantom'],
-    ['VET','VeChain','vechain'],
-    ['FLOW','Flow','flow'],
-    ['COMP','Compound','compound-governance-token'],
-    ['ENS','ENS','ethereum-name-service'],
-    ['KAVA','Kava','kava'],
-    ['CELO','Celo','celo'],
-    ['STX','Stacks','blockstack']
-  ];
-
-  const CG_ID_MAP = {};
-  PLQN_TOKENS.forEach(([s,_,id])=>{ CG_ID_MAP[s]=id; });
-
-  /* ---------- SUPABASE CLIENT ---------- */
-  const supaLib = window.supabase || (window.parent && window.parent.supabase);
-  if(!supaLib){ console.error("Supabase lib not found."); return; }
-  const supa = supaLib.createClient(SUPA_URL, SUPA_KEY);
-
-  /* ---------- PRICE & MARKET DATA CACHE ---------- */
-  let livePrices = {}; // {SYM:inr}
-  let marketData = {}; // {SYM: {market_cap, price_change_24h, ...}}
-
-  /* ---------- UTILS ---------- */
-  const fmtINR = v => '₹' + Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:2});
-  const fmtNumber = v => Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:0});
-
-  function toast(msg, ok=true){
-    let t = document.getElementById('plqn-toast');
-    if(!t){
-      t = document.createElement('div');
-      t.id='plqn-toast';
-      t.style.cssText=`position:fixed;top:20px;right:20px;background:#333;color:white;padding:12px 20px;border-radius:12px;z-index:99999;opacity:0;transition:all 0.4s cubic-bezier(0.4, 0, 0.2, 1);box-shadow:0 10px 30px rgba(0,0,0,0.3);`;
-      document.body.appendChild(t);
-    }
-    t.textContent = msg;
-    t.style.background = ok ? 'linear-gradient(135deg, #28a745, #20c997)' : 'linear-gradient(135deg, #dc3545, #fd7e14)';
-    t.style.opacity = '1';
-    t.style.transform = 'translateX(0)';
-    setTimeout(()=>{
-      t.style.opacity='0';
-      t.style.transform='translateX(100px)';
-    },3500);
-  }
-
-  /* ---------- HOLDINGS MANAGEMENT ---------- */
-  function localGetHoldings(){
-    try{ return JSON.parse(localStorage.getItem(HOLD_KEY)) || {}; }
-    catch(e){ return {}; }
-  }
-  function localSetHoldings(obj){
-    localStorage.setItem(HOLD_KEY, JSON.stringify(obj));
-  }
-
-  async function getHoldingsMap(){
-    return localGetHoldings();
-  }
-  async function updateHolding(symbol,qty,cost_inr){
-    symbol=symbol.toUpperCase();
-    const h=localGetHoldings();
-    if(qty<=0) delete h[symbol];
-    else h[symbol]={qty,cost_inr};
-    localSetHoldings(h);
-  }
-  async function getHolding(symbol){
-    symbol=symbol.toUpperCase();
-    const map=await getHoldingsMap();
-    const r=map[symbol];
-    if(!r) return {qty:0,cost_inr:0};
-    return {qty:Number(r.qty||0),cost_inr:Number(r.cost_inr||0)};
-  }
-
-  /* ---------- WALLET ---------- */
-  async function getUser(){
-    const {data:{user}} = await supa.auth.getUser();
-    return user;
-  }
-  async function getWalletINR(){
-    const u=await getUser(); if(!u) return 0;
-    const {data,error}=await supa.from('user_wallets').select('balance').eq('uid',u.id).single();
-    if(error){ console.error('wallet fetch error',error); return 0; }
-    return Number(data?.balance||0);
-  }
-  async function setWalletINR(newBal){
-    const u=await getUser(); if(!u) return;
-    const {error}=await supa.from('user_wallets').update({balance:newBal}).eq('uid',u.id);
-    if(error) console.error('wallet update error',error);
-    if(typeof window.updateWalletBalance==='function'){ window.updateWalletBalance(); }
-    else if(window.parent && typeof window.parent.updateWalletBalance==='function'){ window.parent.updateWalletBalance(); }
-  }
-
-  /* ---------- ENHANCED PRICE & MARKET DATA REFRESH ---------- */
-  async function refreshPricesAndMarketData(){
-    try{
-      const ids = PLQN_TOKENS.map(t=>t[2]).join(',');
-      const res = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=inr&ids=${ids}&order=market_cap_desc&per_page=50&page=1&sparkline=false&price_change_percentage=24h`);
-      const data = await res.json();
-      
-      data.forEach(coin => {
-        const token = PLQN_TOKENS.find(([_,__,id]) => id === coin.id);
-        if(!token) return;
+    /* ==========================================================================
+       1. SYSTEM CONFIGURATION
+       ========================================================================== */
+    const CONFIG = {
+        // Database Connection
+        SUPA_URL: 'https://hwrvqyipozrsxyjdpqag.supabase.co',
+        SUPA_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM',
         
-        const [sym] = token;
-        livePrices[sym] = Number(coin.current_price || 0);
-        marketData[sym] = {
-          market_cap: coin.market_cap || 0,
-          price_change_24h: coin.price_change_percentage_24h || 0,
-          volume_24h: coin.total_volume || 0,
-          market_cap_rank: coin.market_cap_rank || 0
-        };
+        // App Settings
+        APP_ID: 'plqn',               // HTML ID for the main container
+        FILE_ID: 'flach-plqn.js',     // Internal ID for filtering tokens
+        REFRESH_RATE: 2000,           // Price update interval (ms)
+        BONUS_CHECK_INTERVAL: 15000,  // Check for bonus updates every 15s
         
-        // Update price display
-        const priceEl = document.getElementById('plqn-price-'+sym);
-        if(priceEl) priceEl.textContent = fmtINR(livePrices[sym]);
+        // Holding Logic
+        MIN_DAYS: 1,
+        MAX_DAYS: 65,
+        MAX_HOLDINGS_PER_USER: 4,     // As per requirement
+        DEFAULT_BONUS_PERCENT: 0.0002,// Default daily bonus if table is empty
         
-        // Update change display
-        const changeEl = document.getElementById('plqn-change-'+sym);
-        if(changeEl) {
-          const change = marketData[sym].price_change_24h;
-          changeEl.textContent = (change > 0 ? '+' : '') + change.toFixed(2) + '%';
-          changeEl.className = `token-change ${change >= 0 ? 'positive' : 'negative'}`;
+        // Database Tables
+        TABLES: {
+            WALLET: 'user_wallets',
+            CONTROL: 'crypto_token_control',
+            HISTORY: 'crypto_token_histry',
+            PLQN_DATA: 'plqn_data',       // New Table for Holdings
+            PLQN_CTRL: 'plqn_control'     // New Table for Bonus Rates
         }
-      });
-    }catch(e){ 
-      console.error('PLQN price/market data fetch fail',e); 
+    };
+
+    /* ==========================================================================
+       2. GLOBAL STATE MANAGEMENT
+       ========================================================================== */
+    const State = {
+        supa: null,           // Supabase Client Instance
+        user: null,           // Current Logged-in User
+        
+        // Data Cache
+        tokens: [],           // Available PLQN Tokens
+        prices: {},           // Real-time Prices: { symbol: { current: 0, last: 0 } }
+        wallet: 0,            // User INR Balance
+        myOrders: [],         // Active Holdings from plqn_data
+        bonusRates: {},       // Rates from plqn_control
+        
+        // UI State
+        selectedDays: 0,      // Days selected in Buy Modal
+        sellOrderId: null,    // Order ID selected in Sell Modal
+        chartData: {          // Data for Graph
+            symbol: null,
+            history: [],
+            offset: 0,
+            type: 'line'
+        },
+        
+        // Engine Control
+        intervals: [],        // Store interval IDs to clear on reload
+        isProcessing: false   // Transaction lock
+    };
+
+    /* ==========================================================================
+       3. UTILITY FUNCTIONS
+       ========================================================================== */
+    
+    // Format Currency (INR)
+    const fmtINR = (val) => {
+        return '₹' + Number(val || 0).toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 4
+        });
+    };
+
+    // Format Crypto Quantity
+    const fmtQty = (val) => {
+        return Number(val || 0).toLocaleString('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 6
+        });
+    };
+
+    // Format Date
+    const fmtDate = (isoString) => {
+        if(!isoString) return '--';
+        const d = new Date(isoString);
+        return d.toLocaleDateString('en-IN', {
+            day: '2-digit', month: 'short', year: '2-digit'
+        });
+    };
+
+    // UI Toast Notification System
+    function toast(message, type = 'success') {
+        // Remove existing toast
+        const existing = document.getElementById('avx-plqn-toast');
+        if (existing) existing.remove();
+
+        const t = document.createElement('div');
+        t.id = 'avx-plqn-toast';
+        t.className = `plqn-toast ${type}`;
+        t.innerHTML = `
+            <div class="plqn-toast-icon">${type === 'success' ? '✅' : '⚠️'}</div>
+            <div class="plqn-toast-msg">${message}</div>
+        `;
+        document.body.appendChild(t);
+
+        // Animation
+        requestAnimationFrame(() => t.classList.add('show'));
+        setTimeout(() => {
+            t.classList.remove('show');
+            setTimeout(() => t.remove(), 300);
+        }, 3500);
     }
-  }
 
-  /* ---------- SAVE TRADE ---------- */
-  async function saveTrade(action,symbol,qty,amount_inr,price_inr){
-    try{
-      const {data:{user}} = await supa.auth.getUser();
-      if(!user) return;
-      const {error} = await supa.from('user_trades').insert({
-        user_id:user.id,
-        action,
-        symbol,
-        qty,
-        price_inr,
-        amount_inr
-      });
-      if(error){ console.error('PLQN trade insert error',error); }
-    }catch(e){
-      console.error('PLQN saveTrade fail',e);
+    /* ==========================================================================
+       4. INITIALIZATION ENGINE
+       ========================================================================== */
+    
+    // Main Entry Point
+    async function initApp() {
+        // 1. Inject Styles immediately
+        injectPremiumStyles();
+
+        const root = document.getElementById(CONFIG.APP_ID);
+        if (!root) {
+            console.error(`Container #${CONFIG.APP_ID} not found in DOM.`);
+            return;
+        }
+
+        renderLoader(root, "Initializing PLQN Engine...");
+
+        // 2. Connect to Supabase (with Retry Logic)
+        try {
+            await connectSupabase();
+        } catch (e) {
+            renderError(root, "Connection Failed. Please refresh.");
+            return;
+        }
+
+        // 3. Authenticate User
+        const { data: { user }, error } = await State.supa.auth.getUser();
+        if (error || !user) {
+            renderEmpty(root, "Login Required", "Please login to access the Premium PLQN Market.");
+            return;
+        }
+        State.user = user;
+
+        // 4. Initial Data Fetch (Parallel)
+        await refreshAllData();
+
+        // 5. Render Core UI
+        renderAppStructure();
+        renderTokenList();
+
+        // 6. Start Real-time Engines
+        startPriceEngine();
+        startBonusEngine();
+        
+        console.log("✅ PLQN Engine Started Successfully");
     }
-  }
 
-  /* ---------- RENDER PLQN ULTRA-ATTRACTIVE INTERFACE ---------- */
-  function renderPLQNInterface(){
-    const c=document.getElementById('plqn'); 
-    if(!c) return;
+    // Robust Supabase Connector
+    function connectSupabase(attempts = 0) {
+        return new Promise((resolve, reject) => {
+            if (window.supabase) {
+                State.supa = window.supabase.createClient(CONFIG.SUPA_URL, CONFIG.SUPA_KEY);
+                resolve();
+            } else if (window.parent && window.parent.supabase) {
+                State.supa = window.parent.supabase.createClient(CONFIG.SUPA_URL, CONFIG.SUPA_KEY);
+                resolve();
+            } else {
+                if (attempts < 5) {
+                    setTimeout(() => connectSupabase(attempts + 1).then(resolve).catch(reject), 500);
+                } else {
+                    reject("Supabase SDK not loaded");
+                }
+            }
+        });
+    }
 
-    c.innerHTML = `
-      <div class="plqn-hero">
-        <div class="plqn-hero-bg"></div>
-        <div class="plqn-hero-content">
-          <div class="plqn-title-section">
-            <h1 class="plqn-main-title">⚡ PLQN FLASH</h1>
-            <p class="plqn-subtitle">Lightning-Speed Trading Platform</p>
-            <div class="plqn-stats">
-              <div class="plqn-stat">
-                <span class="stat-value">30+</span>
-                <span class="stat-label">Assets</span>
-              </div>
-              <div class="plqn-stat">
-                <span class="stat-value">24/7</span>
-                <span class="stat-label">Trading</span>
-              </div>
-              <div class="plqn-stat">
-                <span class="stat-value">⚡</span>
-                <span class="stat-label">Fast</span>
-              </div>
-            </div>
-          </div>
-          <div class="plqn-ai-section">
-            <button class="plqn-ai-btn" onclick="PLQN_openAI()">
-              <div class="ai-btn-content">
-                <span class="ai-icon">🧠</span>
-                <div class="ai-text">
-                  <span class="ai-title">PLQN AI</span>
-                  <span class="ai-desc">Advanced Trading Assistant</span>
+    // Refresh all critical data
+    async function refreshAllData() {
+        await Promise.all([
+            fetchWalletBalance(),
+            fetchMarketTokens(),
+            fetchBonusConfig(),
+            fetchMyHoldings()
+        ]);
+    }
+
+    /* ==========================================================================
+       5. DATA FETCHERS
+       ========================================================================== */
+
+    async function fetchWalletBalance() {
+        const { data } = await State.supa
+            .from(CONFIG.TABLES.WALLET)
+            .select('balance')
+            .eq('uid', State.user.id)
+            .single();
+        
+        if (data) State.wallet = Number(data.balance);
+    }
+
+    async function fetchMarketTokens() {
+        const { data } = await State.supa
+            .from(CONFIG.TABLES.CONTROL)
+            .select('*')
+            .order('id', { ascending: true });
+
+        if (data) {
+            // Filter: Only include tokens NOT in 'nosupported_js' list for this file
+            State.tokens = data.filter(t => {
+                if (!t.nosupported_js) return true;
+                return !t.nosupported_js.includes(CONFIG.FILE_ID);
+            });
+
+            // Initialize Price State
+            State.tokens.forEach(t => {
+                if (!State.prices[t.symbol]) {
+                    State.prices[t.symbol] = {
+                        current: Number(t.manual_price || 0),
+                        last: Number(t.manual_price || 0),
+                        change: Number(t.manual_change_percent || 0)
+                    };
+                }
+            });
+        }
+    }
+
+    async function fetchBonusConfig() {
+        // Fetch from plqn_control to get custom percentages
+        const { data } = await State.supa
+            .from(CONFIG.TABLES.PLQN_CTRL)
+            .select('symbol, daily_bonus_percent');
+            
+        if (data) {
+            data.forEach(row => {
+                State.bonusRates[row.symbol] = Number(row.daily_bonus_percent);
+            });
+        }
+    }
+
+    async function fetchMyHoldings() {
+        // Fetch specific active orders from plqn_data
+        const { data } = await State.supa
+            .from(CONFIG.TABLES.PLQN_DATA)
+            .select('*')
+            .eq('user_id', State.user.id)
+            .eq('status', 'active')
+            .order('created_at', { ascending: false });
+
+        if (data) {
+            State.myOrders = data;
+        }
+    }
+
+    /* ==========================================================================
+       6. PRICE & BONUS ENGINES
+       ========================================================================== */
+
+    function startPriceEngine() {
+        // Clear old intervals
+        State.intervals.forEach(i => clearInterval(i));
+        State.intervals = [];
+
+        // 1. Live API Polling (Every 10s)
+        const apiTokens = State.tokens.filter(t => t.is_live_api && t.api_url);
+        if (apiTokens.length > 0) {
+            const apiInt = setInterval(() => {
+                apiTokens.forEach(async (t) => {
+                    try {
+                        const res = await fetch(t.api_url);
+                        const json = await res.json();
+                        // Assume standard structure { "bitcoin": { "inr": 50000 } }
+                        const key = Object.keys(json)[0];
+                        if (key && json[key].inr) {
+                            updateTokenPrice(t.symbol, Number(json[key].inr));
+                        }
+                    } catch (e) { /* Silent fail */ }
+                });
+            }, 10000);
+            State.intervals.push(apiInt);
+        }
+
+        // 2. Manual Simulation (Every Refresh Rate)
+        const manualTokens = State.tokens.filter(t => !t.is_live_api);
+        const simInt = setInterval(() => {
+            manualTokens.forEach(t => {
+                const current = State.prices[t.symbol].current;
+                const volatility = current * 0.0025; // 0.25% volatility
+                const change = (Math.random() - 0.5) * volatility;
+                let newPrice = current + change;
+
+                // Bounds Check
+                if (t.manual_min_price && newPrice < t.manual_min_price) newPrice = t.manual_min_price + (volatility * 0.5);
+                if (t.manual_max_price && newPrice > t.manual_max_price) newPrice = t.manual_max_price - (volatility * 0.5);
+
+                updateTokenPrice(t.symbol, newPrice);
+            });
+        }, CONFIG.REFRESH_RATE);
+        State.intervals.push(simInt);
+    }
+
+    function updateTokenPrice(symbol, newPrice) {
+        const oldPrice = State.prices[symbol].current;
+        State.prices[symbol].last = oldPrice;
+        State.prices[symbol].current = newPrice;
+
+        // DOM Update
+        const el = document.getElementById(`plqn-price-${symbol}`);
+        if (el) {
+            el.textContent = fmtINR(newPrice);
+            // Flash color
+            el.style.color = newPrice >= oldPrice ? '#10b981' : '#f43f5e';
+            // Reset color after 800ms
+            setTimeout(() => { if(el) el.style.color = '#1e293b'; }, 800);
+        }
+
+        // Update Modals if open
+        const tradeModal = document.getElementById('plqn-trade-modal');
+        if (tradeModal && tradeModal.classList.contains('show') && tradeModal.dataset.sym === symbol) {
+            const liveEl = document.getElementById('plqn-m-live');
+            if (liveEl) {
+                liveEl.textContent = fmtINR(newPrice);
+                liveEl.style.color = newPrice >= oldPrice ? '#10b981' : '#f43f5e';
+            }
+            
+            // Auto Update Estimation Logic
+            if (tradeModal.dataset.mode === 'buy') {
+                const qtyInput = document.getElementById('plqn-inp-qty');
+                const amtInput = document.getElementById('plqn-inp-amt');
+                // If user is typing QTY, update AMT
+                if (document.activeElement === qtyInput && qtyInput.value) {
+                    amtInput.value = (parseFloat(qtyInput.value) * newPrice).toFixed(2);
+                }
+            } else if (tradeModal.dataset.mode === 'sell' && State.sellOrderId) {
+                // In Sell mode, update estimated value
+                const amtInput = document.getElementById('plqn-inp-amt');
+                const qtyInput = document.getElementById('plqn-inp-qty');
+                if (qtyInput.value) {
+                    amtInput.value = (parseFloat(qtyInput.value) * newPrice).toFixed(2);
+                }
+            }
+        }
+    }
+
+    // Bonus Calculation Engine
+    function startBonusEngine() {
+        const bonusInt = setInterval(async () => {
+            if (!State.myOrders || State.myOrders.length === 0) return;
+
+            let updated = false;
+            for (let order of State.myOrders) {
+                const now = new Date();
+                const lastBonus = new Date(order.last_bonus_date);
+                const diffMs = now - lastBonus;
+                const diffHours = diffMs / (1000 * 60 * 60);
+
+                // If 24 hours passed
+                if (diffHours >= 24) {
+                    const daysToAdd = Math.floor(diffHours / 24);
+                    // Get Rate
+                    const rate = State.bonusRates[order.symbol] || CONFIG.DEFAULT_BONUS_PERCENT;
+                    
+                    // Simple Interest Bonus: CurrentQty * (Rate/100) * Days
+                    const bonusQty = Number(order.current_qty) * (rate / 100) * daysToAdd;
+                    const newQty = Number(order.current_qty) + bonusQty;
+                    const newDaysCompleted = (order.days_completed || 0) + daysToAdd;
+
+                    // Update DB
+                    const { error } = await State.supa
+                        .from(CONFIG.TABLES.PLQN_DATA)
+                        .update({
+                            current_qty: newQty,
+                            days_completed: newDaysCompleted,
+                            last_bonus_date: new Date().toISOString()
+                        })
+                        .eq('id', order.id);
+
+                    if (!error) updated = true;
+                }
+            }
+
+            if (updated) {
+                await fetchMyHoldings(); // Refresh local state
+                if (document.getElementById('plqn-hist-list')) {
+                    renderHistoryItems(); // Refresh UI if open
+                }
+            }
+
+        }, CONFIG.BONUS_CHECK_INTERVAL);
+        State.intervals.push(bonusInt);
+    }
+
+    /* ==========================================================================
+       7. UI RENDERING SYSTEM
+       ========================================================================== */
+
+    function renderAppStructure() {
+        const root = document.getElementById(CONFIG.APP_ID);
+        root.innerHTML = `
+            <!-- HEADER -->
+            <div class="plqn-header">
+                <div class="plqn-head-info">
+                    <h2>PLQN Flash Market</h2>
+                    <p>Hold assets to earn daily compounded bonus</p>
                 </div>
-              </div>
-              <div class="ai-btn-glow"></div>
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <div class="plqn-tokens-section">
-        <div class="section-header">
-          <h2>🚀 Premium Assets</h2>
-          <div class="live-indicator">
-            <span class="live-dot"></span>
-            Live Market Data
-          </div>
-        </div>
-        
-        <div class="plqn-tokens-grid">
-          ${PLQN_TOKENS.map(([sym,name])=>`
-            <div class="plqn-token-card">
-              <div class="token-card-bg"></div>
-              <div class="token-header">
-                <div class="token-info">
-                  <div class="token-symbol">${sym}</div>
-                  <div class="token-name">${name}</div>
+                <div class="plqn-head-actions">
+                    <button class="plqn-hist-btn" onclick="AVX_PLQN.openHistory()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        History
+                    </button>
                 </div>
-                <div class="token-rank" id="plqn-rank-${sym}">#--</div>
-              </div>
-              
-              <div class="token-price-section">
-                <div class="token-price" id="plqn-price-${sym}">₹--</div>
-                <div class="token-change" id="plqn-change-${sym}">--%</div>
-              </div>
-              
-              <div class="token-actions">
-                <button class="plqn-buy-btn" onclick="PLQN_buyToken('${sym}')">
-                  <span>Buy</span>
-                  <div class="btn-shine"></div>
-                </button>
-                <button class="plqn-sell-btn" onclick="PLQN_sellToken('${sym}')">
-                  <span>Sell</span>
-                  <div class="btn-shine"></div>
-                </button>
-              </div>
             </div>
-          `).join('')}
-        </div>
-      </div>
-    `;
 
-    addPLQNStyles();
-  }
-
-  /* ---------- ULTRA-ATTRACTIVE PLQN STYLES ---------- */
-  function addPLQNStyles(){
-    if(document.getElementById('plqn-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'plqn-styles';
-    style.textContent = `
-      @keyframes plqnFloat {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
-      }
-      
-      @keyframes plqnGlow {
-        0%, 100% { box-shadow: 0 0 20px rgba(106, 17, 203, 0.3); }
-        50% { box-shadow: 0 0 40px rgba(106, 17, 203, 0.6); }
-      }
-      
-      @keyframes livePulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.5; }
-      }
-      
-      @keyframes shine {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
-      }
-
-      .plqn-hero {
-        position: relative;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #6a11cb 100%);
-        border-radius: 24px;
-        margin-bottom: 30px;
-        overflow: hidden;
-        min-height: 200px;
-        display: flex;
-        align-items: center;
-      }
-      
-      .plqn-hero-bg {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="25" cy="25" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="3" fill="rgba(255,255,255,0.08)"/><circle cx="85" cy="25" r="1" fill="rgba(255,255,255,0.12)"/></svg>');
-        animation: plqnFloat 6s ease-in-out infinite;
-      }
-      
-      .plqn-hero-content {
-        position: relative;
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 30px;
-        color: white;
-      }
-      
-      .plqn-main-title {
-        font-size: 36px;
-        font-weight: 900;
-        margin: 0;
-        background: linear-gradient(45deg, #fff, #f0f8ff);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-      }
-      
-      .plqn-subtitle {
-        font-size: 16px;
-        margin: 8px 0 20px 0;
-        opacity: 0.9;
-        font-weight: 500;
-      }
-      
-      .plqn-stats {
-        display: flex;
-        gap: 20px;
-        margin-top: 15px;
-      }
-      
-      .plqn-stat {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        background: rgba(255,255,255,0.1);
-        padding: 10px 15px;
-        border-radius: 12px;
-        backdrop-filter: blur(10px);
-      }
-      
-      .stat-value {
-        font-size: 20px;
-        font-weight: bold;
-      }
-      
-      .stat-label {
-        font-size: 12px;
-        opacity: 0.8;
-      }
-      
-      .plqn-ai-btn {
-        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-        border: none;
-        border-radius: 20px;
-        padding: 20px;
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        animation: plqnGlow 3s ease-in-out infinite;
-        min-width: 200px;
-      }
-      
-      .plqn-ai-btn:hover {
-        transform: scale(1.05) rotate(1deg);
-        box-shadow: 0 15px 35px rgba(255, 107, 107, 0.4);
-      }
-      
-      .ai-btn-content {
-        position: relative;
-        z-index: 2;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        color: white;
-      }
-      
-      .ai-icon {
-        font-size: 24px;
-      }
-      
-      .ai-title {
-        font-size: 18px;
-        font-weight: bold;
-        display: block;
-      }
-      
-      .ai-desc {
-        font-size: 12px;
-        opacity: 0.9;
-        display: block;
-      }
-      
-      .ai-btn-glow {
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-        animation: plqnFloat 4s ease-in-out infinite;
-      }
-      
-      .plqn-tokens-section {
-        margin-top: 20px;
-      }
-      
-      .section-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        padding: 0 10px;
-      }
-      
-      .section-header h2 {
-        margin: 0;
-        font-size: 24px;
-        font-weight: bold;
-        color: #333;
-      }
-      
-      .live-indicator {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 14px;
-        color: #666;
-      }
-      
-      .live-dot {
-        width: 8px;
-        height: 8px;
-        background: #28a745;
-        border-radius: 50%;
-        animation: livePulse 2s infinite;
-      }
-      
-      .plqn-tokens-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 20px;
-        padding: 0 10px;
-      }
-      
-      .plqn-token-card {
-        position: relative;
-        background: white;
-        border-radius: 20px;
-        padding: 25px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        overflow: hidden;
-        border: 1px solid rgba(255,255,255,0.2);
-      }
-      
-      .plqn-token-card:hover {
-        transform: translateY(-8px) scale(1.02);
-        box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-      }
-      
-      .token-card-bg {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, #667eea, #764ba2, #6a11cb);
-      }
-      
-      .token-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 20px;
-      }
-      
-      .token-symbol {
-        font-size: 20px;
-        font-weight: 900;
-        color: #333;
-        margin-bottom: 4px;
-      }
-      
-      .token-name {
-        font-size: 14px;
-        color: #666;
-        font-weight: 500;
-      }
-      
-      .token-rank {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white;
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: bold;
-      }
-      
-      .token-price-section {
-        margin-bottom: 20px;
-      }
-      
-      .token-price {
-        font-size: 22px;
-        font-weight: bold;
-        color: #333;
-        margin-bottom: 8px;
-      }
-      
-      .token-change {
-        font-size: 14px;
-        font-weight: bold;
-        padding: 4px 8px;
-        border-radius: 12px;
-        display: inline-block;
-      }
-      
-      .token-change.positive {
-        background: #d4edda;
-        color: #28a745;
-      }
-      
-      .token-change.negative {
-        background: #f8d7da;
-        color: #dc3545;
-      }
-      
-      .token-actions {
-        display: flex;
-        gap: 12px;
-      }
-      
-      .plqn-buy-btn, .plqn-sell-btn {
-        flex: 1;
-        padding: 12px 0;
-        border: none;
-        border-radius: 12px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-        font-size: 14px;
-      }
-      
-      .plqn-buy-btn {
-        background: linear-gradient(135deg, #28a745, #20c997);
-        color: white;
-      }
-      
-      .plqn-buy-btn:hover {
-        background: linear-gradient(135deg, #218838, #1da88a);
-        transform: scale(1.05);
-        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
-      }
-      
-      .plqn-sell-btn {
-        background: linear-gradient(135deg, #dc3545, #fd7e14);
-        color: white;
-      }
-      
-      .plqn-sell-btn:hover {
-        background: linear-gradient(135deg, #c82333, #e8680a);
-        transform: scale(1.05);
-        box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3);
-      }
-      
-      .btn-shine {
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-        transition: left 0.5s;
-      }
-      
-      .plqn-buy-btn:hover .btn-shine,
-      .plqn-sell-btn:hover .btn-shine {
-        left: 100%;
-        animation: shine 0.5s ease-in-out;
-      }
-
-      /* ENHANCED AI CHAT STYLES */
-      .ai-chat-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.8), rgba(118, 75, 162, 0.8));
-        z-index: 10000;
-        display: none;
-        backdrop-filter: blur(15px);
-        animation: fadeIn 0.3s ease-out;
-      }
-      
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      
-      .ai-chat-container {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 95%;
-        max-width: 550px;
-        height: 400px;
-        background: white;
-        border-radius: 25px;
-        overflow: hidden;
-        box-shadow: 0 25px 80px rgba(0,0,0,0.4);
-        display: flex;
-        flex-direction: column;
-        animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      
-      @keyframes slideUp {
-        from { 
-          opacity: 0;
-          transform: translate(-50%, -30%) scale(0.9);
-        }
-        to { 
-          opacity: 1;
-          transform: translate(-50%, -50%) scale(1);
-        }
-      }
-      
-      .ai-chat-header {
-        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-        color: white;
-        padding: 25px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        position: relative;
-        overflow: hidden;
-      }
-      
-      .ai-chat-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-        animation: plqnFloat 8s ease-in-out infinite;
-      }
-      
-      .ai-chat-title {
-        font-size: 20px;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        z-index: 1;
-        position: relative;
-      }
-      
-      .ai-close-btn {
-        background: rgba(255,255,255,0.2);
-        border: none;
-        color: white;
-        width: 35px;
-        height: 35px;
-        border-radius: 50%;
-        cursor: pointer;
-        font-size: 18px;
-        transition: all 0.3s;
-        z-index: 1;
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      
-      .ai-close-btn:hover {
-        background: rgba(255,255,255,0.3);
-        transform: scale(1.1) rotate(90deg);
-      }
-      
-      .ai-chat-messages {
-        flex: 1;
-        overflow-y: auto;
-        padding: 25px;
-        display: flex;
-        flex-direction: column;
-        gap: 18px;
-        background: #f8f9fa;
-      }
-      
-      .ai-message, .user-message {
-        max-width: 85%;
-        padding: 15px 20px;
-        border-radius: 20px;
-        word-wrap: break-word;
-        font-size: 14px;
-        line-height: 1.5;
-        animation: messageSlide 0.3s ease-out;
-      }
-      
-      @keyframes messageSlide {
-        from {
-          opacity: 0;
-          transform: translateY(20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      
-      .ai-message {
-        align-self: flex-start;
-        background: white;
-        color: #333;
-        border: 1px solid #e0e7ff;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-      }
-      
-      .user-message {
-        align-self: flex-end;
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-      }
-      
-      .ai-input-container {
-        padding: 25px;
-        border-top: 1px solid #e0e0e0;
-        display: flex;
-        gap: 15px;
-        background: white;
-      }
-      
-      .ai-input {
-        flex: 1;
-        padding: 15px 20px;
-        border: 2px solid #e0e7ff;
-        border-radius: 25px;
-        outline: none;
-        font-size: 14px;
-        transition: all 0.3s;
-        background: #f8f9fa;
-      }
-      
-      .ai-input:focus {
-        border-color: #667eea;
-        background: white;
-        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-      }
-      
-      .ai-send-btn {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white;
-        border: none;
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        cursor: pointer;
-        font-size: 18px;
-        transition: all 0.3s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-      }
-      
-      .ai-send-btn:hover {
-        background: linear-gradient(135deg, #5a6fd8, #6a5acd);
-        transform: scale(1.05);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-      }
-
-      /* TRADE MODAL STYLES */
-      .plqn-trade-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(102, 126, 234, 0.3));
-        z-index: 9999;
-        display: none;
-        backdrop-filter: blur(10px);
-      }
-      
-      .plqn-trade-container {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 95%;
-        max-width: 450px;
-        background: white;
-        border-radius: 20px;
-        overflow: hidden;
-        box-shadow: 0 25px 80px rgba(0,0,0,0.4);
-        animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      
-      .plqn-trade-header {
-        background: linear-gradient(135deg, #28a745, #20c997);
-        color: white;
-        padding: 25px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        position: relative;
-      }
-      
-      .plqn-trade-header.sell {
-        background: linear-gradient(135deg, #dc3545, #fd7e14);
-      }
-      
-      .plqn-trade-header h3 {
-        margin: 0;
-        font-size: 20px;
-        font-weight: bold;
-      }
-      
-      .plqn-trade-body {
-        padding: 25px;
-      }
-      
-      .plqn-trade-info {
-        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-        padding: 20px;
-        border-radius: 15px;
-        margin-bottom: 25px;
-        border-left: 4px solid #667eea;
-      }
-      
-      .plqn-trade-info div {
-        margin-bottom: 8px;
-        font-size: 14px;
-        font-weight: 500;
-      }
-      
-      .plqn-trade-input {
-        width: 100%;
-        padding: 15px 20px;
-        border: 2px solid #e0e7ff;
-        border-radius: 12px;
-        margin-bottom: 18px;
-        font-size: 16px;
-        outline: none;
-        transition: all 0.3s;
-        background: #f8f9fa;
-        box-sizing: border-box;
-      }
-      
-      .plqn-trade-input:focus {
-        border-color: #667eea;
-        background: white;
-        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-        transform: scale(1.02);
-      }
-      
-      .plqn-confirm-btn {
-        width: 100%;
-        padding: 15px;
-        border: none;
-        border-radius: 12px;
-        font-size: 16px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s;
-        color: white;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-      }
-      
-      .plqn-confirm-btn.buy {
-        background: linear-gradient(135deg, #28a745, #20c997);
-        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-      }
-      
-      .plqn-confirm-btn.buy:hover {
-        background: linear-gradient(135deg, #218838, #1da88a);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
-      }
-      
-      .plqn-confirm-btn.sell {
-        background: linear-gradient(135deg, #dc3545, #fd7e14);
-        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
-      }
-      
-      .plqn-confirm-btn.sell:hover {
-        background: linear-gradient(135deg, #c82333, #e8680a);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
-      }
-
-      /* Responsive Design */
-      @media (max-width: 768px) {
-        .plqn-hero-content {
-          flex-direction: column;
-          text-align: center;
-          gap: 20px;
-        }
-        
-        .plqn-main-title {
-          font-size: 28px;
-        }
-        
-        .plqn-tokens-grid {
-          grid-template-columns: 1fr;
-        }
-        
-        .ai-chat-container {
-          width: 98%;
-          height: 50vh;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  /* ---------- ENHANCED AI CHAT SYSTEM ---------- */
-  let plqnAIChatState = {
-    isOpen: false,
-    awaitingQuantity: false,
-    awaitingPrice: false,
-    currentAction: null,
-    currentToken: null,
-    currentTokenPrice: 0
-  };
-
-  function PLQN_openAI(){
-    if(plqnAIChatState.isOpen) return;
-    
-    const overlay = document.createElement('div');
-    overlay.className = 'ai-chat-overlay';
-    overlay.innerHTML = `
-      <div class="ai-chat-container">
-        <div class="ai-chat-header">
-          <div class="ai-chat-title">
-            <span>🧠</span>
-            PLQN AI Assistant
-          </div>
-          <button class="ai-close-btn" onclick="PLQN_closeAI()">×</button>
-        </div>
-        <div class="ai-chat-messages" id="plqn-ai-messages">
-          <div class="ai-message">
-            Hello! I'm PLQN AI, your advanced trading assistant. I can help you with:
-            <br><br>
-            🔹 Buy/Sell any token<br>
-            🔹 Check live token prices<br>
-            🔹 View market cap data<br>
-            🔹 24-hour price changes<br>
-            🔹 Your wallet balance<br>
-            🔹 Portfolio holdings<br>
-            🔹 Token details & rankings<br>
-            <br>
-            What would you like to know today?
-          </div>
-        </div>
-        <div class="ai-input-container">
-          <input type="text" class="ai-input" id="plqn-ai-input" placeholder="Ask me anything about trading or market data..." />
-          <button class="ai-send-btn" onclick="PLQN_sendMessage()">➤</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(overlay);
-    overlay.style.display = 'block';
-    plqnAIChatState.isOpen = true;
-    
-    document.getElementById('plqn-ai-input').addEventListener('keypress', function(e){
-      if(e.key === 'Enter') PLQN_sendMessage();
-    });
-    
-    setTimeout(() => document.getElementById('plqn-ai-input').focus(), 100);
-  }
-
-  function PLQN_closeAI(){
-    const overlay = document.querySelector('.ai-chat-overlay');
-    if(overlay) overlay.remove();
-    plqnAIChatState.isOpen = false;
-    plqnAIChatState.awaitingQuantity = false;
-    plqnAIChatState.awaitingPrice = false;
-    plqnAIChatState.currentAction = null;
-    plqnAIChatState.currentToken = null;
-  }
-
-  async function PLQN_sendMessage(){
-    const input = document.getElementById('plqn-ai-input');
-    if(!input) return;
-    
-    const message = input.value.trim();
-    if(!message) return;
-    
-    addPLQNAIMessage(message, 'user');
-    input.value = '';
-    
-    const response = await processPLQNAIMessage(message.toLowerCase());
-    addPLQNAIMessage(response, 'ai');
-  }
-
-  function addPLQNAIMessage(message, type){
-    const messagesContainer = document.getElementById('plqn-ai-messages');
-    if(!messagesContainer) return;
-    
-    const messageDiv = document.createElement('div');
-    messageDiv.className = type === 'user' ? 'user-message' : 'ai-message';
-    messageDiv.innerHTML = message;
-    
-    messagesContainer.appendChild(messageDiv);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-  }
-
-  async function processPLQNAIMessage(message){
-    // Handle quantity input
-    if(plqnAIChatState.awaitingQuantity){
-      const qty = parseFloat(message);
-      if(isNaN(qty) || qty <= 0){
-        return "Please enter a valid quantity number.";
-      }
-      
-      const token = plqnAIChatState.currentToken;
-      const price = livePrices[token] || 0;
-      const amount = qty * price;
-      
-      if(plqnAIChatState.currentAction === 'buy'){
-        const balance = await getWalletINR();
-        if(amount > balance){
-          plqnAIChatState.awaitingQuantity = false;
-          return `Insufficient balance. You have ${fmtINR(balance)} but need ${fmtINR(amount)}.`;
-        }
-        
-        await executePLQNTrade('buy', token, qty, amount, price);
-        plqnAIChatState.awaitingQuantity = false;
-        return `✅ Successfully bought ${qty} ${token} for ${fmtINR(amount)}!`;
-      } else if(plqnAIChatState.currentAction === 'sell'){
-        const holding = await getHolding(token);
-        if(qty > holding.qty){
-          plqnAIChatState.awaitingQuantity = false;
-          return `You only hold ${holding.qty} ${token}. Cannot sell ${qty}.`;
-        }
-        
-        await executePLQNTrade('sell', token, qty, amount, price);
-        plqnAIChatState.awaitingQuantity = false;
-        return `✅ Successfully sold ${qty} ${token} for ${fmtINR(amount)}!`;
-      }
+            <!-- TOKEN LIST CONTAINER -->
+            <div id="plqn-token-list" class="plqn-list"></div>
+        `;
     }
-    
-    // Check for token names
-    const tokenFound = PLQN_TOKENS.find(([sym]) => 
-      message.includes(sym.toLowerCase()) || message.includes(sym)
-    );
-    
-    if(tokenFound){
-      const [sym, name] = tokenFound;
-      const price = livePrices[sym] || 0;
-      const marketInfo = marketData[sym] || {};
-      
-      // Market cap inquiry
-      if(message.includes('market cap') || message.includes('marketcap')){
-        if(marketInfo.market_cap){
-          const marketCap = marketInfo.market_cap;
-          const rank = marketInfo.market_cap_rank || 'N/A';
-          return `📊 ${name} (${sym}) Market Data:<br>
-                  💰 Market Cap: ₹${fmtNumber(marketCap)}<br>
-                  🏆 Rank: #${rank}<br>
-                  💵 Current Price: ${fmtINR(price)}`;
+
+    function renderTokenList() {
+        const container = document.getElementById('plqn-token-list');
+        if (!container) return;
+
+        if (State.tokens.length === 0) {
+            renderEmpty(container, "No Assets Found", "Marketplace is currently empty.");
+            return;
+        }
+
+        container.innerHTML = State.tokens.map(t => {
+            const price = State.prices[t.symbol] || { current: 0 };
+            
+            // Generate Icon
+            let iconHTML = '';
+            if (t.icon_type === 'image' && t.icon_url) {
+                iconHTML = `<img src="${t.icon_url}" class="plqn-icon-img" alt="${t.symbol}">`;
+            } else if (t.icon_url) {
+                iconHTML = `<span class="plqn-icon-emoji">${t.icon_url}</span>`;
+            } else {
+                iconHTML = `<span class="plqn-icon-text">${t.symbol.substring(0, 2)}</span>`;
+            }
+
+            return `
+            <div class="plqn-card" id="plqn-card-${t.symbol}">
+                <div class="plqn-card-top">
+                    <div class="plqn-card-icon">${iconHTML}</div>
+                    <div class="plqn-card-info">
+                        <div class="plqn-sym">${t.symbol}</div>
+                        <div class="plqn-name">${t.full_name || t.name}</div>
+                    </div>
+                    <div class="plqn-card-price">
+                        <div id="plqn-price-${t.symbol}">${fmtINR(price.current)}</div>
+                    </div>
+                </div>
+
+                <div class="plqn-card-actions">
+                    <button class="plqn-btn buy" onclick="AVX_PLQN.openTrade('buy', '${t.symbol}')">
+                        HOLD / BUY
+                    </button>
+                    <button class="plqn-btn sell" onclick="AVX_PLQN.openTrade('sell', '${t.symbol}')">
+                        SELL
+                    </button>
+                </div>
+
+                <div class="plqn-card-footer">
+                    <div class="plqn-footer-item" onclick="AVX_PLQN.openGraph('${t.symbol}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
+                        Chart
+                    </div>
+                    <div class="plqn-footer-item" onclick="AVX_PLQN.openInfo('${t.symbol}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                        Info
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function renderLoader(el, msg) {
+        el.innerHTML = `
+            <div class="plqn-loader-box">
+                <div class="plqn-spinner"></div>
+                <p>${msg}</p>
+            </div>`;
+    }
+
+    function renderError(el, msg) {
+        el.innerHTML = `<div class="plqn-error-box">⚠️ ${msg}</div>`;
+    }
+
+    function renderEmpty(el, title, sub) {
+        el.innerHTML = `
+            <div class="plqn-empty-box">
+                <h3>${title}</h3>
+                <p>${sub}</p>
+            </div>`;
+    }
+
+    /* ==========================================================================
+       8. MODAL SYSTEM (Trade, History, Graph)
+       ========================================================================== */
+
+    // --- TRADE MODAL ---
+    function buildTradeModal() {
+        if (document.getElementById('plqn-trade-modal')) return;
+
+        const m = document.createElement('div');
+        m.id = 'plqn-trade-modal';
+        m.className = 'plqn-modal';
+        m.innerHTML = `
+            <div class="plqn-modal-content">
+                <!-- Header -->
+                <div class="plqn-m-header">
+                    <div class="plqn-m-title-grp">
+                        <span id="plqn-m-badge" class="plqn-badge">BUY</span>
+                        <h2 id="plqn-m-sym">BTC</h2>
+                    </div>
+                    <div class="plqn-m-price" id="plqn-m-live">₹0.00</div>
+                </div>
+
+                <!-- Stats -->
+                <div class="plqn-m-stats">
+                    <div class="plqn-stat">
+                        <small>Balance</small>
+                        <span id="plqn-m-bal">₹0.00</span>
+                    </div>
+                    <div class="plqn-stat">
+                        <small>Active Holdings</small>
+                        <span id="plqn-m-count">0</span>
+                    </div>
+                </div>
+
+                <!-- Warning Box -->
+                <div id="plqn-m-warn" class="plqn-warning" style="display:none;"></div>
+
+                <!-- Dynamic Section (Calendar OR Order Select) -->
+                <div id="plqn-m-dynamic" class="plqn-dynamic-area"></div>
+
+                <!-- Chain Selector -->
+                <div class="plqn-input-grp">
+                    <label>Blockchain Network</label>
+                    <div class="plqn-select-wrap">
+                        <select id="plqn-m-chain"></select>
+                    </div>
+                </div>
+
+                <!-- Inputs -->
+                <div class="plqn-trade-row">
+                    <div class="plqn-inp-box">
+                        <label>Amount (INR)</label>
+                        <input type="number" id="plqn-inp-amt" placeholder="0.00">
+                    </div>
+                    <div class="plqn-inp-box">
+                        <label>Quantity</label>
+                        <input type="number" id="plqn-inp-qty" placeholder="0.00">
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <button id="plqn-btn-confirm" class="plqn-btn-main">CONFIRM</button>
+                <button class="plqn-btn-text" onclick="AVX_PLQN.closeModals()">Cancel</button>
+            </div>
+        `;
+        document.body.appendChild(m);
+
+        // Bind Live Input Logic
+        const amtIn = document.getElementById('plqn-inp-amt');
+        const qtyIn = document.getElementById('plqn-inp-qty');
+
+        amtIn.addEventListener('input', () => {
+            const sym = m.dataset.sym;
+            const price = State.prices[sym]?.current || 0;
+            if (price > 0 && amtIn.value) {
+                qtyIn.value = (parseFloat(amtIn.value) / price).toFixed(6);
+            } else {
+                qtyIn.value = '';
+            }
+        });
+
+        qtyIn.addEventListener('input', () => {
+            const sym = m.dataset.sym;
+            const price = State.prices[sym]?.current || 0;
+            if (price > 0 && qtyIn.value) {
+                amtIn.value = (parseFloat(qtyIn.value) * price).toFixed(2);
+            } else {
+                amtIn.value = '';
+            }
+        });
+
+        document.getElementById('plqn-btn-confirm').onclick = executeTransaction;
+    }
+
+    async function openTrade(type, sym, specificOrderId = null) {
+        buildTradeModal();
+        await fetchMyHoldings(); // Ensure fresh data before opening
+
+        const m = document.getElementById('plqn-trade-modal');
+        const token = State.tokens.find(t => t.symbol === sym);
+        if (!token) return;
+
+        // Reset State
+        m.dataset.mode = type;
+        m.dataset.sym = sym;
+        State.selectedDays = 0;
+        State.sellOrderId = specificOrderId;
+
+        // Reset Inputs
+        document.getElementById('plqn-inp-amt').value = '';
+        document.getElementById('plqn-inp-qty').value = '';
+        document.getElementById('plqn-m-warn').style.display = 'none';
+
+        // Set UI Text
+        const badge = document.getElementById('plqn-m-badge');
+        badge.textContent = type;
+        badge.className = `plqn-badge ${type}`;
+        
+        document.getElementById('plqn-m-sym').textContent = sym;
+        const btn = document.getElementById('plqn-btn-confirm');
+        btn.textContent = type === 'buy' ? `STAKE ${sym}` : `SELL ${sym}`;
+        btn.className = `plqn-btn-main ${type}`;
+
+        // Set Stats
+        document.getElementById('plqn-m-bal').textContent = fmtINR(State.wallet);
+        const holdingsCount = State.myOrders.filter(o => o.symbol === sym).length;
+        document.getElementById('plqn-m-count').textContent = holdingsCount;
+
+        // Populate Chains
+        const chainSel = document.getElementById('plqn-m-chain');
+        chainSel.innerHTML = '';
+        const chains = token.blockchains || ['Mainnet'];
+        chains.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c; opt.textContent = c;
+            chainSel.appendChild(opt);
+        });
+
+        // Dynamic Content Render
+        renderDynamicTradeArea(type, sym);
+
+        // Pre-fill if selling specific order
+        if (type === 'sell' && specificOrderId) {
+            const order = State.myOrders.find(o => o.id == specificOrderId);
+            if (order) {
+                const price = State.prices[sym]?.current || 0;
+                document.getElementById('plqn-inp-qty').value = order.current_qty;
+                document.getElementById('plqn-inp-amt').value = (order.current_qty * price).toFixed(2);
+            }
+        }
+
+        openModal(m);
+    }
+
+    function renderDynamicArea(type, sym) {
+        // Alias for function hoisting compatibility
+        renderDynamicTradeArea(type, sym);
+    }
+
+    function renderDynamicTradeArea(type, sym) {
+        const container = document.getElementById('plqn-m-dynamic');
+        container.innerHTML = '';
+
+        if (type === 'buy') {
+            // --- CALENDAR UI ---
+            container.innerHTML = `<label class="plqn-lbl">Select Holding Period (Days)</label>`;
+            const grid = document.createElement('div');
+            grid.className = 'plqn-calendar-grid';
+            
+            for (let i = CONFIG.MIN_DAYS; i <= CONFIG.MAX_DAYS; i++) {
+                const day = document.createElement('div');
+                day.className = 'plqn-cal-day';
+                day.textContent = i;
+                day.onclick = () => {
+                    document.querySelectorAll('.plqn-cal-day').forEach(d => d.classList.remove('active'));
+                    day.classList.add('active');
+                    State.selectedDays = i;
+                };
+                grid.appendChild(day);
+            }
+            container.appendChild(grid);
+
         } else {
-          return `Unable to fetch market cap data for ${sym} right now.`;
+            // --- SELL SELECTOR UI ---
+            const orders = State.myOrders.filter(o => o.symbol === sym);
+            
+            if (orders.length === 0) {
+                container.innerHTML = `<div class="plqn-warning" style="display:block">No Active Holdings to Sell</div>`;
+                return;
+            }
+
+            let optionsHTML = orders.map(o => {
+                const isSelected = State.sellOrderId == o.id ? 'selected' : '';
+                return `<option value="${o.id}" ${isSelected}>ID: ${o.id} | Qty: ${fmtQty(o.current_qty)} | ${o.hold_days} Days</option>`;
+            }).join('');
+
+            container.innerHTML = `
+                <label class="plqn-lbl">Select Holding Order</label>
+                <div class="plqn-select-wrap">
+                    <select id="plqn-sell-select" onchange="AVX_PLQN.onSellOrderChange(this.value)">
+                        <option value="">-- Select Order --</option>
+                        ${optionsHTML}
+                    </select>
+                </div>
+            `;
+            
+            // Trigger change if pre-selected
+            if(State.sellOrderId) {
+                // Ensure UI is synced logic handled in openTrade
+            }
         }
-      }
-      
-      // 24h change inquiry
-      if(message.includes('24') || message.includes('change') || message.includes('growth')){
-        if(marketInfo.price_change_24h !== undefined){
-          const change = marketInfo.price_change_24h;
-          const changeIcon = change >= 0 ? '📈' : '📉';
-          const changeText = change >= 0 ? 'gained' : 'lost';
-          return `${changeIcon} ${name} (${sym}) 24h Performance:<br>
-                  📊 Price Change: ${(change >= 0 ? '+' : '')}${change.toFixed(2)}%<br>
-                  💵 Current Price: ${fmtINR(price)}<br>
-                  📈 ${sym} has ${changeText} ${Math.abs(change).toFixed(2)}% in the last 24 hours.`;
-        } else {
-          return `Unable to fetch 24h change data for ${sym} right now.`;
-        }
-      }
-      
-      // Token price inquiry
-      if(message.includes('price')){
-        if(price > 0){
-          const change = marketInfo.price_change_24h || 0;
-          const changeIcon = change >= 0 ? '📈' : '📉';
-          return `💵 ${name} (${sym}) Live Price: ${fmtINR(price)}<br>
-                  ${changeIcon} 24h Change: ${(change >= 0 ? '+' : '')}${change.toFixed(2)}%`;
-        } else {
-          return `Unable to fetch ${sym} price right now. Please try again.`;
-        }
-      }
-      
-      // Buy request
-      if(message.includes('buy')){
-        plqnAIChatState.currentAction = 'buy';
-        plqnAIChatState.currentToken = sym;
-        plqnAIChatState.awaitingQuantity = true;
-        return `🛒 You want to buy ${name} (${sym})<br>
-                💵 Current price: ${fmtINR(price)}<br>
-                📊 24h change: ${(marketInfo.price_change_24h >= 0 ? '+' : '')}${(marketInfo.price_change_24h || 0).toFixed(2)}%<br><br>
-                How much quantity would you like to buy?`;
-      }
-      
-      // Sell request
-      if(message.includes('sell')){
-        const holding = await getHolding(sym);
-        if(holding.qty <= 0){
-          return `❌ You don't hold any ${sym} tokens to sell.`;
-        }
+    }
+
+    // Exposed Helper for Sell Select
+    function onSellOrderChange(id) {
+        State.sellOrderId = id;
+        const order = State.myOrders.find(o => o.id == id);
+        const price = State.prices[order?.symbol]?.current || 0;
         
-        plqnAIChatState.currentAction = 'sell';
-        plqnAIChatState.currentToken = sym;
-        plqnAIChatState.awaitingQuantity = true;
-        return `💰 You want to sell ${name} (${sym})<br>
-                📦 Your holdings: ${holding.qty} ${sym}<br>
-                💵 Current price: ${fmtINR(price)}<br>
-                📊 Potential value: ${fmtINR(holding.qty * price)}<br><br>
-                How much quantity would you like to sell?`;
-      }
-      
-      // Token details with enhanced info
-      if(message.includes('detail')){
-        const holding = await getHolding(sym);
-        const change = marketInfo.price_change_24h || 0;
-        const marketCap = marketInfo.market_cap || 0;
-        const rank = marketInfo.market_cap_rank || 'N/A';
+        if (order) {
+            document.getElementById('plqn-inp-qty').value = order.current_qty;
+            document.getElementById('plqn-inp-amt').value = (order.current_qty * price).toFixed(2);
+        }
+    }
+
+    // --- TRANSACTION LOGIC ---
+    async function executeTransaction() {
+        const m = document.getElementById('plqn-trade-modal');
+        const mode = m.dataset.mode;
+        const sym = m.dataset.sym;
+        const price = State.prices[sym].current;
+        const amt = parseFloat(document.getElementById('plqn-inp-amt').value);
+        const qty = parseFloat(document.getElementById('plqn-inp-qty').value);
+        const chain = document.getElementById('plqn-m-chain').value;
+        const btn = document.getElementById('plqn-btn-confirm');
+
+        // Validation
+        if (!amt || !qty || amt <= 0 || qty <= 0) { toast("Invalid Amount", 'err'); return; }
+        if (price <= 0) { toast("Wait for price...", 'err'); return; }
+
+        btn.disabled = true;
+        btn.innerHTML = `<div class="plqn-spinner mini"></div> Processing...`;
+
+        try {
+            if (mode === 'buy') {
+                if (State.selectedDays < 1) throw new Error("Select holding days");
+                if (amt > State.wallet) throw new Error("Insufficient Balance");
+                
+                // Limit Check
+                const currentCount = State.myOrders.filter(o => o.symbol === sym).length;
+                if (currentCount >= CONFIG.MAX_HOLDINGS_PER_USER) throw new Error(`Max ${CONFIG.MAX_HOLDINGS_PER_USER} active orders allowed per token`);
+
+                // 1. Deduct Wallet
+                const newBal = State.wallet - amt;
+                const { error: wErr } = await State.supa.from(CONFIG.TABLES.WALLET)
+                    .update({ balance: newBal }).eq('uid', State.user.id);
+                if (wErr) throw wErr;
+
+                // 2. Insert PLQN Data (Active Holding)
+                const { error: pErr } = await State.supa.from(CONFIG.TABLES.PLQN_DATA).insert({
+                    user_id: State.user.id,
+                    symbol: sym,
+                    initial_qty: qty,
+                    current_qty: qty,
+                    purchase_price: price,
+                    total_amount: amt,
+                    blockchain: chain,
+                    hold_days: State.selectedDays,
+                    status: 'active'
+                });
+                if (pErr) throw pErr;
+
+                // 3. Log History
+                await State.supa.from(CONFIG.TABLES.HISTORY).insert({
+                    user_id: State.user.id,
+                    symbol: sym,
+                    action: 'Buying', // Must match other files logic
+                    qty: qty,
+                    price_at_transaction: price,
+                    total_amount: amt,
+                    blockchain_used: chain,
+                    status: 'active'
+                });
+
+                toast(`Staked ${sym} for ${State.selectedDays} Days`);
+
+            } else {
+                // Sell Mode
+                if (!State.sellOrderId) throw new Error("Select an order to sell");
+                const order = State.myOrders.find(o => o.id == State.sellOrderId);
+                if (!order) throw new Error("Order not found");
+                if (qty > Number(order.current_qty)) throw new Error("Insufficient qty in selected order");
+
+                // 1. Calculate Return
+                const returnAmt = qty * price;
+                const newBal = State.wallet + returnAmt;
+
+                // 2. Add Wallet
+                await State.supa.from(CONFIG.TABLES.WALLET)
+                    .update({ balance: newBal }).eq('uid', State.user.id);
+
+                // 3. Update PLQN Data
+                const remaining = Number(order.current_qty) - qty;
+                let status = 'active';
+                if (remaining <= 0.000001) status = 'sold'; // Close order
+
+                await State.supa.from(CONFIG.TABLES.PLQN_DATA)
+                    .update({ current_qty: remaining, status: status })
+                    .eq('id', order.id);
+
+                // 4. Log History
+                await State.supa.from(CONFIG.TABLES.HISTORY).insert({
+                    user_id: State.user.id,
+                    symbol: sym,
+                    action: 'Selling',
+                    qty: qty,
+                    price_at_transaction: price,
+                    total_amount: returnAmt,
+                    blockchain_used: chain,
+                    status: 'completed'
+                });
+
+                toast(`Sold ${fmtQty(qty)} ${sym}`);
+            }
+
+            // Success Cleanup
+            await refreshAllData();
+            closeModals();
+
+        } catch (err) {
+            console.error(err);
+            toast(err.message || "Transaction Failed", 'err');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = "CONFIRM";
+        }
+    }
+
+    // --- HISTORY MODAL ---
+    function openHistory() {
+        let m = document.getElementById('plqn-hist-modal');
+        if (!m) {
+            m = document.createElement('div');
+            m.id = 'plqn-hist-modal';
+            m.className = 'plqn-modal full-screen';
+            m.innerHTML = `
+                <div class="plqn-modal-content fs-content">
+                    <div class="plqn-m-header">
+                        <h2>My Holdings</h2>
+                        <button class="plqn-close-icon" onclick="AVX_PLQN.closeModals()">×</button>
+                    </div>
+                    <div id="plqn-hist-list" class="plqn-hist-list"></div>
+                </div>
+            `;
+            document.body.appendChild(m);
+        }
+        renderHistoryItems();
+        openModal(m);
+    }
+
+    function renderHistoryItems() {
+        const container = document.getElementById('plqn-hist-list');
+        if (!container) return;
+
+        if (State.myOrders.length === 0) {
+            container.innerHTML = `
+                <div class="plqn-empty-hist">
+                    <div class="icon">📭</div>
+                    <p>No Active Holdings</p>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = State.myOrders.map(o => {
+            const token = State.tokens.find(t => t.symbol === o.symbol) || { symbol: o.symbol };
+            const currentPrice = State.prices[o.symbol]?.current || 0;
+            const currentValue = Number(o.current_qty) * currentPrice;
+            const isProfit = currentValue >= o.total_amount;
+            const pnl = currentValue - o.total_amount;
+            const bonusPct = State.bonusRates[o.symbol] || CONFIG.DEFAULT_BONUS_PERCENT;
+            
+            // Icon
+            let icon = `<div class="plqn-h-txt">${o.symbol.substring(0,2)}</div>`;
+            if (token.icon_type === 'image') icon = `<img src="${token.icon_url}" class="plqn-h-img">`;
+
+            // Admin Msg
+            const msgHtml = o.msg_box ? `<div class="plqn-msg-box">💬 Admin: ${o.msg_box}</div>` : '';
+
+            return `
+            <div class="plqn-hist-card">
+                <div class="plqn-hc-header">
+                    <div class="plqn-hc-left">
+                        ${icon}
+                        <div>
+                            <div class="sym">${o.symbol}</div>
+                            <div class="date">Staked: ${fmtDate(o.start_date)}</div>
+                        </div>
+                    </div>
+                    <div class="plqn-hc-right">
+                        <div class="val">${fmtINR(currentValue)}</div>
+                        <div class="pnl ${isProfit ? 'up' : 'down'}">
+                            ${isProfit ? '+' : ''}${pnl.toFixed(2)}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="plqn-hc-progress-wrap">
+                    <div class="plqn-hc-bar">
+                        <div class="fill" style="width: ${(o.days_completed / o.hold_days) * 100}%"></div>
+                    </div>
+                    <div class="plqn-hc-meta">
+                        <span>Day ${o.days_completed}/${o.hold_days}</span>
+                        <span>+${bonusPct}% Daily</span>
+                    </div>
+                </div>
+
+                <div class="plqn-hc-details">
+                    <div class="d-row"><span>Initial Qty:</span> <b>${fmtQty(o.initial_qty)}</b></div>
+                    <div class="d-row"><span>Current Qty:</span> <b class="highlight">${fmtQty(o.current_qty)}</b></div>
+                    <div class="d-row"><span>Locked Value:</span> <b>${fmtINR(o.total_amount)}</b></div>
+                </div>
+
+                ${msgHtml}
+
+                <div class="plqn-hc-actions">
+                    <button class="add" onclick="AVX_PLQN.openTrade('buy', '${o.symbol}')">ADD MORE</button>
+                    <button class="sell" onclick="AVX_PLQN.openTrade('sell', '${o.symbol}', '${o.id}')">SELL THIS</button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // --- INFO MODAL ---
+    function openInfo(sym) {
+        let m = document.getElementById('plqn-info-modal');
+        if (!m) {
+            m = document.createElement('div');
+            m.id = 'plqn-info-modal';
+            m.className = 'plqn-modal';
+            m.innerHTML = `
+                <div class="plqn-modal-content">
+                    <div class="plqn-info-head">
+                        <div id="plqn-inf-icon"></div>
+                        <h2 id="plqn-inf-name"></h2>
+                    </div>
+                    <div class="plqn-info-grid">
+                        <div><span>Supply</span><b id="plqn-inf-sup"></b></div>
+                        <div><span>Volume</span><b id="plqn-inf-vol"></b></div>
+                        <div><span>Holders</span><b id="plqn-inf-hold"></b></div>
+                    </div>
+                    <div class="plqn-info-desc" id="plqn-inf-desc"></div>
+                    <button class="plqn-btn-text" onclick="AVX_PLQN.closeModals()">Close</button>
+                </div>
+            `;
+            document.body.appendChild(m);
+        }
+
+        const t = State.tokens.find(tok => tok.symbol === sym);
+        if (!t) return;
+
+        let icon = t.icon_type === 'image' ? `<img src="${t.icon_url}">` : `<span>${t.symbol.substring(0,2)}</span>`;
+        document.getElementById('plqn-inf-icon').innerHTML = icon;
+        document.getElementById('plqn-inf-name').textContent = t.full_name;
+        document.getElementById('plqn-inf-sup').textContent = t.total_supply || '-';
+        document.getElementById('plqn-inf-vol').textContent = t.volume || '-';
+        document.getElementById('plqn-inf-hold').textContent = t.holders || '-';
+        document.getElementById('plqn-inf-desc').textContent = t.description || 'No description.';
+
+        openModal(m);
+    }
+
+    // --- GRAPH MODAL ---
+    function openGraph(sym) {
+        let m = document.getElementById('plqn-graph-modal');
+        if (!m) {
+            m = document.createElement('div');
+            m.id = 'plqn-graph-modal';
+            m.className = 'plqn-modal full-screen';
+            m.innerHTML = `
+                <div class="plqn-modal-content fs-content graph-mode">
+                    <div class="plqn-m-header">
+                        <div><span id="plqn-g-sym"></span></div>
+                        <button class="plqn-close-icon" onclick="AVX_PLQN.closeModals()">×</button>
+                    </div>
+                    <div class="plqn-chart-wrap">
+                        <canvas id="plqn-canvas"></canvas>
+                    </div>
+                </div>`;
+            document.body.appendChild(m);
+            // Basic Interactions
+            const c = document.getElementById('plqn-canvas');
+            let isDrag = false, startX = 0;
+            c.addEventListener('mousedown', e => { isDrag = true; startX = e.offsetX; });
+            c.addEventListener('mousemove', e => { if(isDrag) State.chartData.offset -= (e.offsetX - startX) * 0.1; startX = e.offsetX; });
+            c.addEventListener('mouseup', () => isDrag = false);
+        }
+
+        State.chartData.symbol = sym;
+        document.getElementById('plqn-g-sym').textContent = sym + " Chart";
         
-        return `📋 ${name} (${sym}) Complete Details:<br><br>
-                💵 Current Price: ${fmtINR(price)}<br>
-                📊 24h Change: ${(change >= 0 ? '+' : '')}${change.toFixed(2)}%<br>
-                💰 Market Cap: ₹${fmtNumber(marketCap)}<br>
-                🏆 Market Rank: #${rank}<br>
-                📦 Your Holdings: ${holding.qty} ${sym}<br>
-                💎 Investment Value: ${fmtINR(holding.cost_inr)}<br>
-                📈 Current Value: ${fmtINR(holding.qty * price)}`;
-      }
-      
-      // General token inquiry
-      const change = marketInfo.price_change_24h || 0;
-      const changeIcon = change >= 0 ? '📈' : '📉';
-      return `${changeIcon} ${name} (${sym})<br>
-              💵 Price: ${fmtINR(price)}<br>
-              📊 24h: ${(change >= 0 ? '+' : '')}${change.toFixed(2)}%<br><br>
-              Would you like to buy, sell, or get more details?`;
+        // Generate Dummy History based on current price
+        const current = State.prices[sym]?.current || 100;
+        let p = current;
+        State.chartData.history = [];
+        for(let i=0; i<100; i++) {
+            let o=p, c=p+(Math.random()-0.5)*(p*0.05), h=Math.max(o,c)*1.01, l=Math.min(o,c)*0.99;
+            State.chartData.history.unshift({open:o, close:c, high:h, low:l});
+            p=c;
+        }
+
+        openModal(m);
+        requestAnimationFrame(drawGraph);
     }
-    
-    // Balance inquiry
-    if(message.includes('balance') || message.includes('wallet')){
-      const balance = await getWalletINR();
-      return `💰 Your current wallet balance: ${fmtINR(balance)}`;
-    }
-    
-    // Holdings inquiry with enhanced display
-    if(message.includes('holding') || message.includes('portfolio')){
-      const holdings = await getHoldingsMap();
-      const holdingsList = Object.keys(holdings);
-      
-      if(holdingsList.length === 0){
-        return "📦 You don't have any token holdings currently.";
-      }
-      
-      let response = "📊 Your Portfolio Holdings:<br><br>";
-      let totalValue = 0;
-      
-      for(const sym of holdingsList){
-        const holding = holdings[sym];
-        const currentPrice = livePrices[sym] || 0;
-        const currentValue = holding.qty * currentPrice;
-        const change = marketData[sym]?.price_change_24h || 0;
-        const changeIcon = change >= 0 ? '📈' : '📉';
+
+    function drawGraph() {
+        const canvas = document.getElementById('plqn-canvas');
+        if(!canvas || !canvas.offsetParent) return; // Stop if hidden
         
-        totalValue += currentValue;
-        response += `${changeIcon} ${sym}: ${holding.qty} tokens<br>`;
-        response += `   💰 Value: ${fmtINR(currentValue)} (${(change >= 0 ? '+' : '')}${change.toFixed(2)}%)<br><br>`;
-      }
-      
-      response += `📊 Total Portfolio Value: ${fmtINR(totalValue)}`;
-      return response;
-    }
-    
-    // Help
-    if(message.includes('help')){
-      return `🤖 PLQN AI Can Help You With:<br><br>
-              🔹 Token prices: "BTC price"<br>
-              🔹 Market cap: "ETH market cap"<br>
-              🔹 24h changes: "SOL 24 hour change"<br>
-              🔹 Buy tokens: "buy BTC"<br>
-              🔹 Sell tokens: "sell ETH"<br>
-              🔹 Check balance: "wallet balance"<br>
-              🔹 View portfolio: "my holdings"<br>
-              🔹 Token details: "BTC details"<br><br>
-              What would you like to explore?`;
-    }
-    
-    // Default response for unrecognized queries
-    return "🤖 No signal. I specialize in trading assistance, market data, and portfolio management. What else can I help you with?";
-  }
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width = canvas.parentElement.offsetWidth;
+        const h = canvas.height = canvas.parentElement.offsetHeight;
+        
+        // Clear
+        ctx.clearRect(0,0,w,h);
+        
+        const data = State.chartData.history;
+        const count = 40;
+        const step = w / count;
+        
+        // Simple Line Chart
+        ctx.beginPath();
+        ctx.strokeStyle = '#ec4899';
+        ctx.lineWidth = 2;
+        
+        const slice = data.slice(0, count); // Slice based on offset in real app
+        if(slice.length === 0) return;
 
-  /* ---------- EXECUTE TRADE ---------- */
-  async function executePLQNTrade(action, symbol, qty, amount, price){
-    if(action === 'buy'){
-      const balance = await getWalletINR();
-      const currentHolding = await getHolding(symbol);
-      
-      await setWalletINR(balance - amount);
-      await updateHolding(symbol, currentHolding.qty + qty, currentHolding.cost_inr + amount);
-      await saveTrade('buy', symbol, qty, amount, price);
-      
-    } else if(action === 'sell'){
-      const balance = await getWalletINR();
-      const currentHolding = await getHolding(symbol);
-      
-      await setWalletINR(balance + amount);
-      await updateHolding(symbol, currentHolding.qty - qty, Math.max(0, currentHolding.cost_inr - amount));
-      await saveTrade('sell', symbol, qty, amount, price);
-    }
-  }
+        const max = Math.max(...slice.map(d => d.high));
+        const min = Math.min(...slice.map(d => d.low));
+        
+        slice.forEach((d, i) => {
+            const x = w - (i * step);
+            const y = h - ((d.close - min) / (max - min)) * (h - 40) - 20;
+            if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        });
+        ctx.stroke();
 
-  /* ---------- TRADE MODALS ---------- */
-  function PLQN_buyToken(symbol){
-    showPLQNTradeModal('buy', symbol);
-  }
-
-  function PLQN_sellToken(symbol){
-    showPLQNTradeModal('sell', symbol);
-  }
-
-  async function showPLQNTradeModal(action, symbol){
-    const price = livePrices[symbol] || 0;
-    if(price <= 0){
-      toast('Price not available', false);
-      return;
+        if(document.getElementById('plqn-graph-modal').classList.contains('show')) {
+            requestAnimationFrame(drawGraph);
+        }
     }
 
-    const balance = await getWalletINR();
-    const holding = await getHolding(symbol);
-    const marketInfo = marketData[symbol] || {};
-    const change = marketInfo.price_change_24h || 0;
+    /* ==========================================================================
+       9. HELPERS (Modal Control, Styles)
+       ========================================================================== */
 
-    const modal = document.createElement('div');
-    modal.className = 'plqn-trade-modal';
-    modal.innerHTML = `
-      <div class="plqn-trade-container">
-        <div class="plqn-trade-header ${action}">
-          <h3>${action === 'buy' ? '🛒 Buy' : '💰 Sell'} ${symbol}</h3>
-          <button onclick="this.parentElement.parentElement.parentElement.remove()" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;">×</button>
-        </div>
-        <div class="plqn-trade-body">
-          <div class="plqn-trade-info">
-            <div>💰 Balance: ${fmtINR(balance)}</div>
-            <div>📦 Holdings: ${holding.qty} ${symbol}</div>
-            <div>💵 Live Price: ${fmtINR(price)}</div>
-            <div>📊 24h Change: ${(change >= 0 ? '+' : '')}${change.toFixed(2)}%</div>
-          </div>
-          <input type="number" class="plqn-trade-input" id="plqn-trade-amount" placeholder="Enter INR amount (Min ₹100)" />
-          <input type="number" class="plqn-trade-input" id="plqn-trade-qty" placeholder="Enter token quantity" />
-          <button class="plqn-confirm-btn ${action}" onclick="PLQN_confirmTrade('${action}', '${symbol}', ${price})">
-            ${action === 'buy' ? '🚀 Buy Now' : '💸 Sell Now'}
-          </button>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(modal);
-    modal.style.display = 'block';
-
-    // Auto-calculate quantity/amount
-    const amountInput = document.getElementById('plqn-trade-amount');
-    const qtyInput = document.getElementById('plqn-trade-qty');
-
-    amountInput.addEventListener('input', () => {
-      if(amountInput.value && price > 0){
-        qtyInput.value = (parseFloat(amountInput.value) / price).toFixed(8);
-      }
-    });
-
-    qtyInput.addEventListener('input', () => {
-      if(qtyInput.value && price > 0){
-        amountInput.value = (parseFloat(qtyInput.value) * price).toFixed(2);
-      }
-    });
-  }
-
-  async function PLQN_confirmTrade(action, symbol, price){
-    const amount = parseFloat(document.getElementById('plqn-trade-amount')?.value || 0);
-    const qty = parseFloat(document.getElementById('plqn-trade-qty')?.value || 0);
-
-    if(!amount || !qty || amount < MIN_INR){
-      toast(`Minimum ${fmtINR(MIN_INR)} required`, false);
-      return;
+    function openModal(el) {
+        document.querySelectorAll('.plqn-modal').forEach(m => m.classList.remove('show'));
+        el.style.display = 'flex';
+        requestAnimationFrame(() => el.classList.add('show'));
     }
 
-    if(action === 'buy'){
-      const balance = await getWalletINR();
-      if(amount > balance){
-        toast('Insufficient balance', false);
-        return;
-      }
+    function closeModals() {
+        document.querySelectorAll('.plqn-modal').forEach(m => {
+            m.classList.remove('show');
+            setTimeout(() => m.style.display = 'none', 300);
+        });
+    }
+
+    function injectPremiumStyles() {
+        if (document.getElementById('avx-plqn-style')) return;
+        const css = `
+            @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+            
+            :root {
+                --p-bg: #f8fafc;
+                --p-card: #ffffff;
+                --p-text: #1e293b;
+                --p-sub: #64748b;
+                --p-acc: #ec4899; /* Pink-500 */
+                --p-acc-h: #db2777;
+                --p-green: #10b981;
+                --p-red: #f43f5e;
+            }
+
+            /* Container Reset */
+            #plqn { font-family: 'Outfit', sans-serif; color: var(--p-text); padding-bottom: 40px; }
+
+            /* Header */
+            .plqn-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding: 10px 0; }
+            .plqn-head-info h2 { font-size: 24px; font-weight: 800; margin: 0; line-height: 1; color: #334155; }
+            .plqn-head-info p { font-size: 12px; color: var(--p-sub); margin: 4px 0 0 0; font-weight: 500; }
+            .plqn-hist-btn { display: flex; align-items: center; gap: 6px; background: #fff; padding: 10px 18px; border-radius: 30px; border: 1px solid #fce7f3; color: var(--p-acc); font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 4px 12px rgba(236, 72, 153, 0.1); transition: 0.2s; }
+            .plqn-hist-btn:hover { background: #fdf2f8; transform: translateY(-1px); }
+            .plqn-hist-btn svg { width: 18px; height: 18px; }
+
+            /* Token Card */
+            .plqn-card { background: var(--p-card); border-radius: 24px; padding: 22px; margin-bottom: 20px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.8); position: relative; overflow: hidden; transition: transform 0.2s; }
+            .plqn-card:hover { transform: translateY(-3px); box-shadow: 0 20px 30px -10px rgba(236, 72, 153, 0.1); }
+            
+            .plqn-card-top { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+            .plqn-card-icon { width: 52px; height: 52px; border-radius: 18px; background: #fff; border: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: var(--p-acc); box-shadow: 0 4px 6px -2px rgba(0,0,0,0.03); overflow: hidden; }
+            .plqn-icon-img { width: 100%; height: 100%; object-fit: cover; }
+            
+            .plqn-card-info { flex: 1; }
+            .plqn-sym { font-weight: 800; font-size: 18px; color: #0f172a; }
+            .plqn-name { font-size: 12px; color: var(--p-sub); font-weight: 500; }
+            
+            .plqn-card-price { text-align: right; font-family: 'Outfit', monospace; font-size: 18px; font-weight: 700; color: #334155; }
+
+            .plqn-card-actions { display: flex; gap: 12px; margin-bottom: 15px; }
+            .plqn-btn { flex: 1; padding: 12px; border: none; border-radius: 14px; font-weight: 700; font-size: 12px; cursor: pointer; color: white; transition: 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
+            .plqn-btn.buy { background: linear-gradient(135deg, #0f172a, #1e3a8a); box-shadow: 0 4px 10px rgba(236, 72, 153, 0.3); }
+            .plqn-btn.buy:active { transform: scale(0.98); }
+            .plqn-btn.sell { background: linear-gradient(135deg, #b91c1c, #ef4444); box-shadow: 0 4px 10px rgba(244, 63, 94, 0.3); }
+            
+            .plqn-card-footer { display: flex; justify-content: space-between; padding-top: 15px; border-top: 1px dashed #e2e8f0; }
+            .plqn-footer-item { display: flex; align-items: center; gap: 6px; color: #94a3b8; font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 8px; transition: 0.2s; }
+            .plqn-footer-item:hover { background: #fdf2f8; color: var(--p-acc); }
+            .plqn-footer-item svg { width: 16px; height: 16px; stroke-width: 2.5; }
+
+            /* Modals */
+            .plqn-modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(8px); z-index: 10000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s; }
+            .plqn-modal.show { opacity: 1; }
+            .plqn-modal.full-screen .plqn-modal-content { height: 90vh; max-height: 90vh; display: flex; flex-direction: column; }
+            
+            .plqn-modal-content { background: #fff; width: 90%; max-width: 420px; border-radius: 30px; padding: 25px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); border: 1px solid #fff; position: relative; }
+            .plqn-modal.show .plqn-modal-content { transform: scale(1); }
+            
+            .plqn-m-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+            .plqn-m-title-grp { display: flex; flex-direction: column; gap: 4px; }
+            .plqn-badge { font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 6px; display: inline-block; width: fit-content; text-transform: uppercase; }
+            .plqn-badge.buy { background: #0f172a; color: #1e3a8a; }
+            .plqn-badge.sell { background: #b91c1c; color: #ef4444; }
+            .plqn-m-header h2 { margin: 0; font-size: 26px; font-weight: 800; color: #0f172a; }
+            .plqn-m-price { font-family: 'Outfit', monospace; font-size: 18px; font-weight: 700; color: #334155; background: #f1f5f9; padding: 6px 12px; border-radius: 10px; }
+
+            .plqn-m-stats { display: flex; gap: 10px; margin-bottom: 20px; }
+            .plqn-stat { flex: 1; background: #f8fafc; padding: 10px; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; }
+            .plqn-stat small { display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+            .plqn-stat span { font-weight: 700; font-size: 14px; color: #0f172a; }
+
+            /* Calendar Grid */
+            .plqn-dynamic-area { margin-bottom: 20px; }
+            .plqn-lbl { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 8px; }
+            .plqn-calendar-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; max-height: 140px; overflow-y: auto; padding-right: 2px; }
+            .plqn-cal-day { background: #f1f5f9; border-radius: 8px; text-align: center; padding: 8px 0; font-size: 12px; font-weight: 600; cursor: pointer; color: #64748b; border: 1px solid transparent; transition: 0.2s; }
+            .plqn-cal-day:hover { background: #e2e8f0; }
+            .plqn-cal-day.active { background: var(--p-acc); color: white; box-shadow: 0 4px 10px rgba(236, 72, 153, 0.3); font-weight: 700; border-color: var(--p-acc-h); }
+
+            /* Select for Selling */
+            .plqn-select-wrap select { width: 100%; padding: 14px; border-radius: 14px; border: 2px solid #f1f5f9; background: #fff; font-weight: 600; font-size: 13px; color: #334155; outline: none; }
+
+            /* Inputs */
+            .plqn-trade-row { display: flex; gap: 12px; margin-bottom: 25px; }
+            .plqn-inp-box { flex: 1; }
+            .plqn-inp-box label { font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 6px; display: block; }
+            .plqn-inp-box input { width: 100%; padding: 14px; border-radius: 14px; border: 2px solid #f1f5f9; font-size: 18px; font-weight: 700; text-align: center; outline: none; color: #0f172a; background: #fff; transition: 0.2s; }
+            .plqn-inp-box input:focus { border-color: var(--p-acc); box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.1); }
+
+            .plqn-btn-main { width: 100%; padding: 16px; border: none; border-radius: 16px; font-weight: 700; font-size: 16px; color: white; cursor: pointer; box-shadow: 0 10px 20px -5px rgba(0,0,0,0.1); transition: 0.1s; margin-bottom: 10px; }
+            .plqn-btn-main.buy { background: var(--p-acc); }
+            .plqn-btn-main.sell { background: var(--p-red); }
+            .plqn-btn-main:active { transform: scale(0.98); }
+            .plqn-btn-text { width: 100%; padding: 10px; background: none; border: none; color: #94a3b8; font-weight: 600; cursor: pointer; }
+
+            /* History List */
+            .plqn-hist-list { flex: 1; overflow-y: auto; padding: 5px; }
+            .plqn-empty-hist { text-align: center; padding: 40px; color: #94a3b8; }
+            .plqn-empty-hist .icon { font-size: 40px; margin-bottom: 10px; filter: grayscale(1); opacity: 0.5; }
+            
+            .plqn-hist-card { background: #fff; border-radius: 18px; padding: 16px; margin-bottom: 15px; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
+            .plqn-hc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed #f1f5f9; }
+            .plqn-hc-left { display: flex; gap: 10px; align-items: center; }
+            .plqn-h-txt { width: 36px; height: 36px; border-radius: 10px; background: #fce7f3; color: var(--p-acc); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
+            .plqn-h-img { width: 36px; height: 36px; border-radius: 10px; object-fit: cover; }
+            .plqn-hc-left .sym { font-weight: 800; font-size: 15px; color: #1e293b; }
+            .plqn-hc-left .date { font-size: 11px; color: #94a3b8; }
+            .plqn-hc-right { text-align: right; }
+            .plqn-hc-right .val { font-weight: 700; font-size: 15px; color: #1e293b; }
+            .plqn-hc-right .pnl { font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+            .plqn-hc-right .pnl.up { background: #dcfce7; color: #166534; }
+            
+            .plqn-hc-progress-wrap { margin-bottom: 12px; }
+            .plqn-hc-bar { height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden; margin-bottom: 4px; }
+            .plqn-hc-bar .fill { height: 100%; background: var(--p-acc); border-radius: 3px; }
+            .plqn-hc-meta { display: flex; justify-content: space-between; font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; }
+            
+            .plqn-hc-details { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; background: #f8fafc; padding: 10px; border-radius: 10px; margin-bottom: 12px; }
+            .plqn-hc-details .d-row { display: flex; flex-direction: column; }
+            .plqn-hc-details span { color: #94a3b8; font-size: 10px; }
+            .plqn-hc-details b { color: #334155; }
+            .plqn-hc-details b.highlight { color: var(--p-acc); }
+            
+            .plqn-msg-box { background: #eff6ff; border-left: 3px solid #3b82f6; color: #1e40af; font-size: 12px; padding: 10px; border-radius: 6px; margin-bottom: 12px; line-height: 1.4; }
+            
+            .plqn-hc-actions { display: flex; gap: 8px; }
+            .plqn-hc-actions button { flex: 1; padding: 8px; border-radius: 8px; border: none; font-weight: 700; font-size: 11px; cursor: pointer; transition: 0.2s; }
+            .plqn-hc-actions .add { background: #fce7f3; color: var(--p-acc); }
+            .plqn-hc-actions .sell { background: #f1f5f9; color: #475569; }
+            .plqn-hc-actions button:hover { opacity: 0.8; }
+
+            /* Utils */
+            .plqn-loader-box { text-align: center; padding: 50px; color: #94a3b8; }
+            .plqn-spinner { width: 36px; height: 36px; border: 3px solid rgba(236, 72, 153, 0.1); border-top-color: var(--p-acc); border-radius: 50%; animation: plqn-spin 0.8s infinite linear; margin: 0 auto 15px auto; }
+            .plqn-spinner.mini { width: 16px; height: 16px; border-width: 2px; display: inline-block; vertical-align: middle; margin: 0 5px 0 0; }
+            @keyframes plqn-spin { to { transform: rotate(360deg); } }
+            
+            .plqn-error-box { background: #fef2f2; color: #991b1b; padding: 15px; border-radius: 12px; text-align: center; font-size: 13px; border: 1px solid #fecaca; }
+            .plqn-warning { background: #fffbeb; color: #92400e; padding: 10px; border-radius: 10px; font-size: 12px; margin-bottom: 15px; border: 1px solid #fde68a; text-align: center; }
+            .plqn-close-icon { background: none; border: none; font-size: 28px; color: #94a3b8; cursor: pointer; }
+
+            /* Toast */
+            .plqn-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #fff; padding: 12px 20px; border-radius: 50px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 10px; z-index: 11000; opacity: 0; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; }
+            .plqn-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+            .plqn-toast-msg { font-size: 13px; font-weight: 600; color: #1e293b; }
+
+            /* Graph */
+            .plqn-chart-wrap { flex: 1; position: relative; width: 100%; min-height: 0; }
+            .plqn-modal-content.fs-content { height: 85vh; padding-bottom: 0; overflow: hidden; }
+            
+            /* Info */
+            .plqn-info-head { text-align: center; margin-bottom: 20px; }
+            #plqn-inf-icon { font-size: 40px; margin-bottom: 10px; display: inline-block; width: 60px; height: 60px; line-height: 60px; background: #f8fafc; border-radius: 20px; }
+            #plqn-inf-icon img { width: 100%; height: 100%; border-radius: 20px; object-fit: cover; }
+            .plqn-info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center; margin-bottom: 20px; }
+            .plqn-info-grid div { background: #f8fafc; padding: 10px; border-radius: 12px; }
+            .plqn-info-grid span { display: block; font-size: 10px; color: #94a3b8; text-transform: uppercase; }
+            .plqn-info-grid b { font-size: 13px; color: #334155; }
+            .plqn-info-desc { background: #f8fafc; padding: 15px; border-radius: 16px; font-size: 13px; color: #475569; line-height: 1.5; margin-bottom: 20px; max-height: 150px; overflow-y: auto; }
+        `;
+        const style = document.createElement('style');
+        style.id = 'avx-plqn-style';
+        style.textContent = css;
+        document.head.appendChild(style);
+    }
+
+    // Expose API
+    window.AVX_PLQN = {
+        openTrade,
+        closeModals,
+        openHistory,
+        openGraph,
+        openInfo,
+        onSellOrderChange
+    };
+
+    /* ==========================================================================
+       10. BOOTSTRAP
+       ========================================================================== */
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initApp);
     } else {
-      const holding = await getHolding(symbol);
-      if(qty > holding.qty){
-        toast('Insufficient holdings', false);
-        return;
-      }
+        initApp();
     }
-
-    await executePLQNTrade(action, symbol, qty, amount, price);
-    
-    // Close modal
-    document.querySelector('.plqn-trade-modal')?.remove();
-    
-    toast(`Successfully ${action === 'buy' ? 'bought' : 'sold'} ${qty} ${symbol}! 🎉`, true);
-  }
-
-  /* ---------- UPDATE MARKET RANKS ---------- */
-  function updateMarketRanks(){
-    PLQN_TOKENS.forEach(([sym]) => {
-      const rankEl = document.getElementById('plqn-rank-' + sym);
-      if(rankEl && marketData[sym]){
-        rankEl.textContent = '#' + (marketData[sym].market_cap_rank || '--');
-      }
-    });
-  }
-
-  /* ---------- GLOBAL FUNCTIONS ---------- */
-  window.PLQN_openAI = PLQN_openAI;
-  window.PLQN_closeAI = PLQN_closeAI;
-  window.PLQN_sendMessage = PLQN_sendMessage;
-  window.PLQN_buyToken = PLQN_buyToken;
-  window.PLQN_sellToken = PLQN_sellToken;
-  window.PLQN_confirmTrade = PLQN_confirmTrade;
-
-  /* ---------- INITIALIZATION ---------- */
-  function initPLQN(){
-    renderPLQNInterface();
-    refreshPricesAndMarketData();
-    updateMarketRanks();
-    setInterval(() => {
-      refreshPricesAndMarketData();
-      updateMarketRanks();
-    }, PRICE_REFRESH_MS);
-  }
-
-  // Auto-initialize when DOM is ready
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', initPLQN);
-  } else {
-    initPLQN();
-  }
 
 })();
