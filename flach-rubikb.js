@@ -1,1552 +1,645 @@
+
 /* ==========================================================
-   flash-rubikb.js – RUBIK-B Advanced Trading Platform
-   Ultra-Premium Trading System with MOD Features
+   flach-rubikb.js – Premium Rubik B Option Engine
+   Features: 
+   - Call (Up) / Put (Down) Options
+   - Live Micro-Graphs per Token
+   - Real-time Price Sync & Trading
+   - Premium Information System (Restored)
    ========================================================== */
-(function(){
+(function() {
 
-  /* ---------- CONFIG ---------- */
-  const SUPA_URL  = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
-  const SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
-
-  const MODE = 'local';
-  const MIN_INR = 100;
-  const PRICE_REFRESH_MS = 20000; // Fast updates for RUBIK-B
-  const HOLD_KEY = 'AVX_rubikb_holdings';
-  const ORDERS_KEY = 'AVX_rubikb_orders';
-
-  /* ---------- RUBIK-B PREMIUM TOKENS ---------- */
-  const RUBIK_TOKENS = [
-    ['BTC','Bitcoin','bitcoin'],
-    ['ETH','Ethereum','ethereum'],
-    ['BNB','BNB','binancecoin'],
-    ['SOL','Solana','solana'],
-    ['XRP','XRP','ripple'],
-    ['ADA','Cardano','cardano'],
-    ['DOGE','Dogecoin','dogecoin'],
-    ['MATIC','Polygon','matic-network'],
-    ['DOT','Polkadot','polkadot'],
-    ['LTC','Litecoin','litecoin'],
-    ['AVAX','Avalanche','avalanche-2'],
-    ['SHIB','Shiba Inu','shiba-inu'],
-    ['ATOM','Cosmos','cosmos'],
-    ['LINK','Chainlink','chainlink'],
-    ['UNI','Uniswap','uniswap'],
-    ['NEAR','NEAR Protocol','near'],
-    ['APT','Aptos','aptos'],
-    ['SAND','The Sandbox','the-sandbox'],
-    ['AAVE','Aave','aave'],
-    ['MKR','Maker','maker'],
-    ['ALGO','Algorand','algorand'],
-    ['FTM','Fantom','fantom'],
-    ['VET','VeChain','vechain'],
-    ['FLOW','Flow','flow'],
-    ['COMP','Compound','compound-governance-token'],
-    ['ENS','ENS','ethereum-name-service'],
-    ['KAVA','Kava','kava'],
-    ['CELO','Celo','celo'],
-    ['STX','Stacks','blockstack'],
-    ['WAVES','Waves','waves']
-  ];
-
-  const CG_ID_MAP = {};
-  RUBIK_TOKENS.forEach(([s,_,id])=>{ CG_ID_MAP[s]=id; });
-
-  /* ---------- SUPABASE CLIENT ---------- */
-  const supaLib = window.supabase || (window.parent && window.parent.supabase);
-  if(!supaLib){ console.error("Supabase lib not found."); return; }
-  const supa = supaLib.createClient(SUPA_URL, SUPA_KEY);
-
-  /* ---------- DATA CACHE ---------- */
-  let livePrices = {};
-  let marketData = {};
-  let priceHistory = {}; // 30-day price history
-  let currentView = 'simple'; // 'simple' or 'mod'
-
-  /* ---------- UTILS ---------- */
-  const fmtINR = v => '₹' + Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:2});
-  const fmtNumber = v => Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:0});
-
-  function toast(msg, ok=true){
-    let t = document.getElementById('rubik-toast');
-    if(!t){
-      t = document.createElement('div');
-      t.id='rubik-toast';
-      t.style.cssText=`position:fixed;top:20px;right:20px;background:#333;color:white;padding:15px 25px;border-radius:15px;z-index:99999;opacity:0;transition:all 0.5s cubic-bezier(0.4, 0, 0.2, 1);box-shadow:0 15px 40px rgba(0,0,0,0.4);`;
-      document.body.appendChild(t);
-    }
-    t.textContent = msg;
-    t.style.background = ok ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #ef4444, #dc2626)';
-    t.style.opacity = '1';
-    t.style.transform = 'translateX(0) scale(1)';
-    setTimeout(()=>{
-      t.style.opacity='0';
-      t.style.transform='translateX(100px) scale(0.8)';
-    },4000);
-  }
-
-  /* ---------- HOLDINGS MANAGEMENT ---------- */
-  function localGetHoldings(){
-    try{ return JSON.parse(localStorage.getItem(HOLD_KEY)) || {}; }
-    catch(e){ return {}; }
-  }
-  function localSetHoldings(obj){
-    localStorage.setItem(HOLD_KEY, JSON.stringify(obj));
-  }
-
-  async function getHoldingsMap(){ return localGetHoldings(); }
-  async function updateHolding(symbol,qty,cost_inr){
-    symbol=symbol.toUpperCase();
-    const h=localGetHoldings();
-    if(qty<=0) delete h[symbol];
-    else h[symbol]={qty,cost_inr};
-    localSetHoldings(h);
-  }
-  async function getHolding(symbol){
-    symbol=symbol.toUpperCase();
-    const map=await getHoldingsMap();
-    const r=map[symbol];
-    if(!r) return {qty:0,cost_inr:0};
-    return {qty:Number(r.qty||0),cost_inr:Number(r.cost_inr||0)};
-  }
-
-  /* ---------- ORDERS MANAGEMENT ---------- */
-  function getOrders(){
-    try{ return JSON.parse(localStorage.getItem(ORDERS_KEY)) || []; }
-    catch(e){ return []; }
-  }
-  function saveOrders(orders){
-    localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
-  }
-  function addOrder(order){
-    const orders = getOrders();
-    order.id = Date.now().toString();
-    order.status = 'pending';
-    orders.push(order);
-    saveOrders(orders);
-    return order.id;
-  }
-  function removeOrder(orderId){
-    const orders = getOrders().filter(o => o.id !== orderId);
-    saveOrders(orders);
-  }
-  function updateOrderStatus(orderId, status){
-    const orders = getOrders();
-    const order = orders.find(o => o.id === orderId);
-    if(order) {
-      order.status = status;
-      saveOrders(orders);
-    }
-  }
-
-  /* ---------- WALLET ---------- */
-  async function getUser(){
-    const {data:{user}} = await supa.auth.getUser();
-    return user;
-  }
-  async function getWalletINR(){
-    const u=await getUser(); if(!u) return 0;
-    const {data,error}=await supa.from('user_wallets').select('balance').eq('uid',u.id).single();
-    if(error){ console.error('wallet fetch error',error); return 0; }
-    return Number(data?.balance||0);
-  }
-  async function setWalletINR(newBal){
-    const u=await getUser(); if(!u) return;
-    const {error}=await supa.from('user_wallets').update({balance:newBal}).eq('uid',u.id);
-    if(error) console.error('wallet update error',error);
-    if(typeof window.updateWalletBalance==='function'){ window.updateWalletBalance(); }
-    else if(window.parent && typeof window.parent.updateWalletBalance==='function'){ window.parent.updateWalletBalance(); }
-  }
-
-  /* ---------- ENHANCED PRICE & MARKET DATA REFRESH ---------- */
-  async function refreshPricesAndMarketData(){
-    try{
-      const ids = RUBIK_TOKENS.map(t=>t[2]).join(',');
-      const res = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=inr&ids=${ids}&order=market_cap_desc&per_page=50&page=1&sparkline=true&price_change_percentage=24h`);
-      const data = await res.json();
-      
-      data.forEach(coin => {
-        const token = RUBIK_TOKENS.find(([_,__,id]) => id === coin.id);
-        if(!token) return;
+    /* ---------- CONFIGURATION ---------- */
+    const CONFIG = {
+        SUPA_URL: 'https://hwrvqyipozrsxyjdpqag.supabase.co',
+        SUPA_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM',
         
-        const [sym] = token;
-        livePrices[sym] = Number(coin.current_price || 0);
-        marketData[sym] = {
-          market_cap: coin.market_cap || 0,
-          price_change_24h: coin.price_change_percentage_24h || 0,
-          volume_24h: coin.total_volume || 0,
-          market_cap_rank: coin.market_cap_rank || 0
-        };
+        CURRENT_FILE: 'flach-rubikb.js', 
+        TARGET_CONTAINER: 'rubikb', // Expects <div id="rubikb">
         
-        // Store 30-day price history from sparkline
-        if(coin.sparkline_in_7d && coin.sparkline_in_7d.price) {
-          priceHistory[sym] = coin.sparkline_in_7d.price;
+        REFRESH_RATE: 1000, // Fast update for smooth graphs
+        TABLES: {
+            WALLET: 'user_wallets',
+            CONTROL: 'crypto_token_control',
+            HISTORY: 'crypto_token_histry'
         }
-        
-        // Update price display
-        updatePriceDisplays(sym);
-      });
-      
-      // Check and execute pending orders
-      checkPendingOrders();
-      
-    }catch(e){ 
-      console.error('RUBIK price/market data fetch fail',e); 
-    }
-  }
-
-  function updatePriceDisplays(sym) {
-    // Simple trading view
-    const priceEl = document.getElementById('rubik-price-'+sym);
-    if(priceEl) priceEl.textContent = fmtINR(livePrices[sym]);
-    
-    const changeEl = document.getElementById('rubik-change-'+sym);
-    if(changeEl) {
-      const change = marketData[sym]?.price_change_24h || 0;
-      changeEl.textContent = (change > 0 ? '+' : '') + change.toFixed(2) + '%';
-      changeEl.className = `price-change ${change >= 0 ? 'positive' : 'negative'}`;
-    }
-    
-    // MOD view
-    const modPriceEl = document.getElementById('mod-price-'+sym);
-    if(modPriceEl) modPriceEl.textContent = fmtINR(livePrices[sym]);
-    
-    const modCapEl = document.getElementById('mod-cap-'+sym);
-    if(modCapEl) modCapEl.textContent = '₹' + fmtNumber(marketData[sym]?.market_cap || 0);
-    
-    const modGainEl = document.getElementById('mod-gain-'+sym);
-    const modLossEl = document.getElementById('mod-loss-'+sym);
-    const change = marketData[sym]?.price_change_24h || 0;
-    if(modGainEl && modLossEl) {
-      if(change >= 0) {
-        modGainEl.textContent = '+' + change.toFixed(2) + '%';
-        modGainEl.style.display = 'block';
-        modLossEl.style.display = 'none';
-      } else {
-        modLossEl.textContent = change.toFixed(2) + '%';
-        modLossEl.style.display = 'block';
-        modGainEl.style.display = 'none';
-      }
-    }
-  }
-
-  /* ---------- SAVE TRADE ---------- */
-  async function saveTrade(action,symbol,qty,amount_inr,price_inr){
-    try{
-      const {data:{user}} = await supa.auth.getUser();
-      if(!user) return;
-      const {error} = await supa.from('user_trades').insert({
-        user_id:user.id,
-        action,
-        symbol,
-        qty,
-        price_inr,
-        amount_inr
-      });
-      if(error){ console.error('RUBIK trade insert error',error); }
-    }catch(e){
-      console.error('RUBIK saveTrade fail',e);
-    }
-  }
-
-  /* ---------- PENDING ORDERS CHECK ---------- */
-  async function checkPendingOrders(){
-    const orders = getOrders().filter(o => o.status === 'pending');
-    
-    for(const order of orders) {
-      const currentPrice = livePrices[order.symbol];
-      if(!currentPrice) continue;
-      
-      let shouldExecute = false;
-      
-      if(order.type === 'buy' && currentPrice <= order.targetPrice) {
-        shouldExecute = true;
-      } else if(order.type === 'sell' && currentPrice >= order.targetPrice) {
-        shouldExecute = true;
-      }
-      
-      if(shouldExecute) {
-        await executeOrder(order);
-      }
-    }
-  }
-
-  async function executeOrder(order){
-    try {
-      if(order.type === 'buy') {
-        const balance = await getWalletINR();
-        const amount = order.quantity * order.targetPrice;
-        
-        if(amount <= balance) {
-          const currentHolding = await getHolding(order.symbol);
-          await setWalletINR(balance - amount);
-          await updateHolding(order.symbol, currentHolding.qty + order.quantity, currentHolding.cost_inr + amount);
-          await saveTrade('buy', order.symbol, order.quantity, amount, order.targetPrice);
-          
-          updateOrderStatus(order.id, 'executed');
-          toast(`✅ Order executed: Bought ${order.quantity} ${order.symbol}`, true);
-        }
-      } else if(order.type === 'sell') {
-        const currentHolding = await getHolding(order.symbol);
-        
-        if(currentHolding.qty >= order.quantity) {
-          const balance = await getWalletINR();
-          const amount = order.quantity * order.targetPrice;
-          
-          await setWalletINR(balance + amount);
-          await updateHolding(order.symbol, currentHolding.qty - order.quantity, Math.max(0, currentHolding.cost_inr - amount));
-          await saveTrade('sell', order.symbol, order.quantity, amount, order.targetPrice);
-          
-          updateOrderStatus(order.id, 'executed');
-          toast(`✅ Order executed: Sold ${order.quantity} ${order.symbol}`, true);
-        }
-      }
-    } catch(e) {
-      console.error('Order execution failed:', e);
-      updateOrderStatus(order.id, 'failed');
-    }
-  }
-
-  /* ---------- RENDER MAIN INTERFACE ---------- */
-  function renderRubikInterface(){
-    const c = document.getElementById('rubikb');
-    if(!c) return;
-
-    c.innerHTML = `
-      <div class="rubik-hero">
-        <div class="rubik-hero-bg"></div>
-        <div class="rubik-hero-content">
-          <div class="rubik-title-section">
-            <h1 class="rubik-main-title">🎯 RUBIK-B</h1>
-            <p class="rubik-subtitle">Advanced Trading Platform</p>
-            <div class="rubik-stats">
-              <div class="rubik-stat">
-                <span class="stat-value">${RUBIK_TOKENS.length}</span>
-                <span class="stat-label">Tokens</span>
-              </div>
-              <div class="rubik-stat">
-                <span class="stat-value">⚡</span>
-                <span class="stat-label">Fast</span>
-              </div>
-              <div class="rubik-stat">
-                <span class="stat-value">🎯</span>
-                <span class="stat-label">Precise</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="rubik-mode-switcher">
-        <button class="mode-btn active" onclick="RUBIK_switchMode('simple')">
-          <span class="mode-icon">📊</span>
-          <span class="mode-text">Simple Trading</span>
-        </button>
-        <button class="mode-btn" onclick="RUBIK_switchMode('mod')">
-          <span class="mode-icon">🚀</span>
-          <span class="mode-text">RUBIK-B MOD</span>
-        </button>
-      </div>
-      
-      <div id="simple-trading" class="trading-section active">
-        <div class="section-header">
-          <h2>📊 Simple Trading</h2>
-          <div class="live-indicator">
-            <span class="live-dot"></span>
-            Live + 30D Charts
-          </div>
-        </div>
-        <div class="simple-tokens-grid" id="simple-tokens"></div>
-      </div>
-      
-      <div id="mod-trading" class="trading-section">
-        <div class="section-header">
-          <h2>🚀 RUBIK-B MOD</h2>
-          <div class="mod-controls">
-            <button class="create-order-btn" onclick="RUBIK_openOrderCreator()">
-              <span>➕</span> Create Order
-            </button>
-            <button class="view-orders-btn" onclick="RUBIK_viewOrders()">
-              <span>📋</span> View Orders
-            </button>
-          </div>
-        </div>
-        <div class="mod-tokens-grid" id="mod-tokens"></div>
-      </div>
-    `;
-
-    renderSimpleTokens();
-    renderModTokens();
-    addRubikStyles();
-  }
-
-  /* ---------- RENDER SIMPLE TRADING TOKENS ---------- */
-  function renderSimpleTokens() {
-    const container = document.getElementById('simple-tokens');
-    if(!container) return;
-
-    container.innerHTML = RUBIK_TOKENS.map(([sym, name]) => `
-      <div class="simple-token-card">
-        <div class="token-header">
-          <div class="token-info">
-            <div class="token-symbol">${sym}</div>
-            <div class="token-name">${name}</div>
-          </div>
-          <div class="token-price" id="rubik-price-${sym}">₹--</div>
-        </div>
-        
-        <div class="token-chart" onclick="RUBIK_showChart('${sym}')">
-          <canvas id="chart-${sym}" width="280" height="80"></canvas>
-        </div>
-        
-        <div class="token-stats">
-          <div class="price-change" id="rubik-change-${sym}">--%</div>
-        </div>
-        
-        <div class="token-actions">
-          <button class="simple-buy-btn" onclick="RUBIK_buyToken('${sym}')">Buy</button>
-          <button class="simple-sell-btn" onclick="RUBIK_sellToken('${sym}')">Sell</button>
-        </div>
-      </div>
-    `).join('');
-
-    // Initialize charts
-    RUBIK_TOKENS.forEach(([sym]) => {
-      drawMiniChart(sym);
-    });
-  }
-
-  /* ---------- RENDER MOD TOKENS ---------- */
-  function renderModTokens() {
-    const container = document.getElementById('mod-tokens');
-    if(!container) return;
-
-    container.innerHTML = RUBIK_TOKENS.map(([sym, name]) => `
-      <div class="mod-token-card">
-        <div class="mod-token-header">
-          <div class="mod-token-info">
-            <div class="mod-token-symbol">${sym}</div>
-            <div class="mod-token-name">${name}</div>
-            <div class="mod-token-price" id="mod-price-${sym}">₹--</div>
-          </div>
-          <div class="mod-token-rank" id="mod-rank-${sym}">#--</div>
-        </div>
-        
-        <div class="mod-market-data">
-          <div class="market-cap">
-            <span class="label">Market Cap:</span>
-            <span class="value" id="mod-cap-${sym}">₹--</span>
-          </div>
-        </div>
-        
-        <div class="mod-price-changes">
-          <div class="price-change-box gain" id="mod-gain-${sym}" style="display:none;">
-            +0.00%
-          </div>
-          <div class="price-change-box loss" id="mod-loss-${sym}" style="display:none;">
-            -0.00%
-          </div>
-        </div>
-        
-        <div class="mod-actions">
-          <button class="mod-buy-long-btn" onclick="RUBIK_buyLongTerm('${sym}')">
-            <span>📈</span> Long Term
-          </button>
-          <button class="mod-sell-short-btn" onclick="RUBIK_sellShort('${sym}')">
-            <span>📉</span> Short Sell
-          </button>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  /* ---------- MINI CHART DRAWING ---------- */
-  function drawMiniChart(symbol) {
-    const canvas = document.getElementById(`chart-${symbol}`);
-    if(!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    const width = canvas.width;
-    const height = canvas.height;
-
-    // Clear canvas
-    ctx.clearRect(0, 0, width, height);
-
-    // Sample data (in real app, use priceHistory[symbol])
-    const data = priceHistory[symbol] || generateSampleData();
-    if(!data || data.length === 0) return;
-
-    const max = Math.max(...data);
-    const min = Math.min(...data);
-    const range = max - min || 1;
-
-    // Draw background
-    ctx.fillStyle = 'rgba(102, 126, 234, 0.05)';
-    ctx.fillRect(0, 0, width, height);
-
-    // Draw line
-    ctx.beginPath();
-    ctx.strokeStyle = '#667eea';
-    ctx.lineWidth = 2;
-
-    data.forEach((price, index) => {
-      const x = (index / (data.length - 1)) * width;
-      const y = height - ((price - min) / range) * height;
-      
-      if(index === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
-    });
-
-    ctx.stroke();
-
-    // Fill area under line
-    ctx.lineTo(width, height);
-    ctx.lineTo(0, height);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(102, 126, 234, 0.1)';
-    ctx.fill();
-  }
-
-  function generateSampleData() {
-    const data = [];
-    let price = 1000 + Math.random() * 5000;
-    for(let i = 0; i < 30; i++) {
-      price += (Math.random() - 0.5) * price * 0.05;
-      data.push(price);
-    }
-    return data;
-  }
-
-  /* ---------- MODE SWITCHING ---------- */
-  function RUBIK_switchMode(mode) {
-    currentView = mode;
-    
-    // Update buttons
-    document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.closest('.mode-btn').classList.add('active');
-    
-    // Update sections
-    document.querySelectorAll('.trading-section').forEach(section => section.classList.remove('active'));
-    document.getElementById(`${mode}-trading`).classList.add('active');
-  }
-
-  /* ---------- ORDER CREATOR ---------- */
-  function RUBIK_openOrderCreator() {
-    const modal = document.createElement('div');
-    modal.className = 'order-creator-modal';
-    modal.innerHTML = `
-      <div class="order-creator-container">
-        <div class="order-creator-header">
-          <h3>🎯 Create Order</h3>
-          <button onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
-        </div>
-        <div class="order-creator-body">
-          <div class="order-form">
-            <select id="order-token" class="order-input">
-              <option value="">Select Token</option>
-              ${RUBIK_TOKENS.map(([sym, name]) => `<option value="${sym}">${sym} - ${name}</option>`).join('')}
-            </select>
-            
-            <select id="order-type" class="order-input">
-              <option value="buy">Buy Order</option>
-              <option value="sell">Sell Order</option>
-            </select>
-            
-            <input type="number" id="order-target-price" class="order-input" placeholder="Target Price (₹)" />
-            <input type="number" id="order-quantity" class="order-input" placeholder="Quantity" />
-            
-            <button class="create-order-confirm-btn" onclick="RUBIK_createOrder()">
-              Create Order
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-  }
-
-  function RUBIK_createOrder() {
-    const token = document.getElementById('order-token').value;
-    const type = document.getElementById('order-type').value;
-    const targetPrice = parseFloat(document.getElementById('order-target-price').value);
-    const quantity = parseFloat(document.getElementById('order-quantity').value);
-
-    if(!token || !targetPrice || !quantity) {
-      toast('Please fill all fields', false);
-      return;
-    }
-
-    const order = {
-      symbol: token,
-      type: type,
-      targetPrice: targetPrice,
-      quantity: quantity,
-      createdAt: new Date().toISOString()
     };
 
-    const orderId = addOrder(order);
-    toast(`Order created successfully! ID: ${orderId}`, true);
-    
-    // Close modal
-    document.querySelector('.order-creator-modal')?.remove();
-  }
+    /* ---------- STATE MANAGEMENT ---------- */
+    const State = {
+        user: null,
+        tokens: [], 
+        prices: {}, 
+        holdings: {}, 
+        walletBal: 0,
+        historyData: {}, // Store price history for graphs { 'BTC': [100, 101, ...] }
+        intervals: []
+    };
 
-  /* ---------- VIEW ORDERS ---------- */
-  function RUBIK_viewOrders() {
-    const orders = getOrders();
-    
-    const modal = document.createElement('div');
-    modal.className = 'orders-view-modal';
-    modal.innerHTML = `
-      <div class="orders-view-container">
-        <div class="orders-view-header">
-          <h3>📋 Your Orders</h3>
-          <button onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
-        </div>
-        <div class="orders-view-body">
-          ${orders.length === 0 ? '<p>No orders found</p>' : orders.map(order => `
-            <div class="order-item ${order.status}">
-              <div class="order-info">
-                <span class="order-symbol">${order.symbol}</span>
-                <span class="order-type">${order.type.toUpperCase()}</span>
-                <span class="order-details">${order.quantity} @ ₹${order.targetPrice}</span>
-              </div>
-              <div class="order-actions">
-                <span class="order-status">${order.status}</span>
-                ${order.status === 'pending' ? `<button onclick="RUBIK_cancelOrder('${order.id}')">Cancel</button>` : ''}
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-  }
+    /* ---------- SUPABASE INIT ---------- */
+    const supaLib = window.supabase || (window.parent && window.parent.supabase);
+    const getRoot = () => document.getElementById(CONFIG.TARGET_CONTAINER);
 
-  function RUBIK_cancelOrder(orderId) {
-    removeOrder(orderId);
-    toast('Order cancelled', true);
-    document.querySelector('.orders-view-modal')?.remove();
-  }
-
-  /* ---------- TRADING FUNCTIONS ---------- */
-  async function RUBIK_buyToken(symbol) { await showTradeModal('buy', symbol); }
-  async function RUBIK_sellToken(symbol) { await showTradeModal('sell', symbol); }
-  async function RUBIK_buyLongTerm(symbol) { await showTradeModal('buy', symbol, 'long'); }
-  async function RUBIK_sellShort(symbol) { await showTradeModal('sell', symbol, 'short'); }
-
-  async function showTradeModal(action, symbol, type = 'normal') {
-    const price = livePrices[symbol] || 0;
-    if(price <= 0) {
-      toast('Price not available', false);
-      return;
-    }
-
-    const balance = await getWalletINR();
-    const holding = await getHolding(symbol);
-
-    const modal = document.createElement('div');
-    modal.className = 'rubik-trade-modal';
-    modal.innerHTML = `
-      <div class="rubik-trade-container">
-        <div class="rubik-trade-header ${action}">
-          <h3>${action === 'buy' ? 'Buy' : 'Sell'} ${symbol} ${type === 'long' ? '(Long Term)' : type === 'short' ? '(Short)' : ''}</h3>
-          <button onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
-        </div>
-        <div class="rubik-trade-body">
-          <div class="rubik-trade-info">
-            <div>Balance: ${fmtINR(balance)}</div>
-            <div>Holdings: ${holding.qty} ${symbol}</div>
-            <div>Live Price: ${fmtINR(price)}</div>
-            ${type === 'short' ? '<div class="short-warning">⚠️ Short selling - Instant execution</div>' : ''}
-          </div>
-          <input type="number" class="rubik-trade-input" id="trade-amount" placeholder="Enter INR amount" />
-          <input type="number" class="rubik-trade-input" id="trade-qty" placeholder="Enter quantity" />
-          <button class="rubik-confirm-btn ${action}" onclick="RUBIK_confirmTrade('${action}', '${symbol}', ${price}, '${type}')">
-            ${action === 'buy' ? 'Buy Now' : type === 'short' ? 'Sell Short' : 'Sell Now'}
-          </button>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    // Auto-calculate
-    const amountInput = document.getElementById('trade-amount');
-    const qtyInput = document.getElementById('trade-qty');
-
-    amountInput.addEventListener('input', () => {
-      if(amountInput.value && price > 0) {
-        qtyInput.value = (parseFloat(amountInput.value) / price).toFixed(8);
-      }
-    });
-
-    qtyInput.addEventListener('input', () => {
-      if(qtyInput.value && price > 0) {
-        amountInput.value = (parseFloat(qtyInput.value) * price).toFixed(2);
-      }
-    });
-  }
-
-  async function RUBIK_confirmTrade(action, symbol, price, type) {
-    const amount = parseFloat(document.getElementById('trade-amount')?.value || 0);
-    const qty = parseFloat(document.getElementById('trade-qty')?.value || 0);
-
-    if(!amount || !qty || amount < MIN_INR) {
-      toast(`Minimum ${fmtINR(MIN_INR)} required`, false);
-      return;
-    }
-
-    if(action === 'buy') {
-      const balance = await getWalletINR();
-      if(amount > balance) {
-        toast('Insufficient balance', false);
+    if (!supaLib) {
+        console.error("❌ Supabase Library Missing");
+        const el = getRoot();
+        if(el) el.innerHTML = '<div style="color:red;padding:20px;">Error: Supabase SDK not found.</div>';
         return;
-      }
-      
-      const currentHolding = await getHolding(symbol);
-      await setWalletINR(balance - amount);
-      await updateHolding(symbol, currentHolding.qty + qty, currentHolding.cost_inr + amount);
-      await saveTrade('buy', symbol, qty, amount, price);
-      
+    }
+    const supa = supaLib.createClient(CONFIG.SUPA_URL, CONFIG.SUPA_KEY);
+
+    /* ---------- UTILITY FUNCTIONS ---------- */
+    const fmtINR = (v) => '₹' + Number(v || 0).toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 4
+    });
+    const fmtQty = (v) => Number(v || 0).toLocaleString('en-US', {
+        maximumFractionDigits: 6
+    });
+    
+    function toast(msg, type = 'success') {
+        let t = document.getElementById('avx-toast');
+        if (!t) {
+            t = document.createElement('div');
+            t.id = 'avx-toast';
+            document.body.appendChild(t);
+        }
+        t.innerHTML = `
+            <div class="avx-toast-icon">${type === 'success' ? '✅' : '⚠️'}</div>
+            <div class="avx-toast-msg">${msg}</div>
+        `;
+        t.className = type;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    /* ---------- DATA ENGINE ---------- */
+    async function initApp() {
+        injectStyles();
+        const root = getRoot();
+        if(!root) return;
+
+        renderLoader("Syncing Rubik B Options...");
+
+        // 1. Auth
+        const { data: { user } } = await supa.auth.getUser();
+        State.user = user;
+
+        if (!user) {
+            renderError("Please Login to Trade Options");
+            return;
+        }
+
+        // 2. Load Data
+        await Promise.all([fetchWallet(), fetchTokens(), fetchHoldings()]);
+
+        // 3. Start Engines
+        startPriceEngine();
+
+        // 4. Render
+        renderTokenList();
+    }
+
+    async function fetchWallet() {
+        if (!State.user) return;
+        const { data } = await supa.from(CONFIG.TABLES.WALLET).select('balance').eq('uid', State.user.id).single();
+        if (data) State.walletBal = Number(data.balance);
+    }
+
+    async function fetchTokens() {
+        const { data } = await supa.from(CONFIG.TABLES.CONTROL).select('*').order('id', { ascending: true });
+        if (data) {
+            State.tokens = data.filter(t => !t.nosupported_js || !t.nosupported_js.includes(CONFIG.CURRENT_FILE));
+            
+            // Initialize prices & history
+            State.tokens.forEach(t => {
+                const p = Number(t.manual_price || 0);
+                State.prices[t.symbol] = { current: p, last: p };
+                State.historyData[t.symbol] = new Array(40).fill(p); // Init graph data
+            });
+        }
+    }
+
+    async function fetchHoldings() {
+        const { data } = await supa.from(CONFIG.TABLES.HISTORY).select('symbol, action, qty').eq('user_id', State.user.id);
+        if (data) {
+            const temp = {};
+            data.forEach(row => {
+                const sym = row.symbol;
+                const qty = Number(row.qty);
+                if (!temp[sym]) temp[sym] = 0;
+                if (row.action === 'Buying') temp[sym] += qty;
+                else if (row.action === 'Selling') temp[sym] -= qty;
+            });
+            Object.keys(temp).forEach(k => { if (temp[k] <= 0.000001) delete temp[k]; });
+            State.holdings = temp;
+        }
+    }
+
+    /* ---------- PRICE & GRAPH ENGINE ---------- */
+    function startPriceEngine() {
+        State.intervals.forEach(clearInterval);
+        State.intervals = [];
+
+        const run = () => {
+            // Live API
+            State.tokens.filter(t => t.is_live_api && t.api_url).forEach(async (t) => {
+                try {
+                    const res = await fetch(t.api_url);
+                    const json = await res.json();
+                    const key = Object.keys(json)[0];
+                    if (key && json[key]?.inr) updatePrice(t.symbol, Number(json[key].inr));
+                } catch(e){}
+            });
+
+            // Manual Sim
+            State.tokens.filter(t => !t.is_live_api).forEach(t => {
+                const cur = State.prices[t.symbol].current;
+                const vol = cur * 0.003; // Higher volatility for Rubik
+                let next = cur + (Math.random() - 0.5) * vol;
+                if (t.manual_min_price && next < t.manual_min_price) next = t.manual_min_price;
+                if (t.manual_max_price && next > t.manual_max_price) next = t.manual_max_price;
+                updatePrice(t.symbol, next);
+            });
+        };
+
+        run();
+        State.intervals.push(setInterval(run, CONFIG.REFRESH_RATE));
+    }
+
+    function updatePrice(sym, newPrice) {
+        const oldPrice = State.prices[sym].current;
+        State.prices[sym] = { current: newPrice, last: oldPrice };
+
+        // 1. Update Graph Data
+        if(State.historyData[sym]) {
+            State.historyData[sym].push(newPrice);
+            if(State.historyData[sym].length > 40) State.historyData[sym].shift();
+            drawMiniGraph(sym);
+        }
+
+        // 2. UI Price Update
+        const el = document.getElementById(`rb-price-${sym}`);
+        if (el) {
+            el.textContent = fmtINR(newPrice);
+            el.style.color = newPrice >= oldPrice ? '#10b981' : '#f43f5e';
+        }
+    }
+
+    /* ---------- GRAPH RENDERING ---------- */
+    function drawMiniGraph(sym) {
+        const canvas = document.getElementById(`rb-graph-${sym}`);
+        if(!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        const data = State.historyData[sym];
+        const w = canvas.width;
+        const h = canvas.height;
+        
+        // Find range
+        let min = Math.min(...data);
+        let max = Math.max(...data);
+        let range = max - min || 1;
+
+        ctx.clearRect(0, 0, w, h);
+        
+        // Draw Path
+        ctx.beginPath();
+        const step = w / (data.length - 1);
+        
+        data.forEach((val, i) => {
+            const x = i * step;
+            // Invert Y (0 is top)
+            const y = h - ((val - min) / range) * (h - 10) - 5; 
+            if(i===0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+
+        const isUp = data[data.length-1] >= data[0];
+        ctx.strokeStyle = isUp ? '#10b981' : '#f43f5e';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Gradient Fill
+        ctx.lineTo(w, h);
+        ctx.lineTo(0, h);
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, isUp ? "rgba(16, 185, 129, 0.2)" : "rgba(244, 63, 94, 0.2)");
+        grad.addColorStop(1, "rgba(255, 255, 255, 0)");
+        ctx.fillStyle = grad;
+        ctx.fill();
+    }
+
+    /* ---------- UI RENDERER ---------- */
+    function renderLoader(msg) {
+        const app = getRoot();
+        if (app) app.innerHTML = `<div class="avx-loader"><div class="avx-spinner-premium"></div><p>${msg}</p></div>`;
+    }
+    
+    function renderError(msg) {
+        const app = getRoot();
+        if (app) app.innerHTML = `<div class="avx-error">⚠️ ${msg}</div>`;
+    }
+
+    function renderTokenList() {
+        const app = getRoot();
+        if (!app) return;
+
+        if (State.tokens.length === 0) {
+            app.innerHTML = `<div class="avx-empty"><h2>No Rubik Options</h2></div>`;
+            return;
+        }
+
+        app.innerHTML = State.tokens.map(t => {
+            const p = State.prices[t.symbol] || { current: 0 };
+            
+            let iconHTML = '';
+            if (t.icon_type === 'image' && t.icon_url) {
+                iconHTML = `<img src="${t.icon_url}" class="avx-icon-img">`;
+            } else {
+                iconHTML = `<span class="avx-icon-text">${t.symbol.substring(0,2)}</span>`;
+            }
+
+            return `
+            <div class="avx-card-rubik" id="rb-card-${t.symbol}">
+                
+                <div class="rb-top">
+                    <div class="rb-icon">${iconHTML}</div>
+                    <div class="rb-info">
+                        <span class="rb-sym">${t.symbol}</span>
+                        <span class="rb-name">Rubik Option</span>
+                    </div>
+                    <div class="rb-price" id="rb-price-${t.symbol}">${fmtINR(p.current)}</div>
+                </div>
+
+                <!-- LIVE GRAPH CONTAINER (Visual Only) -->
+                <div class="rb-graph-box">
+                    <canvas id="rb-graph-${t.symbol}" class="rb-graph-canvas" width="300" height="60"></canvas>
+                </div>
+
+                <div class="rb-actions">
+                    <button class="rb-btn call" onclick="AVX_RB.openTrade('call', '${t.symbol}')">
+                        <span>CALL</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                            <path d="M7 17L17 7M17 7H7M17 7V17"/>
+                        </svg>
+                    </button>
+                    <button class="rb-btn put" onclick="AVX_RB.openTrade('put', '${t.symbol}')">
+                        <span>PUT</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                            <path d="M17 7L7 17M7 17H17M7 17V7"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- RESTORED: INFORMATION SYSTEM -->
+                <div class="rb-footer">
+                    <div class="rb-foot-btn" onclick="AVX_RB.openInfo('${t.symbol}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 16v-4"/>
+                            <path d="M12 8h.01"/>
+                        </svg>
+                        <span>Asset Info</span>
+                    </div>
+                </div>
+
+            </div>`;
+        }).join('');
+        
+        // Init graphs immediately after render
+        State.tokens.forEach(t => drawMiniGraph(t.symbol));
+    }
+
+    /* ---------- INFORMATION SYSTEM (RESTORED) ---------- */
+    
+    function buildInfoModal() {
+        if(document.getElementById('rb-info-modal')) return;
+        const m = document.createElement('div');
+        m.id = 'rb-info-modal';
+        m.className = 'avx-modal';
+        m.innerHTML = `
+            <div class="avx-modal-card">
+                <div class="avx-info-header">
+                    <div id="rb-i-icon-box" class="avx-glow-icon"></div>
+                    <h2 id="rb-i-name">BTC</h2>
+                    <p id="rb-i-full">Bitcoin</p>
+                </div>
+                <div class="avx-info-grid">
+                    <div class="avx-ig-item"><span>Supply</span><b id="rb-i-supp">--</b></div>
+                    <div class="avx-ig-item"><span>Volume</span><b id="rb-i-vol">--</b></div>
+                    <div class="avx-ig-item"><span>Holders</span><b id="rb-i-hold">--</b></div>
+                </div>
+                <div class="avx-desc-box" id="rb-i-desc"></div>
+                <div class="avx-links-row" id="rb-i-links"></div>
+                <button class="avx-btn-text" onclick="AVX_RB.closeModals()">Close</button>
+            </div>`;
+        document.body.appendChild(m);
+    }
+
+    function openInfo(sym) {
+        buildInfoModal();
+        let m = document.getElementById('rb-info-modal');
+        
+        const t = State.tokens.find(tok => tok.symbol === sym);
+        if(!t) return;
+
+        let iconHTML = '';
+        if (t.icon_type === 'image' && t.icon_url) {
+            iconHTML = `<img src="${t.icon_url}">`;
+        } else {
+            iconHTML = `<span>${t.symbol.substring(0,2)}</span>`;
+        }
+        document.getElementById('rb-i-icon-box').innerHTML = iconHTML;
+        document.getElementById('rb-i-name').textContent = t.symbol;
+        document.getElementById('rb-i-full').textContent = t.full_name;
+        
+        document.getElementById('rb-i-supp').textContent = t.total_supply || 'N/A';
+        document.getElementById('rb-i-vol').textContent = t.volume || 'N/A';
+        document.getElementById('rb-i-hold').textContent = t.holders || 'N/A';
+        document.getElementById('rb-i-desc').textContent = t.description || "No description available for this asset.";
+
+        const linksDiv = document.getElementById('rb-i-links');
+        linksDiv.innerHTML = '';
+        if(t.social_links) {
+            Object.entries(t.social_links).forEach(([key, url]) => {
+                linksDiv.innerHTML += `<a href="${url}" target="_blank" class="avx-link-chip">${key} ↗</a>`;
+            });
+        }
+        openModal(m);
+    }
+
+    /* ---------- MODAL & TRADING ---------- */
+    function buildTradeModal() {
+        if(document.getElementById('rb-trade-modal')) return;
+        const m = document.createElement('div');
+        m.id = 'rb-trade-modal';
+        m.className = 'avx-modal';
+        m.innerHTML = `
+            <div class="avx-modal-card rb-theme">
+                <div class="avx-modal-header">
+                    <div class="rb-mh-left">
+                        <span id="rb-m-type" class="rb-badge">CALL</span> 
+                        <span id="rb-m-sym" class="avx-title">BTC</span>
+                    </div>
+                    <div class="rb-mh-right">
+                        <div id="rb-m-live-price" class="avx-price-tag">₹0.00</div>
+                    </div>
+                </div>
+                <div class="avx-stat-row">
+                    <div class="avx-stat-pill"><small>Balance</small><span id="rb-m-bal">₹0.00</span></div>
+                    <div class="avx-stat-pill"><small>Holding</small><span id="rb-m-hold">0.00</span></div>
+                </div>
+                
+                <div class="rb-arrow-visual">
+                    <div id="rb-vis-icon"></div>
+                    <p id="rb-vis-text">Profit if price goes UP</p>
+                </div>
+
+                <div class="avx-trade-inputs">
+                    <div class="avx-inp-cont"><label>Total (INR)</label><input type="number" id="rb-t-amt" placeholder="0.00"></div>
+                    <div class="avx-inp-cont"><label>Quantity</label><input type="number" id="rb-t-qty" placeholder="0.00"></div>
+                </div>
+                <button id="rb-confirm-btn" class="avx-btn-main">CONFIRM OPTION</button>
+                <button class="avx-btn-text" onclick="AVX_RB.closeModals()">Cancel</button>
+            </div>`;
+        document.body.appendChild(m);
+        setupInputs(m);
+    }
+
+    function setupInputs(m) {
+        const amt = m.querySelector('#rb-t-amt');
+        const qty = m.querySelector('#rb-t-qty');
+        const getP = () => State.prices[m.dataset.sym]?.current || 0;
+
+        amt.oninput = () => {
+            const p = getP();
+            if(p>0 && amt.value) qty.value = (parseFloat(amt.value)/p).toFixed(6); else qty.value='';
+        };
+        qty.oninput = () => {
+            const p = getP();
+            if(p>0 && qty.value) amt.value = (parseFloat(qty.value)*p).toFixed(2); else amt.value='';
+        };
+        m.querySelector('#rb-confirm-btn').onclick = executeTrade;
+    }
+
+    async function openTrade(type, sym) {
+        buildTradeModal();
+        let m = document.getElementById('rb-trade-modal');
+        const t = State.tokens.find(tk => tk.symbol === sym);
+        if(!t) return;
+
+        m.dataset.mode = type;
+        m.dataset.sym = sym;
+        
+        // Reset
+        document.getElementById('rb-t-amt').value = '';
+        document.getElementById('rb-t-qty').value = '';
+
+        // UI
+        const typeEl = document.getElementById('rb-m-type');
+        typeEl.textContent = type.toUpperCase();
+        typeEl.className = `rb-badge ${type}`;
+        
+        document.getElementById('rb-m-sym').textContent = sym;
+        document.getElementById('rb-m-bal').textContent = fmtINR(State.walletBal);
+        document.getElementById('rb-m-hold').textContent = `${State.holdings[sym]||0}`;
+        document.getElementById('rb-m-live-price').textContent = fmtINR(State.prices[sym].current);
+
+        // Arrow Visual
+        const visIcon = document.getElementById('rb-vis-icon');
+        const visText = document.getElementById('rb-vis-text');
+        if(type === 'call') {
+            visIcon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3"><path d="M7 17L17 7M17 7H7M17 7V17"/></svg>`;
+            visText.textContent = "Profit if price goes UP";
+            visText.style.color = "#10b981";
+        } else {
+            visIcon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="3"><path d="M17 7L7 17M7 17H17M7 17V7"/></svg>`;
+            visText.textContent = "Profit if price goes DOWN";
+            visText.style.color = "#f43f5e";
+        }
+
+        const btn = document.getElementById('rb-confirm-btn');
+        btn.textContent = `${type.toUpperCase()} NOW`;
+        btn.className = `avx-btn-main ${type}`;
+
+        openModal(m);
+    }
+
+    async function executeTrade() {
+        const m = document.getElementById('rb-trade-modal');
+        const mode = m.dataset.mode;
+        const sym = m.dataset.sym;
+        const amt = parseFloat(document.getElementById('rb-t-amt').value);
+        const qty = parseFloat(document.getElementById('rb-t-qty').value);
+        const price = State.prices[sym].current;
+
+        if(!amt || !qty) { toast("Invalid Amount", "err"); return; }
+        
+        if(mode === 'call' && amt > State.walletBal) { toast("Insufficient Balance", "err"); return; }
+        if(mode === 'put' && qty > (State.holdings[sym]||0)) { toast("Insufficient Holdings", "err"); return; }
+
+        const btn = document.getElementById('rb-confirm-btn');
+        btn.disabled = true; btn.textContent = "Processing...";
+
+        try {
+            // DB Logic (Call=Buy, Put=Sell)
+            const actionStr = mode === 'call' ? 'Buying' : 'Selling';
+            const { error: hErr } = await supa.from(CONFIG.TABLES.HISTORY).insert({
+                user_id: State.user.id, symbol: sym, action: actionStr,
+                qty: qty, price_at_transaction: price, total_amount: amt,
+                blockchain_used: 'Rubik', status: 'active'
+            });
+            if(hErr) throw hErr;
+
+            const newBal = mode === 'call' ? State.walletBal - amt : State.walletBal + amt;
+            await supa.from(CONFIG.TABLES.WALLET).update({ balance: newBal }).eq('uid', State.user.id);
+
+            State.walletBal = newBal;
+            await fetchHoldings();
+            
+            toast(`${mode.toUpperCase()} Success!`);
+            closeModals();
+
+        } catch (e) {
+            console.error(e);
+            toast("Trade Failed", "err");
+        }
+        btn.disabled = false;
+    }
+
+    /* ---------- HELPERS ---------- */
+    function openModal(el) {
+        document.querySelectorAll('.avx-modal').forEach(m => m.classList.remove('show'));
+        el.style.display = 'flex';
+        setTimeout(()=>el.classList.add('show'), 10);
+    }
+    function closeModals() {
+        document.querySelectorAll('.avx-modal').forEach(m => {
+            m.classList.remove('show');
+            setTimeout(()=>m.style.display='none', 300);
+        });
+    }
+
+    function injectStyles() {
+        if(document.getElementById('avx-rubik-css')) return;
+        const css = `
+            @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+            :root { --rb-bg: #f1f5f9; --rb-card: #ffffff; --rb-text: #1e293b; --rb-call: #10b981; --rb-put: #f43f5e; }
+            body { font-family: 'Outfit', sans-serif !important; background: var(--rb-bg); color: var(--rb-text); }
+
+            /* CARD */
+            .avx-card-rubik { background: #fff; border-radius: 24px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 20px -5px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; transition: transform 0.2s; }
+            .avx-card-rubik:hover { transform: translateY(-3px); }
+            
+            /* TOP */
+            .rb-top { display: flex; align-items: center; gap: 14px; margin-bottom: 15px; }
+            .rb-icon { width: 48px; height: 48px; border-radius: 14px; background: #f8fafc; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: #64748b; border: 1px solid #f1f5f9; overflow: hidden; }
+            .avx-icon-img { width: 100%; height: 100%; object-fit: cover; }
+            .rb-info { flex: 1; display:flex; flex-direction:column; }
+            .rb-sym { font-weight: 800; font-size: 18px; color: #0f172a; line-height: 1.1; }
+            .rb-name { font-size: 12px; color: #64748b; font-weight: 500; }
+            .rb-price { font-family: 'Outfit', monospace; font-size: 18px; font-weight: 700; color: #1e293b; transition: color 0.2s; }
+
+            /* GRAPH BOX - VISUAL ONLY */
+            .rb-graph-box { height: 70px; background: #f8fafc; border-radius: 12px; position: relative; margin-bottom: 20px; overflow: hidden; border: 2px solid transparent; }
+            .rb-graph-canvas { width: 100%; height: 100%; display: block; }
+
+            /* ACTIONS */
+            .rb-actions { display: flex; gap: 12px; margin-bottom: 15px; }
+            .rb-btn { flex: 1; padding: 14px; border: none; border-radius: 16px; color: white; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.1s; position: relative; overflow: hidden; }
+            .rb-btn:active { transform: scale(0.97); }
+            
+            .rb-btn.call { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
+            .rb-btn.put { background: linear-gradient(135deg, #f43f5e, #e11d48); box-shadow: 0 4px 10px rgba(244, 63, 94, 0.3); }
+            .rb-btn svg { width: 20px; height: 20px; }
+
+            /* FOOTER (Restored) */
+            .rb-footer { display: flex; justify-content: flex-end; padding-top: 12px; border-top: 1px dashed #e2e8f0; }
+            .rb-foot-btn { display: flex; align-items: center; gap: 6px; color: #64748b; cursor: pointer; font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 8px; transition: 0.2s; background: #f8fafc; }
+            .rb-foot-btn:hover { background: #f1f5f9; color: #334155; }
+            .rb-foot-btn svg { width: 16px; height: 16px; stroke-width: 2.5; }
+
+            /* MODAL SPECIFIC */
+            .rb-theme .rb-mh-left { display: flex; flex-direction: column; }
+            .rb-badge { font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 6px; display: inline-block; width: fit-content; text-transform: uppercase; margin-bottom: 4px; }
+            .rb-badge.call { background: #d1fae5; color: #047857; }
+            .rb-badge.put { background: #ffe4e6; color: #be123c; }
+            
+            .rb-arrow-visual { text-align: center; margin: 20px 0; background: #f8fafc; padding: 15px; border-radius: 16px; }
+            #rb-vis-icon svg { width: 40px; height: 40px; }
+            #rb-vis-text { font-size: 13px; font-weight: 700; margin-top: 5px; margin-bottom: 0; }
+
+            /* INFO MODAL */
+            .avx-info-header { text-align: center; margin-bottom: 30px; }
+            .avx-glow-icon { width: 80px; height: 80px; margin: 0 auto 16px; border-radius: 28px; background: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center; font-size: 36px; border: 1px solid #f1f5f9; }
+            .avx-glow-icon img { width: 100%; height: 100%; border-radius: 28px; object-fit: cover; }
+            .avx-info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+            .avx-ig-item { background: #f8fafc; padding: 16px 8px; border-radius: 18px; text-align: center; border: 1px solid #e2e8f0; }
+            .avx-ig-item span { display: block; font-size: 10px; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; font-weight: 700; }
+            .avx-ig-item b { font-size: 14px; color: #0f172a; font-weight: 700; }
+            .avx-desc-box { font-size: 14px; line-height: 1.6; color: #475569; background: #f8fafc; padding: 18px; border-radius: 20px; margin-bottom: 24px; max-height: 140px; overflow-y: auto; border: 1px solid #e2e8f0; }
+            .avx-links-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 15px; }
+            .avx-link-chip { background: #e0e7ff; color: #3730a3; padding: 8px 16px; border-radius: 30px; text-decoration: none; font-size: 12px; font-weight: 700; transition: background 0.2s; }
+            .avx-link-chip:hover { background: #c7d2fe; }
+
+            /* UTILS */
+            .avx-loader { text-align:center; padding:50px; color:#94a3b8; }
+            .avx-spinner-premium { width: 36px; height: 36px; border: 3px solid rgba(0,0,0,0.1); border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 10px auto; }
+            @keyframes spin { to { transform: rotate(360deg); } }
+            .avx-empty { text-align:center; padding:40px; color:#94a3b8; }
+            .avx-error { text-align:center; padding:20px; color:#ef4444; background:#fef2f2; border-radius:12px; margin:20px; border:1px solid #fecaca; }
+
+            /* MODAL SHARED */
+            .avx-modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); z-index: 10000; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+            .avx-modal.show { opacity: 1; }
+            .avx-modal-card { background: #fff; width: 90%; max-width: 440px; border-radius: 32px; padding: 30px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+            .avx-modal.show .avx-modal-card { transform: scale(1); }
+            
+            .avx-modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+            .avx-title { font-size: 28px; font-weight: 800; color: #0f172a; }
+            .avx-price-tag { font-family: 'Outfit', monospace; font-size: 18px; font-weight: 700; color: #334155; background: #f1f5f9; padding: 6px 12px; border-radius: 12px; }
+            .avx-stat-row { display: flex; gap: 12px; margin-bottom: 20px; }
+            .avx-stat-pill { flex: 1; background: #f8fafc; padding: 12px; border-radius: 16px; text-align: center; border: 1px solid #e2e8f0; }
+            .avx-stat-pill small { display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; }
+            .avx-stat-pill span { font-weight: 700; font-size: 14px; color: #0f172a; }
+            
+            .avx-trade-inputs { display: flex; gap: 16px; margin-bottom: 24px; }
+            .avx-inp-cont { flex: 1; }
+            .avx-inp-cont label { font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 8px; display: block; text-transform: uppercase; }
+            .avx-inp-cont input { width: 100%; padding: 16px; border-radius: 18px; border: 2px solid #f1f5f9; font-size: 20px; font-weight: 700; text-align: center; outline: none; color: #0f172a; background: #fff; transition: 0.2s; }
+            .avx-inp-cont input:focus { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+            
+            .avx-btn-main { width: 100%; padding: 18px; border: none; border-radius: 20px; font-weight: 800; font-size: 16px; color: white; cursor: pointer; margin-bottom: 12px; transition: transform 0.1s; }
+            .avx-btn-main.call { background: #10b981; }
+            .avx-btn-main.put { background: #f43f5e; }
+            .avx-btn-main:active { transform: scale(0.98); }
+            .avx-btn-text { width: 100%; padding: 12px; background: none; border: none; color: #94a3b8; font-weight: 600; cursor: pointer; transition: 0.2s; }
+            .avx-btn-text:hover { color: #64748b; }
+
+            #avx-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #fff; padding: 12px 24px; border-radius: 50px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 12px; z-index: 20000; opacity: 0; transition: 0.4s; pointer-events: none; }
+            #avx-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+            .avx-toast-icon { font-size: 18px; }
+            .avx-toast-msg { font-size: 14px; font-weight: 600; color: #1e293b; }
+        `;
+        const style = document.createElement('style');
+        style.id = 'avx-rubik-css';
+        style.textContent = css;
+        document.head.appendChild(style);
+    }
+
+    /* ---------- EXPOSE API ---------- */
+    window.AVX_RB = {
+        openTrade,
+        closeModals,
+        openInfo
+    };
+
+    /* ---------- BOOTSTRAP ---------- */
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initApp);
     } else {
-      const holding = await getHolding(symbol);
-      if(type !== 'short' && qty > holding.qty) {
-        toast('Insufficient holdings', false);
-        return;
-      }
-      
-      const balance = await getWalletINR();
-      await setWalletINR(balance + amount);
-      
-      if(type === 'short') {
-        // Short selling - can sell more than holdings
-        await updateHolding(symbol, Math.max(0, holding.qty - qty), Math.max(0, holding.cost_inr - amount));
-      } else {
-        await updateHolding(symbol, holding.qty - qty, Math.max(0, holding.cost_inr - amount));
-      }
-      
-      await saveTrade('sell', symbol, qty, amount, price);
+        initApp();
     }
-
-    // Close modal
-    document.querySelector('.rubik-trade-modal')?.remove();
-    
-    const typeText = type === 'long' ? ' for long term' : type === 'short' ? ' (short)' : '';
-    toast(`Successfully ${action === 'buy' ? 'bought' : 'sold'} ${qty} ${symbol}${typeText}!`, true);
-  }
-
-  /* ---------- CHART DISPLAY ---------- */
-  function RUBIK_showChart(symbol) {
-    // Simple chart popup
-    const modal = document.createElement('div');
-    modal.className = 'chart-modal';
-    modal.innerHTML = `
-      <div class="chart-container">
-        <div class="chart-header">
-          <h3>${symbol} - 30 Day Chart</h3>
-          <button onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
-        </div>
-        <div class="chart-body">
-          <canvas id="big-chart-${symbol}" width="500" height="300"></canvas>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-    
-    // Draw larger chart
-    setTimeout(() => drawBigChart(symbol), 100);
-  }
-
-  function drawBigChart(symbol) {
-    const canvas = document.getElementById(`big-chart-${symbol}`);
-    if(!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    const width = canvas.width;
-    const height = canvas.height;
-
-    ctx.clearRect(0, 0, width, height);
-
-    const data = priceHistory[symbol] || generateSampleData();
-    if(!data || data.length === 0) return;
-
-    const max = Math.max(...data);
-    const min = Math.min(...data);
-    const range = max - min || 1;
-
-    // Draw grid
-    ctx.strokeStyle = 'rgba(200, 200, 200, 0.3)';
-    ctx.lineWidth = 1;
-    for(let i = 0; i <= 10; i++) {
-      const y = (i / 10) * height;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(width, y);
-      ctx.stroke();
-    }
-
-    // Draw price line
-    ctx.beginPath();
-    ctx.strokeStyle = '#667eea';
-    ctx.lineWidth = 3;
-
-    data.forEach((price, index) => {
-      const x = (index / (data.length - 1)) * width;
-      const y = height - ((price - min) / range) * height;
-      
-      if(index === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
-    });
-
-    ctx.stroke();
-
-    // Fill area
-    ctx.lineTo(width, height);
-    ctx.lineTo(0, height);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(102, 126, 234, 0.2)';
-    ctx.fill();
-  }
-
-  /* ---------- ULTRA-PREMIUM STYLES ---------- */
-  function addRubikStyles() {
-    if(document.getElementById('rubik-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'rubik-styles';
-    style.textContent = `
-      @keyframes rubikGlow {
-        0%, 100% { box-shadow: 0 0 30px rgba(236, 72, 153, 0.3); }
-        50% { box-shadow: 0 0 60px rgba(236, 72, 153, 0.6); }
-      }
-      
-      @keyframes rubikFloat {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-8px); }
-      }
-      
-      @keyframes rubikPulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.7; }
-      }
-      
-      .rubik-hero {
-        position: relative;
-        background: linear-gradient(135deg, #ec4899 0%, #be185d 50%, #831843 100%);
-        border-radius: 25px;
-        margin-bottom: 30px;
-        overflow: hidden;
-        min-height: 180px;
-        display: flex;
-        align-items: center;
-        animation: rubikGlow 4s ease-in-out infinite;
-      }
-      
-      .rubik-hero-bg {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="25,25 75,25 50,75" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="20" r="3" fill="rgba(255,255,255,0.08)"/></svg>');
-        animation: rubikFloat 8s ease-in-out infinite;
-      }
-      
-      .rubik-hero-content {
-        position: relative;
-        width: 100%;
-        padding: 30px;
-        color: white;
-        text-align: center;
-      }
-      
-      .rubik-main-title {
-        font-size: 42px;
-        font-weight: 900;
-        margin: 0;
-        background: linear-gradient(45deg, #fff, #fce7f3);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-shadow: 0 2px 15px rgba(0,0,0,0.3);
-        letter-spacing: 2px;
-      }
-      
-      .rubik-subtitle {
-        font-size: 18px;
-        margin: 10px 0 25px 0;
-        opacity: 0.95;
-        font-weight: 600;
-      }
-      
-      .rubik-stats {
-        display: flex;
-        justify-content: center;
-        gap: 30px;
-        margin-top: 20px;
-      }
-      
-      .rubik-stat {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        background: rgba(255,255,255,0.15);
-        padding: 15px 20px;
-        border-radius: 15px;
-        backdrop-filter: blur(15px);
-        border: 1px solid rgba(255,255,255,0.2);
-      }
-      
-      .stat-value {
-        font-size: 24px;
-        font-weight: bold;
-      }
-      
-      .stat-label {
-        font-size: 13px;
-        opacity: 0.9;
-        margin-top: 2px;
-      }
-      
-      .rubik-mode-switcher {
-        display: flex;
-        gap: 15px;
-        margin-bottom: 30px;
-        padding: 0 10px;
-      }
-      
-      .mode-btn {
-        flex: 1;
-        padding: 18px 20px;
-        border: none;
-        border-radius: 18px;
-        background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
-        cursor: pointer;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-size: 16px;
-        font-weight: 600;
-        color: #374151;
-        position: relative;
-        overflow: hidden;
-      }
-      
-      .mode-btn.active {
-        background: linear-gradient(135deg, #ec4899, #be185d);
-        color: white;
-        transform: scale(1.02);
-        box-shadow: 0 10px 30px rgba(236, 72, 153, 0.3);
-      }
-      
-      .mode-btn:hover:not(.active) {
-        background: linear-gradient(135deg, #e5e7eb, #d1d5db);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-      }
-      
-      .mode-icon {
-        font-size: 20px;
-      }
-      
-      .trading-section {
-        display: none;
-      }
-      
-      .trading-section.active {
-        display: block;
-      }
-      
-      .section-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 25px;
-        padding: 0 10px;
-      }
-      
-      .section-header h2 {
-        margin: 0;
-        font-size: 28px;
-        font-weight: bold;
-        color: #1f2937;
-      }
-      
-      .live-indicator {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 14px;
-        color: #6b7280;
-        font-weight: 500;
-      }
-      
-      .live-dot {
-        width: 10px;
-        height: 10px;
-        background: #10b981;
-        border-radius: 50%;
-        animation: rubikPulse 2s infinite;
-      }
-      
-      .mod-controls {
-        display: flex;
-        gap: 12px;
-      }
-      
-      .create-order-btn, .view-orders-btn {
-        padding: 12px 20px;
-        border: none;
-        border-radius: 12px;
-        cursor: pointer;
-        font-weight: bold;
-        font-size: 14px;
-        transition: all 0.3s;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      
-      .create-order-btn {
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: white;
-      }
-      
-      .create-order-btn:hover {
-        background: linear-gradient(135deg, #059669, #047857);
-        transform: scale(1.05);
-      }
-      
-      .view-orders-btn {
-        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-        color: white;
-      }
-      
-      .view-orders-btn:hover {
-        background: linear-gradient(135deg, #1d4ed8, #1e40af);
-        transform: scale(1.05);
-      }
-      
-      /* SIMPLE TRADING STYLES */
-      .simple-tokens-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 20px;
-        padding: 0 10px;
-      }
-      
-      .simple-token-card {
-        background: white;
-        border-radius: 20px;
-        padding: 25px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-        border: 2px solid transparent;
-      }
-      
-      .simple-token-card:hover {
-        transform: translateY(-5px) scale(1.02);
-        box-shadow: 0 20px 60px rgba(0,0,0,0.12);
-        border-color: #ec4899;
-      }
-      
-      .token-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 20px;
-      }
-      
-      .token-symbol {
-        font-size: 22px;
-        font-weight: 900;
-        color: #1f2937;
-      }
-      
-      .token-name {
-        font-size: 14px;
-        color: #6b7280;
-        font-weight: 500;
-        margin-top: 4px;
-      }
-      
-      .token-price {
-        font-size: 20px;
-        font-weight: bold;
-        color: #10b981;
-      }
-      
-      .token-chart {
-        margin-bottom: 20px;
-        cursor: pointer;
-        padding: 10px;
-        border-radius: 12px;
-        transition: all 0.3s;
-      }
-      
-      .token-chart:hover {
-        background: rgba(102, 126, 234, 0.05);
-        transform: scale(1.02);
-      }
-      
-      .token-stats {
-        margin-bottom: 20px;
-      }
-      
-      .price-change {
-        font-size: 14px;
-        font-weight: bold;
-        padding: 6px 12px;
-        border-radius: 20px;
-        display: inline-block;
-      }
-      
-      .price-change.positive {
-        background: #d1fae5;
-        color: #10b981;
-      }
-      
-      .price-change.negative {
-        background: #fee2e2;
-        color: #ef4444;
-      }
-      
-      .token-actions {
-        display: flex;
-        gap: 12px;
-      }
-      
-      .simple-buy-btn, .simple-sell-btn {
-        flex: 1;
-        padding: 12px 0;
-        border: none;
-        border-radius: 12px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s;
-        font-size: 14px;
-        color: white;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-      
-      .simple-buy-btn {
-        background: linear-gradient(135deg, #10b981, #059669);
-      }
-      
-      .simple-buy-btn:hover {
-        background: linear-gradient(135deg, #059669, #047857);
-        transform: scale(1.05);
-        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
-      }
-      
-      .simple-sell-btn {
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-      }
-      
-      .simple-sell-btn:hover {
-        background: linear-gradient(135deg, #dc2626, #b91c1c);
-        transform: scale(1.05);
-        box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
-      }
-      
-      /* MOD TRADING STYLES */
-      .mod-tokens-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-        gap: 25px;
-        padding: 0 10px;
-      }
-      
-      .mod-token-card {
-        background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
-        border-radius: 25px;
-        padding: 30px;
-        box-shadow: 0 15px 50px rgba(0,0,0,0.1);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-        border: 3px solid transparent;
-      }
-      
-      .mod-token-card:hover {
-        transform: translateY(-8px) scale(1.02);
-        box-shadow: 0 25px 70px rgba(236, 72, 153, 0.15);
-        border-color: #ec4899;
-      }
-      
-      .mod-token-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 5px;
-        background: linear-gradient(90deg, #ec4899, #be185d, #831843);
-      }
-      
-      .mod-token-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 25px;
-      }
-      
-      .mod-token-symbol {
-        font-size: 24px;
-        font-weight: 900;
-        color: #1f2937;
-        letter-spacing: 1px;
-      }
-      
-      .mod-token-name {
-        font-size: 14px;
-        color: #6b7280;
-        font-weight: 500;
-        margin-top: 4px;
-      }
-      
-      .mod-token-price {
-        font-size: 18px;
-        font-weight: bold;
-        color: #ec4899;
-        margin-top: 8px;
-      }
-      
-      .mod-token-rank {
-        background: linear-gradient(135deg, #ec4899, #be185d);
-        color: white;
-        padding: 8px 15px;
-        border-radius: 25px;
-        font-size: 12px;
-        font-weight: bold;
-      }
-      
-      .mod-market-data {
-        margin-bottom: 20px;
-        padding: 15px;
-        background: rgba(236, 72, 153, 0.05);
-        border-radius: 15px;
-        border: 1px solid rgba(236, 72, 153, 0.1);
-      }
-      
-      .market-cap .label {
-        color: #6b7280;
-        font-size: 14px;
-        font-weight: 500;
-      }
-      
-      .market-cap .value {
-        color: #1f2937;
-        font-size: 16px;
-        font-weight: bold;
-        margin-left: 8px;
-      }
-      
-      .mod-price-changes {
-        display: flex;
-        gap: 12px;
-        margin-bottom: 25px;
-      }
-      
-      .price-change-box {
-        flex: 1;
-        padding: 12px 16px;
-        border-radius: 15px;
-        font-size: 14px;
-        font-weight: bold;
-        text-align: center;
-        transition: all 0.3s;
-      }
-      
-      .price-change-box.gain {
-        background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-        color: #065f46;
-        border: 2px solid #10b981;
-      }
-      
-      .price-change-box.loss {
-        background: linear-gradient(135deg, #fee2e2, #fecaca);
-        color: #991b1b;
-        border: 2px solid #ef4444;
-      }
-      
-      .mod-actions {
-        display: flex;
-        gap: 15px;
-      }
-      
-      .mod-buy-long-btn, .mod-sell-short-btn {
-        flex: 1;
-        padding: 15px 12px;
-        border: none;
-        border-radius: 15px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        font-size: 14px;
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-      
-      .mod-buy-long-btn {
-        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-      }
-      
-      .mod-buy-long-btn:hover {
-        background: linear-gradient(135deg, #1d4ed8, #1e40af);
-        transform: scale(1.08);
-        box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
-      }
-      
-      .mod-sell-short-btn {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-      }
-      
-      .mod-sell-short-btn:hover {
-        background: linear-gradient(135deg, #d97706, #b45309);
-        transform: scale(1.08);
-        box-shadow: 0 10px 30px rgba(245, 158, 11, 0.4);
-      }
-      
-      /* MODAL STYLES */
-      .rubik-trade-modal, .order-creator-modal, .orders-view-modal, .chart-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(236, 72, 153, 0.2));
-        z-index: 9999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        backdrop-filter: blur(15px);
-      }
-      
-      .rubik-trade-container, .order-creator-container, .orders-view-container, .chart-container {
-        width: 95%;
-        max-width: 500px;
-        background: white;
-        border-radius: 25px;
-        overflow: hidden;
-        box-shadow: 0 30px 80px rgba(0,0,0,0.4);
-        animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      
-      .rubik-trade-header, .order-creator-header, .orders-view-header, .chart-header {
-        background: linear-gradient(135deg, #ec4899, #be185d);
-        color: white;
-        padding: 25px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      
-      .rubik-trade-header.sell, .order-creator-header.sell {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-      }
-      
-      .rubik-trade-body, .order-creator-body, .orders-view-body, .chart-body {
-        padding: 30px;
-      }
-      
-      .rubik-trade-info {
-        background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-        padding: 20px;
-        border-radius: 15px;
-        margin-bottom: 25px;
-        border-left: 5px solid #ec4899;
-      }
-      
-      .short-warning {
-        color: #f59e0b;
-        font-weight: bold;
-        font-size: 14px;
-        margin-top: 10px;
-      }
-      
-      .rubik-trade-input, .order-input {
-        width: 100%;
-        padding: 15px 20px;
-        border: 2px solid #e5e7eb;
-        border-radius: 12px;
-        margin-bottom: 18px;
-        font-size: 16px;
-        outline: none;
-        transition: all 0.3s;
-        background: #f9fafb;
-        box-sizing: border-box;
-      }
-      
-      .rubik-trade-input:focus, .order-input:focus {
-        border-color: #ec4899;
-        background: white;
-        box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.1);
-        transform: scale(1.02);
-      }
-      
-      .rubik-confirm-btn, .create-order-confirm-btn {
-        width: 100%;
-        padding: 15px;
-        border: none;
-        border-radius: 15px;
-        font-size: 16px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s;
-        color: white;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-      }
-      
-      .rubik-confirm-btn.buy, .create-order-confirm-btn {
-        background: linear-gradient(135deg, #10b981, #059669);
-      }
-      
-      .rubik-confirm-btn.buy:hover, .create-order-confirm-btn:hover {
-        background: linear-gradient(135deg, #059669, #047857);
-        transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
-      }
-      
-      .rubik-confirm-btn.sell {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-      }
-      
-      .rubik-confirm-btn.sell:hover {
-        background: linear-gradient(135deg, #d97706, #b45309);
-        transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(245, 158, 11, 0.4);
-      }
-      
-      /* ORDER ITEMS */
-      .order-item {
-        background: #f9fafb;
-        padding: 20px;
-        border-radius: 15px;
-        margin-bottom: 15px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-left: 5px solid #6b7280;
-        transition: all 0.3s;
-      }
-      
-      .order-item.pending {
-        border-left-color: #f59e0b;
-        background: #fffbeb;
-      }
-      
-      .order-item.executed {
-        border-left-color: #10b981;
-        background: #f0fdf4;
-      }
-      
-      .order-item.failed {
-        border-left-color: #ef4444;
-        background: #fef2f2;
-      }
-      
-      .order-symbol {
-        font-weight: bold;
-        font-size: 16px;
-        color: #1f2937;
-      }
-      
-      .order-type {
-        font-size: 12px;
-        padding: 4px 8px;
-        border-radius: 8px;
-        background: #e5e7eb;
-        color: #374151;
-        margin: 0 8px;
-      }
-      
-      .order-details {
-        font-size: 14px;
-        color: #6b7280;
-      }
-      
-      .order-status {
-        font-size: 12px;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-weight: bold;
-        text-transform: uppercase;
-      }
-      
-      /* RESPONSIVE */
-      @media (max-width: 768px) {
-        .rubik-main-title {
-          font-size: 32px;
-        }
-        
-        .rubik-stats {
-          gap: 15px;
-        }
-        
-        .mode-btn {
-          padding: 15px;
-          font-size: 14px;
-        }
-        
-        .simple-tokens-grid, .mod-tokens-grid {
-          grid-template-columns: 1fr;
-        }
-        
-        .section-header {
-          flex-direction: column;
-          gap: 15px;
-          text-align: center;
-        }
-        
-        .mod-controls {
-          flex-direction: column;
-          gap: 10px;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  /* ---------- GLOBAL FUNCTIONS ---------- */
-  window.RUBIK_switchMode = RUBIK_switchMode;
-  window.RUBIK_openOrderCreator = RUBIK_openOrderCreator;
-  window.RUBIK_createOrder = RUBIK_createOrder;
-  window.RUBIK_viewOrders = RUBIK_viewOrders;
-  window.RUBIK_cancelOrder = RUBIK_cancelOrder;
-  window.RUBIK_buyToken = RUBIK_buyToken;
-  window.RUBIK_sellToken = RUBIK_sellToken;
-  window.RUBIK_buyLongTerm = RUBIK_buyLongTerm;
-  window.RUBIK_sellShort = RUBIK_sellShort;
-  window.RUBIK_confirmTrade = RUBIK_confirmTrade;
-  window.RUBIK_showChart = RUBIK_showChart;
-
-  /* ---------- INITIALIZATION ---------- */
-  function initRubik(){
-    renderRubikInterface();
-    refreshPricesAndMarketData();
-    setInterval(refreshPricesAndMarketData, PRICE_REFRESH_MS);
-  }
-
-  // Auto-initialize
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', initRubik);
-  } else {
-    initRubik();
-  }
 
 })();
