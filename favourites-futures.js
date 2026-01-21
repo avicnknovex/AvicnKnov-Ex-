@@ -1,513 +1,773 @@
-/* ==========================================================
-   favourites-futures.js – User Favourite Tokens (max: unlimited)
-   - Select from master 50 token list
-   - Live INR prices (CoinGecko)
-   - Supabase wallet connect (user_wallets)
-   - Shared holdings (local now; flip MODE to 'supa' later)
-   - Buy / Sell modal (INR <-> Qty auto)
-   - Trade log -> user_trades (Supabase)
-   - Remove favourite
-   - Simple 30D line chart
-   ========================================================== */
-(function(){
+/**
+ * ==========================================================================================
+ * MODULE: favourites-futures.js
+ * DESCRIPTION: Premium Futures Favorites Trading Engine (Production Grade)
+ * AUTHOR: AVX System
+ * 
+ * FEATURES:
+ * 1. Persistent Favorites System (LocalStorage)
+ * 2. Hybrid Price Engine (Live API + Volatility Simulation)
+ * 3. Real-time Trading Execution (Long/Short)
+ * 4. "Not Add Any Token" Empty State Logic
+ * 5. Robust Error Handling & Auto-Retry
+ * 6. Premium "Glass" UI with Animations
+ * ==========================================================================================
+ */
 
-  /* ---------- CONFIG ---------- */
-  const SUPA_URL  = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
-  const SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+(function() {
+    'use strict';
 
-  const MODE             = 'local';          // holdings: 'local' | 'supa'
-  const MIN_INR          = 100;
-  const PRICE_REFRESH_MS = 30000;
-  const HOLD_KEY         = 'AVX_holdings_test'; // shared w/ favourites-all.js
-  const FAV_KEY          = 'AVX_futures_favs';  // store fav token syms
-
-  /* ---------- MASTER TOKENS (sym, name, coingecko id) ---------- */
-  const TOKENS = [
-    ['BTC','Bitcoin','bitcoin'],['ETH','Ethereum','ethereum'],['BNB','BNB','binancecoin'],
-    ['SOL','Solana','solana'],['XRP','XRP','ripple'],['ADA','Cardano','cardano'],
-    ['DOGE','Dogecoin','dogecoin'],['MATIC','Polygon','matic-network'],['DOT','Polkadot','polkadot'],
-    ['LTC','Litecoin','litecoin'],['TRX','TRON','tron'],['AVAX','Avalanche','avalanche-2'],
-    ['SHIB','Shiba Inu','shiba-inu'],['ATOM','Cosmos','cosmos'],['XLM','Stellar','stellar'],
-    ['LINK','Chainlink','chainlink'],['UNI','Uniswap','uniswap'],['ETC','Ethereum Classic','ethereum-classic'],
-    ['FIL','Filecoin','filecoin'],['APT','Aptos','aptos'],['NEAR','NEAR Protocol','near'],
-    ['ICP','Internet Computer','internet-computer'],['SAND','The Sandbox','the-sandbox'],
-    ['AAVE','Aave','aave'],['AXS','Axie Infinity','axie-infinity'],['QNT','Quant','quant-network'],
-    ['EGLD','MultiversX','elrond-erd-2'],['MKR','Maker','maker'],['RUNE','THORChain','thorchain'],
-    ['ALGO','Algorand','algorand'],['FTM','Fantom','fantom'],['CRV','Curve DAO','curve-dao-token'],
-    ['HBAR','Hedera','hedera-hashgraph'],['VET','VeChain','vechain'],['GRT','The Graph','the-graph'],
-    ['FLOW','Flow','flow'],['SNX','Synthetix','synthetix-network-token'],['DYDX','dYdX','dydx'],
-    ['ZEC','Zcash','zcash'],['BAT','Basic Attention Token','basic-attention-token'],
-    ['1INCH','1inch','1inch'],['COMP','Compound','compound-governance-token'],
-    ['ENS','ENS','ethereum-name-service'],['KAVA','Kava','kava'],['ZIL','Zilliqa','zilliqa'],
-    ['CELO','Celo','celo'],['OMG','OMG Network','omisego'],['ANKR','Ankr','ankr'],
-    ['STX','Stacks','blockstack'],['WAVES','Waves','waves'],['CHZ','Chiliz','chiliz']
-  ];
-  const CG_ID_MAP={};TOKENS.forEach(([s,_,id])=>CG_ID_MAP[s]=id);
-
-  /* ---------- SUPABASE CLIENT ---------- */
-  const supaLib = window.supabase || (window.parent && window.parent.supabase);
-  if(!supaLib){ console.error('Supabase lib not found.'); return; }
-  const supa = supaLib.createClient(SUPA_URL,SUPA_KEY);
-
-  /* ---------- PRICE CACHE ---------- */
-  const livePrices={}; // {SYM:inr}
-
-  /* ---------- UTILS ---------- */
-  const fmtINR = v=>'₹'+Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:2});
-  function getTokenMeta(sym){return TOKENS.find(t=>t[0]===sym)||null;}
-
-  function toast(msg,ok=true){
-    let t=document.getElementById('avxfut-toast');
-    if(!t){
-      t=document.createElement('div');
-      t.id='avxfut-toast';
-      document.body.appendChild(t);
-    }
-    t.textContent=msg;
-    t.className=ok?'ok':'err';
-    t.style.opacity='1';
-    setTimeout(()=>{t.style.opacity='0';},2200);
-  }
-
-  /* ---------- FAV STORAGE ---------- */
-  function favGet(){
-    try{const a=JSON.parse(localStorage.getItem(FAV_KEY)||'[]');return Array.isArray(a)?a:[];}
-    catch(_){return [];}
-  }
-  function favSet(arr){localStorage.setItem(FAV_KEY,JSON.stringify(arr));}
-  function favAdd(sym){
-    sym=sym.toUpperCase();
-    const f=favGet();
-    if(!f.includes(sym)){f.push(sym);favSet(f);}
-  }
-  function favRemove(sym){
-    sym=sym.toUpperCase();
-    let f=favGet().filter(s=>s!==sym);
-    favSet(f);
-  }
-
-  /* ---------- HOLDINGS LOCAL ---------- */
-  function localGetHoldings(){try{return JSON.parse(localStorage.getItem(HOLD_KEY))||{};}catch(_){return {};}}
-  function localSetHoldings(o){localStorage.setItem(HOLD_KEY,JSON.stringify(o));}
-
-  /* ---------- HOLDINGS SUPA (future) ---------- */
-  async function supaGetHoldingsMap(){
-    const {data:{user}}=await supa.auth.getUser();if(!user)return{};
-    const {data,error}=await supa.from('user_holdings').select('symbol,qty,cost_inr').eq('user_id',user.id);
-    if(error){console.warn('supa holdings error',error);return{};}
-    const map={};data.forEach(r=>map[r.symbol.toUpperCase()]={qty:Number(r.qty||0),cost_inr:Number(r.cost_inr||0)});
-    return map;
-  }
-  async function supaUpsertHolding(symbol,qty,cost_inr){
-    const {data:{user}}=await supa.auth.getUser();if(!user)return;
-    if(qty<=0){await supa.from('user_holdings').delete().eq('user_id',user.id).eq('symbol',symbol);return;}
-    await supa.from('user_holdings').upsert({user_id:user.id,symbol,qty,cost_inr},{onConflict:'user_id,symbol'});
-  }
-  async function getHoldingsMap(){return MODE==='supa'?await supaGetHoldingsMap():localGetHoldings();}
-  async function updateHolding(symbol,qty,cost_inr){
-    symbol=symbol.toUpperCase();
-    if(MODE==='supa'){await supaUpsertHolding(symbol,qty,cost_inr);}
-    else{const h=localGetHoldings();if(qty<=0)delete h[symbol];else h[symbol]={qty,cost_inr};localSetHoldings(h);}
-  }
-  async function getHolding(symbol){
-    symbol=symbol.toUpperCase();const h=await getHoldingsMap();const r=h[symbol];
-    if(!r)return{qty:0,cost_inr:0};
-    return{qty:Number(r.qty||0),cost_inr:Number(r.cost_inr||0)};
-  }
-
-  /* ---------- WALLET (Supabase) ---------- */
-  async function getUser(){const {data:{user}}=await supa.auth.getUser();return user;}
-  async function getWalletINR(){
-    const u=await getUser();if(!u)return 0;
-    const {data,error}=await supa.from('user_wallets').select('balance').eq('uid',u.id).single();
-    if(error){console.error('wallet fetch error',error);return 0;}
-    return Number(data?.balance||0);
-  }
-  async function setWalletINR(newBal){
-    const u=await getUser();if(!u)return;
-    const {error}=await supa.from('user_wallets').update({balance:newBal}).eq('uid',u.id);
-    if(error)console.error('wallet update error',error);
-    if(typeof window.updateWalletBalance==='function')window.updateWalletBalance();
-    else if(window.parent&&typeof window.parent.updateWalletBalance==='function')window.parent.updateWalletBalance();
-  }
-
-  /* ---------- TRADE HISTORY SAVE (user_trades) ---------- */
-  async function saveTrade(action,symbol,qty,amt,price){
-    try{
-      const {data:{user}}=await supa.auth.getUser();if(!user)return;
-      const {error}=await supa.from('user_trades').insert([{user_id:user.id,action,symbol,qty,price_inr:price,amount_inr:amt}]);
-      if(error)console.error('trade save error',error);
-    }catch(e){console.error('saveTrade fail',e);}
-  }
-
-  /* ---------- PRICE REFRESH ---------- */
-  async function refreshPrices(){
-    try{
-      const ids=TOKENS.map(t=>t[2]).join(',');
-      const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=inr`);
-      const j=await r.json();
-      TOKENS.forEach(([sym,_,id])=>{
-        const p=Number(j[id]?.inr||0);livePrices[sym]=p;
-        const el=document.getElementById('fut-price-'+sym);if(el)el.textContent=fmtINR(p);
-      });
-    }catch(e){console.error('price fetch fail',e);}
-  }
-
-  /* ---------- RENDER LIST ---------- */
-  function getContainer(){
-    return document.getElementById('futures')
-        || document.getElementById('all')
-        || document.body;
-  }
-  function renderList(){
-    const c=getContainer();if(!c)return;
-    const favs=favGet();
-    if(!favs.length){
-      c.innerHTML=`
-        <div class="avxfut-empty">
-          <p>No favourite tokens yet.</p>
-          <button class="avxfut-add-btn" onclick="AVXFUT_openAddFav()">+ Add Favourite Token</button>
-        </div>`;
-      return;
-    }
-    c.innerHTML=`
-      <div class="avxfut-topbar">
-        <button class="avxfut-add-btn" onclick="AVXFUT_openAddFav()">+ Add Favourite Token</button>
-      </div>
-      ${favs.map(sym=>{
-        const meta=getTokenMeta(sym)||[sym,sym];
-        return `
-          <div class="avxfut-row">
-            <div class="avxfut-left" onclick="AVXFUT_showTokenGraph('${sym}')">
-              <div class="avxfut-sym">${sym}</div>
-              <div class="avxfut-name">${meta[1]||sym}</div>
-              <div class="avxfut-price" id="fut-price-${sym}">₹--</div>
-            </div>
-            <div class="avxfut-actions">
-              <button class="avxfut-buy"  onclick="AVXFUT_buyToken('${sym}')">Buy</button>
-              <button class="avxfut-sell" onclick="AVXFUT_sellToken('${sym}')">Sell</button>
-              <button class="avxfut-rem"  onclick="AVXFUT_remove('${sym}')">✕</button>
-            </div>
-          </div>`;
-      }).join('')}
-    `;
-  }
-
-  /* ---------- ADD-FAV MODAL ---------- */
-  function buildAddFavModal(){
-    const m=document.createElement('div');
-    m.id='avxfut-add-modal';
-    m.innerHTML=`
-      <div class="avxfut-a-overlay"></div>
-      <div class="avxfut-a-box">
-        <div class="avxfut-a-head">
-          <span>Select Token</span>
-          <button id="avxfut-a-close">×</button>
-        </div>
-        <input id="avxfut-a-search" type="text" placeholder="Search token..."/>
-        <div id="avxfut-a-list" class="avxfut-a-list"></div>
-      </div>`;
-    document.body.appendChild(m);
-    m.querySelector('.avxfut-a-overlay').onclick=closeAddFavModal;
-    m.querySelector('#avxfut-a-close').onclick=closeAddFavModal;
-    m.querySelector('#avxfut-a-search').addEventListener('input',renderAddFavList);
-    return m;
-  }
-  function openAddFavModal(){
-    const m=document.getElementById('avxfut-add-modal')||buildAddFavModal();
-    renderAddFavList();
-    m.style.display='block';requestAnimationFrame(()=>m.classList.add('show'));
-  }
-  function closeAddFavModal(){
-    const m=document.getElementById('avxfut-add-modal');if(!m)return;
-    m.classList.remove('show');setTimeout(()=>{m.style.display='none';},150);
-  }
-  function renderAddFavList(){
-    const m=document.getElementById('avxfut-add-modal');if(!m)return;
-    const list=m.querySelector('#avxfut-a-list');
-    const q=m.querySelector('#avxfut-a-search').value.trim().toLowerCase();
-    const favs=favGet();
-    const avail=TOKENS.filter(([sym,name])=>{
-      if(favs.includes(sym))return false;
-      return !q || sym.toLowerCase().includes(q) || name.toLowerCase().includes(q);
-    });
-    if(!avail.length){
-      list.innerHTML='<div class="avxfut-a-none">No tokens found.</div>';
-      return;
-    }
-    list.innerHTML=avail.map(([sym,name])=>`
-      <div class="avxfut-a-item" onclick="AVXFUT_addFav('${sym}')">
-        <span class="sym">${sym}</span>
-        <span class="nm">${name}</span>
-      </div>`).join('');
-  }
-
-  /* ---------- CHART MODAL ---------- */
-  function buildChartModal(){
-    const wrap=document.createElement('div');
-    wrap.id='avxfut-chart-modal';
-    wrap.innerHTML=`
-      <div class="avxfut-c-overlay"></div>
-      <div class="avxfut-c-box">
-        <div class="avxfut-c-head">
-          <span id="avxfut-c-title">Chart</span>
-          <button id="avxfut-c-close">×</button>
-        </div>
-        <canvas id="avxfut-canvas" width="400" height="220"></canvas>
-        <div class="avxfut-c-range-msg">Last 30 days (INR)</div>
-      </div>`;
-    document.body.appendChild(wrap);
-    wrap.querySelector('.avxfut-c-overlay').onclick=hideChartModal;
-    wrap.querySelector('#avxfut-c-close').onclick=hideChartModal;
-    return wrap;
-  }
-  function hideChartModal(){
-    const m=document.getElementById('avxfut-chart-modal');if(!m)return;
-    m.classList.remove('show');setTimeout(()=>{m.style.display='none';},150);
-  }
-  async function showChart(sym){
-    const m=document.getElementById('avxfut-chart-modal')||buildChartModal();
-    m.querySelector('#avxfut-c-title').textContent=`${sym} Chart`;
-    m.style.display='block';requestAnimationFrame(()=>m.classList.add('show'));
-    const id=CG_ID_MAP[sym];
-    if(!id){toast('No chart data.',false);return;}
-    try{
-      const r=await fetch(`https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=inr&days=30&interval=daily`);
-      const j=await r.json();
-      const pts=(j.prices||[]).map(p=>Number(p[1]));
-      drawSimpleLine('avxfut-canvas',pts);
-    }catch(e){toast('Chart load failed.',false);}
-  }
-  function drawSimpleLine(canvasId,data){
-    const cv=document.getElementById(canvasId);if(!cv)return;
-    const ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);
-    if(!data.length)return;
-    const pad=20,w=cv.width-pad*2,h=cv.height-pad*2;
-    const min=Math.min(...data),max=Math.max(...data),rng=max-min||1;
-    ctx.strokeStyle='#ccc';ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(pad,cv.height-pad);ctx.lineTo(cv.width-pad,cv.height-pad);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(pad,pad);ctx.lineTo(pad,cv.height-pad);ctx.stroke();
-    ctx.strokeStyle='#3b82f6';ctx.lineWidth=2;ctx.beginPath();
-    data.forEach((v,i)=>{
-      const x=pad+(i/(data.length-1))*w;
-      const y=pad+(1-((v-min)/rng))*h;
-      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
-    });
-    ctx.stroke();
-  }
-
-  /* ---------- TRADE MODAL ---------- */
-  function buildTradeModal(){
-    const m=document.createElement('div');
-    m.id='avxfut-trade-modal';
-    m.innerHTML=`
-      <div class="avxfut-t-overlay"></div>
-      <div class="avxfut-t-box">
-        <div class="avxfut-t-head">
-          <span id="avxfut-t-title">Trade</span>
-          <button id="avxfut-t-close">×</button>
-        </div>
-        <div class="avxfut-t-bal"  id="avxfut-t-bal">Balance: ₹--</div>
-        <div class="avxfut-t-hold" id="avxfut-t-hold">You hold: --</div>
-        <div class="avxfut-t-price" id="avxfut-t-price">Live Price: ₹--</div>
-
-        <label class="avxfut-t-lbl">INR Amount</label>
-        <div class="avxfut-input-wrap">
-          <input type="number" id="avxfut-t-amt" placeholder="Enter amount in INR"/>
-          <button type="button" id="avxfut-t-amt-max" class="avxfut-max-btn">MAX</button>
-        </div>
-
-        <label class="avxfut-t-lbl">Token Qty</label>
-        <div class="avxfut-input-wrap">
-          <input type="number" id="avxfut-t-qty" placeholder="Enter token qty"/>
-          <button type="button" id="avxfut-t-qty-max" class="avxfut-max-btn">MAX</button>
-        </div>
-
-        <div class="avxfut-t-min">Min ₹${MIN_INR}</div>
-        <button id="avxfut-t-confirm" class="avxfut-t-confirm">Confirm</button>
-      </div>`;
-    document.body.appendChild(m);
-
-    m.querySelector('.avxfut-t-overlay').onclick=hideTradeModal;
-    m.querySelector('#avxfut-t-close').onclick=hideTradeModal;
-
-    const amt=m.querySelector('#avxfut-t-amt');
-    const qty=m.querySelector('#avxfut-t-qty');
-    amt.addEventListener('input',()=>{
-      const price=Number(m.dataset.price||0);
-      if(price>0)qty.value=amt.value?(Number(amt.value)/price).toFixed(8):'';
-    });
-    qty.addEventListener('input',()=>{
-      const price=Number(m.dataset.price||0);
-      if(price>0)amt.value=qty.value?(Number(qty.value)*price).toFixed(2):'';
-    });
-
-    m.querySelector('#avxfut-t-amt-max').onclick=async()=>{
-      if(m.dataset.mode!=='buy')return;
-      const bal=await getWalletINR();amt.value=bal.toFixed(2);
-      const price=Number(m.dataset.price||0);
-      qty.value=price?(bal/price).toFixed(8):'';
-    };
-    m.querySelector('#avxfut-t-qty-max').onclick=async()=>{
-      if(m.dataset.mode!=='sell')return;
-      const sym=m.dataset.sym;
-      const hold=await getHolding(sym);
-      qty.value=hold.qty;
-      const price=Number(m.dataset.price||0);
-      amt.value=price?(hold.qty*price).toFixed(2):'';
+    /* ==========================================================================
+       1. SYSTEM CONFIGURATION & CONSTANTS
+       ========================================================================== */
+    const CONFIG = {
+        // Database Credentials
+        SUPA_URL: 'https://hwrvqyipozrsxyjdpqag.supabase.co',
+        SUPA_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM',
+        
+        // Target Container ID (Must match HTML)
+        TARGET_CONTAINER: 'futures', 
+        
+        // LocalStorage Key (Unique to prevent conflict)
+        STORAGE_KEY: 'avx_fav_futures_v3', 
+        
+        // Engine Settings
+        REFRESH_RATE: 2000,           
+        API_TIMEOUT: 5000,            
+        
+        // Database Tables
+        TABLES: {
+            WALLET: 'user_wallets',
+            CONTROL: 'crypto_token_control',
+            HISTORY: 'crypto_token_histry'
+        }
     };
 
-    m.querySelector('#avxfut-t-confirm').onclick=confirmTrade;
-    return m;
-  }
-  function showTradeModal({mode,sym,price,bal,holdQty}){
-    const m=document.getElementById('avxfut-trade-modal')||buildTradeModal();
-    m.dataset.mode=mode;m.dataset.sym=sym;m.dataset.price=price;
-    const title=m.querySelector('#avxfut-t-title');
-    const btn=m.querySelector('#avxfut-t-confirm');
-    if(mode==='buy'){title.textContent=`Buy ${sym}`;btn.textContent='Buy Now';btn.classList.remove('sell');btn.classList.add('buy');}
-    else{title.textContent=`Sell ${sym}`;btn.textContent='Sell Now';btn.classList.remove('buy');btn.classList.add('sell');}
-    m.querySelector('#avxfut-t-bal').textContent=`Balance: ${fmtINR(bal)}`;
-    m.querySelector('#avxfut-t-hold').textContent=`You hold: ${holdQty.toFixed(8)} ${sym}`;
-    m.querySelector('#avxfut-t-price').textContent=`Live Price: ${fmtINR(price)}`;
-    m.querySelector('#avxfut-t-amt').value='';
-    m.querySelector('#avxfut-t-qty').value='';
-    m.style.display='block';requestAnimationFrame(()=>m.classList.add('show'));
-  }
-  function hideTradeModal(){
-    const m=document.getElementById('avxfut-trade-modal');if(!m)return;
-    m.classList.remove('show');setTimeout(()=>{m.style.display='none';},150);
-  }
+    /* ==========================================================================
+       2. GLOBAL STATE
+       ========================================================================== */
+    const State = {
+        isInitialized: false,
+        user: null,
+        walletBal: 0.00,
+        
+        // Data Store
+        allTokens: [],      // All tokens from DB
+        favSymbols: [],     // User's favorite symbols
+        prices: {},         // Real-time prices
+        holdings: {},       // User's holdings
+        
+        // Engine
+        intervals: [],
+        activeModal: null
+    };
 
-  /* ---------- CONFIRM TRADE ---------- */
-  async function confirmTrade(){
-    const m=document.getElementById('avxfut-trade-modal');if(!m)return;
-    const mode=m.dataset.mode,sym=m.dataset.sym;
-    const price=Number(m.dataset.price||0);
-    const amt=Number(m.querySelector('#avxfut-t-amt').value||0);
-    const qty=Number(m.querySelector('#avxfut-t-qty').value||0);
-    if(price<=0){toast('Live price missing.',false);return;}
+    /* ==========================================================================
+       3. DEPENDENCY CHECK & INIT
+       ========================================================================== */
+    
+    // 1. Get Supabase Client
+    const supaLib = window.supabase || (window.parent && window.parent.supabase);
+    let supa = null;
 
-    if(mode==='buy'){
-      if(isNaN(amt)||amt<MIN_INR){toast(`Min ₹${MIN_INR}`,false);return;}
-      const bal=await getWalletINR();
-      if(amt>bal){toast('Insufficient balance.',false);return;}
-      const buyQty=amt/price;
-      const cur=await getHolding(sym);
-      await setWalletINR(bal-amt);
-      await updateHolding(sym,cur.qty+buyQty,cur.cost_inr+amt);
-      await saveTrade('buy',sym,buyQty,amt,price);
-      toast('Token Buy Done ✅',true);
-    }else{
-      if(isNaN(qty)||qty<=0){toast('Enter quantity.',false);return;}
-      if((qty*price)<MIN_INR){toast(`Min ₹${MIN_INR}`,false);return;}
-      const cur=await getHolding(sym);
-      if(qty>cur.qty){toast('Not enough token.',false);return;}
-      const bal=await getWalletINR();
-      const sellAmt=qty*price;
-      const avgCost=cur.qty?cur.cost_inr/cur.qty:0;
-      const newQty=cur.qty-qty;
-      const newCost=newQty>0?cur.cost_inr-(qty*avgCost):0;
-      await setWalletINR(bal+sellAmt);
-      await updateHolding(sym,newQty,newCost);
-      await saveTrade('sell',sym,qty,sellAmt,price);
-      toast('Token Sell Done ✅',true);
+    // 2. Main Bootstrapper
+    async function initApp() {
+        injectPremiumStyles(); // Inject CSS first to prevent FOUC
+
+        const root = document.getElementById(CONFIG.TARGET_CONTAINER);
+        if (!root) {
+            console.warn(`[AVX] Container #${CONFIG.TARGET_CONTAINER} not found. Retrying in 500ms...`);
+            setTimeout(initApp, 500);
+            return;
+        }
+
+        // Show Loader
+        renderLoader(root, "Initializing Favorites...");
+
+        // Verify Supabase
+        if (!supaLib) {
+            renderError(root, "System Error: Database SDK Missing");
+            return;
+        }
+        supa = supaLib.createClient(CONFIG.SUPA_URL, CONFIG.SUPA_KEY);
+
+        try {
+            // Load LocalStorage Data
+            StorageManager.load();
+
+            // Authenticate
+            const { data: { user }, error } = await supa.auth.getUser();
+            if (error || !user) {
+                renderError(root, "Please Log In to Manage Favorites", true);
+                return;
+            }
+            State.user = user;
+
+            // Fetch Data
+            await Promise.all([
+                fetchWallet(),
+                fetchTokens(),
+                fetchHoldings()
+            ]);
+
+            // Start Engine
+            State.isInitialized = true;
+            startPriceEngine();
+
+            // Initial Render
+            renderLayout(root);
+            renderFavoritesList(); 
+
+        } catch (err) {
+            console.error("[Init] Error:", err);
+            renderError(root, "Failed to load data. Please refresh.");
+        }
     }
-    hideTradeModal();
-  }
 
-  /* ---------- GLOBAL HANDLERS (for inline HTML) ---------- */
-  window.AVXFUT_buyToken = async sym=>{
-    const bal=await getWalletINR();const price=livePrices[sym]||0;const hold=await getHolding(sym);
-    showTradeModal({mode:'buy',sym,price,bal,holdQty:hold.qty});
-  };
-  window.AVXFUT_sellToken = async sym=>{
-    const bal=await getWalletINR();const price=livePrices[sym]||0;const hold=await getHolding(sym);
-    showTradeModal({mode:'sell',sym,price,bal,holdQty:hold.qty});
-  };
-  window.AVXFUT_showTokenGraph = showChart;
-  window.AVXFUT_remove = sym=>{
-    if(!confirm(`Remove ${sym} from favourites?`))return;
-    favRemove(sym);renderList();refreshPrices();
-  };
-  window.AVXFUT_openAddFav = openAddFavModal;
-  window.AVXFUT_addFav = sym=>{
-    favAdd(sym);closeAddFavModal();renderList();refreshPrices();toast(`${sym} added!`);
-  };
+    /* ==========================================================================
+       4. DATA LAYER
+       ========================================================================== */
 
-  /* ---------- STYLE ---------- */
-  function injectCSS(){
-    if(document.getElementById('avxfut-style'))return;
-    const s=document.createElement('style');s.id='avxfut-style';s.textContent=`
-      .avxfut-topbar{text-align:right;padding:8px;}
-      .avxfut-add-btn{padding:6px 12px;font-size:13px;border:none;border-radius:6px;background:#3b82f6;color:#fff;cursor:pointer;}
-      .avxfut-empty{text-align:center;padding:24px 8px;font-size:15px;color:#666;}
-      .avxfut-empty p{margin-bottom:12px;}
+    async function fetchWallet() {
+        const { data } = await supa.from(CONFIG.TABLES.WALLET).select('balance').eq('uid', State.user.id).single();
+        if (data) State.walletBal = Number(data.balance);
+    }
 
-      .avxfut-row{display:flex;justify-content:space-between;align-items:center;padding:10px 8px;border-bottom:1px solid #eee;font-size:15px;}
-      .avxfut-row:nth-child(even){background:#fafafa;}
-      .avxfut-left{text-align:left;cursor:pointer;}
-      .avxfut-sym{font-weight:600;}
-      .avxfut-name{font-size:12px;opacity:.7;margin-top:1px;}
-      .avxfut-price{font-size:13px;margin-top:2px;}
-      .avxfut-actions{display:flex;gap:6px;}
-      .avxfut-actions button{padding:4px 10px;font-size:13px;border:none;border-radius:5px;color:#fff;cursor:pointer;}
-      .avxfut-buy{background:#3b82f6;}
-      .avxfut-sell{background:#ef4444;}
-      .avxfut-rem{background:#6b7280;}
+    async function fetchTokens() {
+        const { data } = await supa.from(CONFIG.TABLES.CONTROL).select('*').order('id', { ascending: true });
+        if (data) {
+            State.allTokens = data;
+            // Init Prices
+            data.forEach(t => {
+                if (!State.prices[t.symbol]) {
+                    State.prices[t.symbol] = {
+                        current: Number(t.manual_price || 0),
+                        last: Number(t.manual_price || 0)
+                    };
+                }
+            });
+        }
+    }
 
-      #avxfut-trade-modal{position:fixed;inset:0;display:none;z-index:9999;opacity:0;transition:opacity .15s;}
-      #avxfut-trade-modal.show{opacity:1;}
-      #avxfut-trade-modal .avxfut-t-overlay{position:absolute;inset:0;background:rgba(0,0,0,.4);}
-      #avxfut-trade-modal .avxfut-t-box{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;width:90%;max-width:420px;padding:20px;border-radius:12px;box-shadow:0 4px 25px rgba(0,0,0,.25);font-size:15px;}
-      .avxfut-t-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:600;font-size:18px;}
-      #avxfut-t-close{background:none;border:none;font-size:22px;line-height:1;cursor:pointer;}
-      .avxfut-t-bal,.avxfut-t-hold,.avxfut-t-price{margin-bottom:8px;font-size:14px;}
-      .avxfut-t-price{opacity:.8;}
-      .avxfut-t-lbl{display:block;margin-top:12px;font-size:13px;font-weight:600;opacity:.8;}
-      .avxfut-input-wrap{display:flex;align-items:center;gap:8px;margin-top:4px;}
-      .avxfut-input-wrap input{flex:1;padding:8px;font-size:16px;border:1px solid #ccc;border-radius:8px;text-align:right;}
-      .avxfut-max-btn{padding:6px 10px;border:none;border-radius:6px;font-size:13px;cursor:pointer;background:#e5e5e5;}
-      .avxfut-t-min{text-align:right;margin-top:10px;font-size:12px;opacity:.7;}
-      .avxfut-t-confirm{margin-top:16px;width:100%;padding:10px;font-size:16px;border:none;border-radius:8px;color:#fff;cursor:pointer;font-weight:600;}
-      .avxfut-t-confirm.buy{background:#3b82f6;}
-      .avxfut-t-confirm.sell{background:#ef4444;}
+    async function fetchHoldings() {
+        const { data } = await supa.from(CONFIG.TABLES.HISTORY).select('symbol, action, qty').eq('user_id', State.user.id);
+        if (data) {
+            const temp = {};
+            data.forEach(row => {
+                const s = row.symbol;
+                const q = Number(row.qty);
+                if (!temp[s]) temp[s] = 0;
+                if (row.action === 'Buying') temp[s] += q;
+                else if (row.action === 'Selling') temp[s] -= q;
+            });
+            // Filter zeros
+            Object.keys(temp).forEach(k => { if (temp[k] <= 0.000001) delete temp[k]; });
+            State.holdings = temp;
+        }
+    }
 
-      #avxfut-toast{position:fixed;top:10px;left:50%;transform:translateX(-50%);padding:8px 16px;border-radius:6px;font-size:14px;color:#fff;background:#3b82f6;z-index:10000;opacity:0;transition:opacity .25s;pointer-events:none;}
-      #avxfut-toast.ok{background:#10b981;}
-      #avxfut-toast.err{background:#ef4444;}
+    /* ==========================================================================
+       5. STORAGE MANAGER (LocalStorage)
+       ========================================================================== */
+    const StorageManager = {
+        load: () => {
+            try {
+                const raw = localStorage.getItem(CONFIG.STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    State.favSymbols = Array.isArray(parsed) ? parsed : [];
+                } else {
+                    State.favSymbols = [];
+                }
+            } catch (e) { State.favSymbols = []; }
+        },
+        save: () => {
+            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(State.favSymbols));
+        },
+        add: (sym) => {
+            if (!State.favSymbols.includes(sym)) {
+                State.favSymbols.push(sym);
+                StorageManager.save();
+                return true;
+            }
+            return false;
+        },
+        remove: (sym) => {
+            const oldLen = State.favSymbols.length;
+            State.favSymbols = State.favSymbols.filter(s => s !== sym);
+            if (State.favSymbols.length !== oldLen) {
+                StorageManager.save();
+                return true;
+            }
+            return false;
+        }
+    };
 
-      #avxfut-add-modal{position:fixed;inset:0;display:none;z-index:9999;opacity:0;transition:opacity .15s;}
-      #avxfut-add-modal.show{opacity:1;}
-      #avxfut-add-modal .avxfut-a-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);}
-      #avxfut-add-modal .avxfut-a-box{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;width:90%;max-width:420px;padding:16px 16px 24px;border-radius:12px;box-shadow:0 4px 25px rgba(0,0,0,.25);font-size:15px;}
-      .avxfut-a-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:600;font-size:18px;}
-      #avxfut-a-close{background:none;border:none;font-size:22px;line-height:1;cursor:pointer;}
-      #avxfut-a-search{width:100%;padding:8px 10px;font-size:15px;border:1px solid #ccc;border-radius:8px;margin-bottom:10px;}
-      .avxfut-a-list{max-height:260px;overflow-y:auto;border:1px solid #eee;border-radius:8px;}
-      .avxfut-a-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid #f0f0f0;cursor:pointer;font-size:15px;}
-      .avxfut-a-item:hover{background:#f5f5f5;}
-      .avxfut-a-item .sym{font-weight:600;}
-      .avxfut-a-none{text-align:center;padding:16px;color:#666;}
+    /* ==========================================================================
+       6. PRICE ENGINE
+       ========================================================================== */
+    function startPriceEngine() {
+        State.intervals.forEach(clearInterval);
+        State.intervals = [];
 
-      #avxfut-chart-modal{position:fixed;inset:0;display:none;z-index:9999;opacity:0;transition:opacity .15s;}
-      #avxfut-chart-modal.show{opacity:1;}
-      #avxfut-chart-modal .avxfut-c-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);}
-      #avxfut-chart-modal .avxfut-c-box{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;width:94%;max-width:500px;padding:16px 16px 24px;border-radius:12px;box-shadow:0 4px 25px rgba(0,0,0,.25);}
-      .avxfut-c-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:600;font-size:18px;}
-      #avxfut-c-close{background:none;border:none;font-size:22px;line-height:1;cursor:pointer;}
-      .avxfut-c-range-msg{text-align:center;font-size:12px;opacity:.7;margin-top:8px;}
-    `;
-    document.head.appendChild(s);
-  }
+        const run = () => {
+            // Live API
+            State.allTokens.filter(t => t.is_live_api && t.api_url).forEach(async (t) => {
+                try {
+                    const res = await fetch(t.api_url);
+                    const json = await res.json();
+                    const key = Object.keys(json)[0];
+                    if (key && json[key]?.inr) updateTokenPrice(t.symbol, Number(json[key].inr));
+                } catch(e){}
+            });
 
-  /* ---------- INIT ---------- */
-  async function init(){
-    injectCSS();
-    renderList();
-    await refreshPrices();
-    setInterval(refreshPrices,PRICE_REFRESH_MS);
-  }
-  document.addEventListener('DOMContentLoaded',init);
+            // Manual Sim
+            State.allTokens.filter(t => !t.is_live_api).forEach(t => {
+                const cur = State.prices[t.symbol].current;
+                const vol = cur * 0.002;
+                let next = cur + (Math.random() - 0.5) * vol;
+                // Bounds
+                if (t.manual_min_price && next < t.manual_min_price) next = t.manual_min_price;
+                if (t.manual_max_price && next > t.manual_max_price) next = t.manual_max_price;
+                updateTokenPrice(t.symbol, next);
+            });
+        };
+
+        run();
+        State.intervals.push(setInterval(run, CONFIG.REFRESH_RATE));
+    }
+
+    function updateTokenPrice(sym, newPrice) {
+        const oldPrice = State.prices[sym].current;
+        State.prices[sym].current = newPrice;
+        State.prices[sym].last = oldPrice;
+
+        // UI Updates
+        const el = document.getElementById(`ff-price-${sym}`);
+        if (el) {
+            el.textContent = fmtINR(newPrice);
+            el.style.color = newPrice >= oldPrice ? '#10b981' : '#f43f5e';
+            setTimeout(() => { if(el) el.style.color = '#1e293b'; }, 800);
+        }
+
+        // Modal Update
+        const m = document.getElementById('ff-trade-modal');
+        if (m && m.classList.contains('show') && m.dataset.sym === sym) {
+            document.getElementById('ff-m-live-price').textContent = fmtINR(newPrice);
+            // Auto Calc
+            const qty = document.getElementById('ff-t-qty');
+            const amt = document.getElementById('ff-t-amt');
+            if (document.activeElement === qty && qty.value) {
+                amt.value = (parseFloat(qty.value) * newPrice).toFixed(2);
+            }
+        }
+    }
+
+    /* ==========================================================================
+       7. UI RENDERING
+       ========================================================================== */
+    
+    function renderLayout(root) {
+        root.innerHTML = `
+            <div class="ff-header-bar">
+                <div class="ff-head-info">
+                    <div class="ff-head-title">Favorites</div>
+                    <div class="ff-head-sub">Futures Market</div>
+                </div>
+                <button class="ff-add-btn" onclick="AVX_FAV.openAddModal()">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                    Add Token
+                </button>
+            </div>
+            <div id="ff-list-container" class="ff-list-grid"></div>
+        `;
+    }
+
+    function renderFavoritesList() {
+        const container = document.getElementById('ff-list-container');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        // EMPTY STATE
+        if (State.favSymbols.length === 0) {
+            container.innerHTML = `
+                <div class="avx-empty-state">
+                    <div class="avx-empty-icon">⭐</div>
+                    <h2>Not Add Any Token</h2>
+                    <p>Tap the "+ Add Token" button to build your watchlist.</p>
+                </div>
+            `;
+            return;
+        }
+
+        // RENDER LIST
+        State.favSymbols.forEach(sym => {
+            const token = State.allTokens.find(t => t.symbol === sym);
+            if (!token) return; // Clean up deleted tokens silently
+
+            const price = State.prices[sym].current;
+            
+            let iconHTML = '';
+            if (token.icon_type === 'image' && token.icon_url) {
+                iconHTML = `<img src="${token.icon_url}" class="avx-icon-img">`;
+            } else if (token.icon_url) {
+                iconHTML = `<span class="avx-icon-emoji">${token.icon_url}</span>`;
+            } else {
+                iconHTML = `<span class="avx-icon-text">${token.symbol.substring(0, 2)}</span>`;
+            }
+
+            const card = document.createElement('div');
+            card.className = 'avx-card-premium';
+            card.id = `ff-card-${sym}`;
+            card.innerHTML = `
+                <button class="ff-remove-btn" onclick="AVX_FAV.removeFromFavorites('${sym}')">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 12h14"/></svg>
+                </button>
+                
+                <div class="avx-cp-top">
+                    <div class="avx-cp-icon">${iconHTML}</div>
+                    <div class="avx-cp-details">
+                        <span class="avx-cp-sym">${token.symbol}</span>
+                        <span class="avx-cp-full">${token.full_name || token.name}</span>
+                    </div>
+                    <div class="avx-cp-price-box">
+                        <div class="avx-cp-price" id="ff-price-${sym}">${fmtINR(price)}</div>
+                    </div>
+                </div>
+
+                <div class="avx-cp-actions">
+                    <button class="avx-btn-p buy-btn" onclick="AVX_FAV.openTrade('buy', '${sym}')">BUY / LONG</button>
+                    <button class="avx-btn-p sell-btn" onclick="AVX_FAV.openTrade('sell', '${sym}')">SELL / SHORT</button>
+                </div>
+
+                <div class="avx-cp-footer">
+                    <div class="avx-foot-btn" onclick="AVX_FAV.openGraph('${sym}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
+                        <span>Chart</span>
+                    </div>
+                    <div class="avx-foot-btn" onclick="AVX_FAV.openInfo('${sym}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                        <span>Info</span>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function renderLoader(container, msg) {
+        container.innerHTML = `
+            <div class="avx-loader">
+                <div class="avx-spinner-premium"></div>
+                <p>${msg}</p>
+            </div>`;
+    }
+
+    function renderError(container, msg, retry = false) {
+        container.innerHTML = `
+            <div class="avx-error-box">
+                <div style="font-size:32px;margin-bottom:10px;">⚠️</div>
+                <p>${msg}</p>
+                ${retry ? '<button onclick="location.reload()" class="avx-btn-retry">Retry</button>' : ''}
+            </div>`;
+    }
+
+    /* ==========================================================================
+       8. MODAL LOGIC (ADD / TRADE)
+       ========================================================================== */
+
+    /* --- ADD TOKEN MODAL --- */
+    function openAddModal() {
+        let m = document.getElementById('ff-add-modal');
+        if (!m) {
+            m = document.createElement('div');
+            m.id = 'ff-add-modal';
+            m.className = 'avx-modal';
+            m.innerHTML = `
+                <div class="avx-modal-card add-card">
+                    <div class="avx-modal-header">
+                        <div class="avx-mh-left">
+                            <span class="avx-title">Add To Favorites</span>
+                            <span class="avx-subtitle">Select tokens to track</span>
+                        </div>
+                        <button class="avx-btn-close-icon" onclick="AVX_FAV.closeModals()">×</button>
+                    </div>
+                    <div class="ff-search-box">
+                        <input type="text" id="ff-search-input" placeholder="Search tokens..." oninput="AVX_FAV.filterAddList(this.value)">
+                    </div>
+                    <div id="ff-add-list" class="ff-add-list"></div>
+                </div>`;
+            document.body.appendChild(m);
+        }
+        renderAddList();
+        openModal(m);
+    }
+
+    function renderAddList(filter = '') {
+        const listEl = document.getElementById('ff-add-list');
+        if (!listEl) return;
+
+        const avail = State.allTokens.filter(t => {
+            const notFav = !State.favSymbols.includes(t.symbol);
+            const matches = t.symbol.toLowerCase().includes(filter.toLowerCase()) || t.name.toLowerCase().includes(filter.toLowerCase());
+            return notFav && matches;
+        });
+
+        if (avail.length === 0) {
+            listEl.innerHTML = `<div class="avx-mini-empty"><p>${State.allTokens.length > 0 ? 'No results found' : 'Loading...'}</p></div>`;
+            return;
+        }
+
+        listEl.innerHTML = avail.map(t => {
+            let icon = `<div class="ff-add-char">${t.symbol[0]}</div>`;
+            if (t.icon_type === 'image') icon = `<img src="${t.icon_url}" class="ff-add-img">`;
+            
+            return `
+            <div class="ff-add-item" onclick="AVX_FAV.addToFavorites('${t.symbol}')">
+                <div class="ff-item-left">
+                    ${icon}
+                    <div>
+                        <div class="ff-item-sym">${t.symbol}</div>
+                        <div class="ff-item-name">${t.name}</div>
+                    </div>
+                </div>
+                <button class="ff-btn-plus">+</button>
+            </div>`;
+        }).join('');
+    }
+
+    function filterAddList(val) { renderAddList(val); }
+
+    function addToFavorites(sym) {
+        if (StorageManager.add(sym)) {
+            toast(`${sym} Added`);
+            renderFavoritesList();
+            closeModals();
+        }
+    }
+
+    function removeFromFavorites(sym) {
+        if (confirm(`Remove ${sym} from favorites?`)) {
+            if (StorageManager.remove(sym)) {
+                toast(`${sym} Removed`);
+                renderFavoritesList();
+            }
+        }
+    }
+
+    /* --- TRADE MODAL --- */
+    function openTrade(type, sym) {
+        // Build modal on demand
+        if (!document.getElementById('ff-trade-modal')) {
+            const m = document.createElement('div');
+            m.id = 'ff-trade-modal';
+            m.className = 'avx-modal';
+            m.innerHTML = `
+                <div class="avx-modal-card">
+                    <div class="avx-modal-header">
+                        <div class="avx-mh-left">
+                            <span id="ff-m-type" class="avx-badge">BUY</span> 
+                            <span id="ff-m-sym" class="avx-title">BTC</span>
+                        </div>
+                        <div class="avx-mh-right">
+                            <div id="ff-m-live-price" class="avx-price-tag">₹0.00</div>
+                        </div>
+                    </div>
+                    <div class="avx-stat-row">
+                        <div class="avx-stat-pill"><small>Balance</small><span id="ff-m-bal">₹0.00</span></div>
+                        <div class="avx-stat-pill"><small>Holding</small><span id="ff-m-hold">0.00</span></div>
+                    </div>
+                    <div class="avx-input-group">
+                        <label>Network / Leverage</label>
+                        <div class="avx-select-wrapper"><select id="ff-m-chain"></select></div>
+                    </div>
+                    <div class="avx-trade-inputs">
+                        <div class="avx-inp-cont"><label>Total (INR)</label><input type="number" id="ff-t-amt" placeholder="0.00"></div>
+                        <div class="avx-inp-cont"><label>Quantity</label><input type="number" id="ff-t-qty" placeholder="0.00"></div>
+                    </div>
+                    <button id="ff-confirm-btn" class="avx-btn-main">CONFIRM ORDER</button>
+                    <button class="avx-btn-text" onclick="AVX_FAV.closeModals()">Cancel</button>
+                </div>`;
+            document.body.appendChild(m);
+            setupTradeInputs();
+        }
+
+        const m = document.getElementById('ff-trade-modal');
+        const token = State.allTokens.find(t => t.symbol === sym);
+        if (!token) return;
+
+        // Setup UI
+        m.dataset.mode = type;
+        m.dataset.sym = sym;
+        document.getElementById('ff-t-amt').value = '';
+        document.getElementById('ff-t-qty').value = '';
+        
+        const btn = document.getElementById('ff-confirm-btn');
+        btn.innerHTML = 'CONFIRM ORDER';
+        btn.disabled = false;
+        btn.className = `avx-btn-main ${type}`; // Add class for styling
+
+        document.getElementById('ff-m-type').textContent = type === 'buy' ? 'LONG' : 'SHORT';
+        document.getElementById('ff-m-type').className = `avx-badge ${type}`;
+        document.getElementById('ff-m-sym').textContent = sym;
+        
+        document.getElementById('ff-m-bal').textContent = fmtINR(State.walletBal);
+        document.getElementById('ff-m-hold').textContent = fmtQty(State.holdings[sym] || 0);
+        document.getElementById('ff-m-live-price').textContent = fmtINR(State.prices[sym].current);
+
+        const sel = document.getElementById('ff-m-chain');
+        sel.innerHTML = '';
+        (token.blockchains || ['Mainnet']).forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c; opt.textContent = c;
+            sel.appendChild(opt);
+        });
+
+        openModal(m);
+    }
+
+    function setupTradeInputs() {
+        const amt = document.getElementById('ff-t-amt');
+        const qty = document.getElementById('ff-t-qty');
+        const btn = document.getElementById('ff-confirm-btn');
+        
+        const getP = () => {
+            const sym = document.getElementById('ff-trade-modal').dataset.sym;
+            return State.prices[sym].current || 0;
+        };
+
+        amt.oninput = () => {
+            const p = getP();
+            if (p > 0 && amt.value) qty.value = (parseFloat(amt.value) / p).toFixed(6);
+            else qty.value = '';
+        };
+        qty.oninput = () => {
+            const p = getP();
+            if (p > 0 && qty.value) amt.value = (parseFloat(qty.value) * p).toFixed(2);
+            else amt.value = '';
+        };
+        btn.onclick = executeTrade;
+    }
+
+    async function executeTrade() {
+        const m = document.getElementById('ff-trade-modal');
+        const mode = m.dataset.mode;
+        const sym = m.dataset.sym;
+        const amt = parseFloat(document.getElementById('ff-t-amt').value);
+        const qty = parseFloat(document.getElementById('ff-t-qty').value);
+        const chain = document.getElementById('ff-m-chain').value;
+        const price = State.prices[sym].current;
+
+        if (!amt || !qty || amt <= 0) { toast("Invalid Amount", "err"); return; }
+        if (mode === 'buy' && amt > State.walletBal) { toast("Insufficient Balance", "err"); return; }
+        if (mode === 'sell' && qty > (State.holdings[sym] || 0)) { toast("Insufficient Holdings", "err"); return; }
+
+        const btn = document.getElementById('ff-confirm-btn');
+        btn.disabled = true;
+        btn.innerHTML = `<div class="avx-spinner-btn"></div> Processing...`;
+
+        try {
+            const actionStr = mode === 'buy' ? 'Buying' : 'Selling';
+            
+            // 1. History
+            const { error: hErr } = await supa.from(CONFIG.TABLES.HISTORY).insert({
+                user_id: State.user.id,
+                symbol: sym,
+                action: actionStr,
+                qty: qty,
+                price_at_transaction: price,
+                total_amount: amt,
+                blockchain_used: chain,
+                status: 'active'
+            });
+            if (hErr) throw hErr;
+
+            // 2. Wallet
+            const newBal = mode === 'buy' ? State.walletBal - amt : State.walletBal + amt;
+            await supa.from(CONFIG.TABLES.WALLET).update({ balance: newBal }).eq('uid', State.user.id);
+
+            // 3. Update Local State
+            State.walletBal = newBal;
+            await fetchHoldings();
+            
+            toast(`Success: ${mode.toUpperCase()} ${sym}`);
+            closeModals();
+
+        } catch (e) {
+            console.error(e);
+            toast("Transaction Failed", "err");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = "CONFIRM ORDER";
+        }
+    }
+
+    /* ==========================================================================
+       9. UTILITIES & STYLES
+       ========================================================================== */
+    
+    function fmtINR(v) { return '₹' + Number(v||0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:4}); }
+    function fmtQty(v) { return Number(v||0).toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:6}); }
+
+    function toast(msg, type='success') {
+        let t = document.getElementById('avx-toast');
+        if (t) t.remove();
+        t = document.createElement('div');
+        t.id = 'avx-toast';
+        t.className = `avx-toast-container ${type}`;
+        t.innerHTML = `<div class="avx-toast-icon">${type === 'success' ? '✅' : '⚠️'}</div><div class="avx-toast-text">${msg}</div>`;
+        document.body.appendChild(t);
+        setTimeout(() => t.classList.add('show'), 10);
+        setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3000);
+    }
+
+    function openModal(el) {
+        document.querySelectorAll('.avx-modal').forEach(m => m.classList.remove('show'));
+        el.style.display = 'flex';
+        setTimeout(() => el.classList.add('show'), 10);
+    }
+
+    function closeModals() {
+        document.querySelectorAll('.avx-modal').forEach(m => {
+            m.classList.remove('show');
+            setTimeout(() => m.style.display = 'none', 300);
+        });
+    }
+
+    function openGraph(sym) { if(window.AVX && window.AVX.openGraph) window.AVX.openGraph(sym); }
+    function openInfo(sym) { if(window.AVX && window.AVX.openInfo) window.AVX.openInfo(sym); }
+
+    function injectPremiumStyles() {
+        if (document.getElementById('avx-fav-css')) return;
+        const css = `
+            @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+            :root { --p-bg: #f1f5f9; --p-card: #ffffff; --p-text: #1e293b; --p-acc: #6366f1; --p-green: #10b981; --p-red: #f43f5e; --p-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05); }
+            body { font-family: 'Outfit', sans-serif !important; background: var(--p-bg); color: var(--p-text); }
+            
+            .ff-header-bar { display:flex; justify-content:space-between; align-items:center; padding:20px 0; margin-bottom:20px; }
+            .ff-head-title { font-size:26px; font-weight:800; color:#334155; line-height:1; }
+            .ff-head-sub { font-size:12px; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px; }
+            
+            .ff-add-btn { display:flex; align-items:center; gap:8px; background:linear-gradient(135deg, #4f46e5, #4338ca); color:#fff; padding:12px 24px; border-radius:30px; border:none; font-weight:700; font-size:14px; cursor:pointer; box-shadow:0 8px 20px -5px rgba(79, 70, 229, 0.4); transition: transform 0.2s; }
+            .ff-add-btn:active { transform:scale(0.97); }
+
+            .avx-empty-state { background: #fff; border-radius: 24px; padding: 60px 20px; text-align: center; box-shadow: var(--p-shadow); border: 2px dashed #e2e8f0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+            .avx-empty-icon { font-size: 60px; margin-bottom: 20px; filter: grayscale(1) opacity(0.5); }
+            .avx-empty-state h2 { font-size: 22px; color: #334155; margin: 0 0 10px 0; font-weight: 800; }
+            .avx-empty-state p { font-size: 14px; color: #64748b; margin: 0; }
+
+            .avx-card-premium { background: var(--p-card); border-radius: 28px; padding: 24px; margin-bottom: 20px; box-shadow: var(--p-shadow); border: 1px solid rgba(255,255,255,0.8); position: relative; transition: transform 0.2s; animation: fadeIn 0.5s ease; }
+            @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+            .avx-card-premium:hover { transform: translateY(-3px); }
+            
+            .ff-remove-btn { position: absolute; top: 18px; right: 18px; width: 32px; height: 32px; border-radius: 50%; background: #fef2f2; color: #ef4444; border: 1px solid #fee2e2; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; z-index: 5; opacity: 0; transform: scale(0.8); }
+            .avx-card-premium:hover .ff-remove-btn { opacity: 1; transform: scale(1); }
+            .ff-remove-btn:hover { background: #ef4444; color: #fff; }
+
+            .avx-cp-top { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-right: 40px; }
+            .avx-cp-icon { width: 56px; height: 56px; border-radius: 18px; background: #f8fafc; border: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 24px; font-weight: 800; color: var(--p-acc); }
+            .avx-icon-img { width: 100%; height: 100%; object-fit: cover; }
+            .avx-cp-details { flex: 1; display:flex; flex-direction:column; justify-content: center; }
+            .avx-cp-sym { font-weight: 800; font-size: 20px; color: var(--p-text); line-height: 1.2; }
+            .avx-cp-full { font-weight: 500; font-size: 13px; color: #64748b; }
+            .avx-cp-price-box { text-align: right; }
+            .avx-cp-price { font-weight: 700; font-size: 20px; color: #1e293b; font-family: 'Outfit', monospace; transition: color 0.3s; }
+
+            .avx-cp-actions { display: flex; gap: 12px; margin-bottom: 20px; }
+            .avx-btn-p { flex: 1; padding: 14px; border: none; border-radius: 16px; font-weight: 700; font-size: 13px; cursor: pointer; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px; transition: transform 0.1s; }
+            .buy-btn { background: linear-gradient(135deg, #0f172a, #334155); }
+            .sell-btn { background: linear-gradient(135deg, #b91c1c, #ef4444); }
+            .avx-btn-p:active { transform: scale(0.97); }
+
+            .avx-cp-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 16px; }
+            .avx-foot-btn { display: flex; align-items: center; gap: 6px; color: #94a3b8; cursor: pointer; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 10px; transition: 0.2s; }
+            .avx-foot-btn:hover { background: #f1f5f9; color: var(--p-acc); }
+            .avx-foot-btn svg { width: 18px; height: 18px; stroke-width: 2.5; }
+
+            .add-card { height: 80vh; max-height: 600px; display: flex; flex-direction: column; }
+            .ff-search-box { padding: 0 0 15px 0; border-bottom: 1px solid #f1f5f9; margin-bottom: 15px; }
+            #ff-search-input { width: 100%; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; font-size: 14px; font-weight: 600; color: #334155; outline: none; }
+            .ff-add-list { flex: 1; overflow-y: auto; padding-right: 5px; }
+            .ff-add-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: 16px; margin-bottom: 10px; cursor: pointer; border: 1px solid transparent; transition: 0.2s; background: #fff; }
+            .ff-add-item:hover { background: #f8fafc; border-color: #e2e8f0; transform: translateX(4px); }
+            .ff-item-left { display: flex; gap: 12px; align-items: center; }
+            .ff-add-char { width: 40px; height: 40px; border-radius: 12px; background: #e0e7ff; color: #4338ca; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+            .ff-add-img { width: 40px; height: 40px; border-radius: 12px; object-fit: cover; }
+            .ff-item-sym { font-weight: 800; font-size: 15px; color: #1e293b; }
+            .ff-item-name { font-size: 11px; color: #64748b; font-weight: 500; }
+            .ff-btn-plus { width: 32px; height: 32px; border-radius: 50%; border: none; background: #f1f5f9; color: #64748b; font-size: 18px; font-weight: 700; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+            .ff-add-item:hover .ff-btn-plus { background: var(--p-acc); color: white; }
+
+            .avx-loader { display:flex; flex-direction:column; align-items:center; padding:60px; color:#94a3b8; font-weight:500; }
+            .avx-spinner-premium { width: 40px; height: 40px; border: 3px solid rgba(99, 102, 241, 0.1); border-top-color: var(--p-acc); border-radius: 50%; animation: spin 0.8s ease-in-out infinite; margin-bottom: 15px; }
+            @keyframes spin { to { transform: rotate(360deg); } }
+            
+            .avx-error-box { text-align: center; padding: 40px; background: #fff1f2; border-radius: 20px; border: 1px solid #fecdd3; color: #9f1239; }
+            .avx-btn-retry { margin-top: 15px; padding: 10px 20px; background: #9f1239; color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; }
+
+            .avx-modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); z-index: 10000; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+            .avx-modal.show { opacity: 1; }
+            .avx-modal-card { background: #fff; width: 90%; max-width: 440px; border-radius: 32px; padding: 30px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+            .avx-modal.show .avx-modal-card { transform: scale(1); }
+            .avx-modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+            .avx-title { font-size: 24px; font-weight: 800; color: #0f172a; display: block; }
+            .avx-subtitle { font-size: 12px; color: #64748b; font-weight: 500; display: block; margin-top: 2px; }
+            .avx-btn-close-icon { background: none; border: none; font-size: 28px; color: #94a3b8; cursor: pointer; transition: 0.2s; }
+            .avx-btn-close-icon:hover { color: #0f172a; }
+
+            .avx-mh-left { display: flex; flex-direction: column; }
+            .avx-badge { font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; width: fit-content; margin-bottom: 6px; }
+            .avx-badge.buy { background: #e0e7ff; color: #4338ca; }
+            .avx-badge.sell { background: #ffe4e6; color: #be123c; }
+            .avx-price-tag { font-family: 'Outfit', monospace; font-size: 18px; font-weight: 700; color: #334155; background: #f1f5f9; padding: 8px 14px; border-radius: 12px; }
+            
+            .avx-stat-row { display: flex; gap: 12px; margin-bottom: 24px; }
+            .avx-stat-pill { flex: 1; background: #f8fafc; padding: 12px; border-radius: 16px; text-align: center; border: 1px solid #e2e8f0; }
+            .avx-stat-pill small { display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; }
+            .avx-stat-pill span { font-weight: 700; font-size: 14px; color: #0f172a; }
+            
+            .avx-trade-inputs { display: flex; gap: 12px; margin-bottom: 24px; }
+            .avx-inp-cont { flex: 1; }
+            .avx-inp-cont label { font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 8px; display: block; text-transform: uppercase; }
+            .avx-inp-cont input { width: 100%; padding: 16px; border-radius: 18px; border: 2px solid #f1f5f9; font-size: 18px; font-weight: 700; text-align: center; outline: none; color: #0f172a; background: #fff; transition: 0.2s; }
+            .avx-inp-cont input:focus { border-color: var(--p-acc); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
+            
+            .avx-btn-main { width: 100%; padding: 18px; border: none; border-radius: 18px; font-weight: 800; font-size: 16px; color: white; cursor: pointer; box-shadow: 0 10px 20px -5px rgba(0,0,0,0.15); transition: 0.2s; margin-bottom: 12px; }
+            .avx-btn-main.buy { background: #1e3a8a; }
+            .avx-btn-main.sell { background: #b91c1c; }
+            .avx-btn-main:active { transform: scale(0.98); }
+            .avx-btn-main:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
+            .avx-spinner-btn { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; display: inline-block; vertical-align: middle; animation: spin 0.8s infinite linear; margin-right: 8px; }
+            .avx-btn-text { width: 100%; padding: 12px; background: none; border: none; color: #94a3b8; font-weight: 600; cursor: pointer; transition: 0.2s; }
+            .avx-btn-text:hover { color: #64748b; }
+            
+            .avx-input-group { margin-bottom: 20px; }
+            .avx-input-group label { font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 8px; display: block; text-transform: uppercase; }
+            .avx-select-wrapper select { width: 100%; padding: 14px; border-radius: 16px; border: 2px solid #f1f5f9; background: #fff; font-weight: 600; outline: none; font-size: 14px; color: #334155; }
+
+            .avx-toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #fff; padding: 12px 24px; border-radius: 50px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 12px; z-index: 20000; opacity: 0; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; }
+            .avx-toast-container.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+            .avx-toast-icon { font-size: 18px; }
+            .avx-toast-text { font-size: 14px; font-weight: 600; color: #1e293b; }
+            @media (max-width: 480px) { .avx-modal-card { width: 95%; padding: 20px; } }
+        `;
+        const style = document.createElement('style');
+        style.id = 'avx-fav-style';
+        style.textContent = css;
+        document.head.appendChild(style);
+    }
+
+    // Expose API
+    window.AVX_FAV = {
+        openTrade, closeModals, openAddModal, addToFavorites, removeFromFavorites, openGraph, openInfo, filterAddList
+    };
+
+    // BOOTSTRAP
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+        initApp();
+    }
 
 })();
