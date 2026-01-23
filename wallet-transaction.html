@@ -1,0 +1,371 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Wallet History - AvicnKnov</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+      
+      body {
+        font-family: 'Outfit', sans-serif;
+        background-color: #f8f9fc;
+        color: #1e293b;
+        -webkit-tap-highlight-color: transparent;
+      }
+      
+      /* --- Custom Scrollbar --- */
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+      
+      /* --- Animations --- */
+      .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+      .slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes slideUp { 
+        from { transform: translateY(20px); opacity: 0; } 
+        to { transform: translateY(0); opacity: 1; } 
+      }
+
+      /* Premium Card */
+      .tx-card {
+          background: white;
+          border: 1px solid #f1f5f9;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .tx-card:active {
+          transform: scale(0.98);
+      }
+
+      /* Status Badge Pulse */
+      .status-dot {
+          height: 8px; width: 8px; border-radius: 50%; display: inline-block;
+      }
+      .status-pending { background-color: #f59e0b; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2); }
+      .status-success { background-color: #10b981; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2); }
+      .status-canceled { background-color: #f43f5e; box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.2); }
+      .status-processing { background-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2); }
+    </style>
+
+    <!-- Import Map -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.292.0",
+        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.3"
+      }
+    }
+    </script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-[#f8f9fc] pb-10 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { createClient } from '@supabase/supabase-js';
+        import { 
+            ArrowLeft, RefreshCw, Filter, ArrowDownLeft, ArrowUpRight, 
+            Copy, CheckCircle2, Clock, XCircle, Loader2, AlertCircle, 
+            Calendar, FileText, ChevronRight
+        } from 'lucide-react';
+
+        // --- Supabase Configuration ---
+        const supabaseUrl = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        // --- Table Name ---
+        const TABLE_NAME = 'wallet-user-transactions';
+
+        // --- Descriptions ---
+        const generateDescription = (type, status) => {
+            const t = type?.toLowerCase() || '';
+            const s = status?.toLowerCase() || '';
+
+            if (t === 'deposit') {
+                if (s === 'pending') return "Deposit request is under review. Please wait for admin approval.";
+                if (s === 'success') return "Funds successfully added to your wallet.";
+                if (s === 'canceled') return "Deposit request was canceled or expired.";
+            } else if (t === 'withdrawal') {
+                if (s === 'pending') return "Withdrawal request is being processed.";
+                if (s === 'success') return "Funds sent to your account successfully.";
+                if (s === 'canceled') return "Withdrawal canceled. Funds refunded to wallet.";
+            }
+            return "Transaction status updated.";
+        };
+
+        const WalletTransactions = () => {
+            const [transactions, setTransactions] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [filter, setFilter] = useState('all'); 
+
+            // --- Navigation ---
+            const handleBack = () => {
+                window.location.href = 'wallet.html'; // Or dashboard.html
+            };
+
+            // --- Logic ---
+            const fetchTransactions = async () => {
+                setLoading(true);
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) return; 
+
+                    // Fetch Data
+                    const { data: rawData, error } = await supabase
+                        .from(TABLE_NAME)
+                        .select('*')
+                        .eq('user_id', user.id)
+                        .order('created_at', { ascending: false });
+
+                    if (error) throw error;
+                    
+                    if (!rawData || rawData.length === 0) {
+                        setTransactions([]);
+                        setLoading(false);
+                        return;
+                    }
+
+                    // Auto-Cancel Logic (Client Side Trigger)
+                    const updates = [];
+                    const processedData = rawData.map((tx) => {
+                        let updatedTx = { ...tx };
+                        let needsUpdate = false;
+
+                        // Check 24 Hour Expiry for Pending
+                        const createdTime = new Date(updatedTx.created_at).getTime();
+                        const currentTime = Date.now();
+                        const hoursDiff = (currentTime - createdTime) / (1000 * 60 * 60);
+
+                        if (updatedTx.status === 'pending' && hoursDiff > 24) {
+                            updatedTx.status = 'canceled';
+                            needsUpdate = true;
+                        }
+
+                        if (needsUpdate) {
+                            updates.push(
+                                supabase
+                                    .from(TABLE_NAME)
+                                    .update({ status: 'canceled' })
+                                    .eq('id', updatedTx.id)
+                            );
+                        }
+                        return updatedTx;
+                    });
+
+                    if (updates.length > 0) await Promise.all(updates);
+
+                    setTransactions(processedData);
+
+                } catch (err) {
+                    console.error('Error:', err);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            useEffect(() => {
+                fetchTransactions();
+            }, []);
+
+            // --- Filter Logic ---
+            const filteredData = transactions.filter(tx => {
+                if (filter === 'all') return true;
+                return tx.type.toLowerCase() === filter;
+            });
+
+            return (
+                <div className="min-h-screen text-slate-800 relative">
+                    
+                    {/* Sticky Header */}
+                    <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm px-5 py-4">
+                        <div className="max-w-2xl mx-auto">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <button 
+                                        onClick={handleBack} 
+                                        className="w-10 h-10 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-slate-100 transition-colors shadow-sm border border-slate-100 active:scale-90"
+                                    >
+                                        <ArrowLeft className="w-5 h-5" />
+                                    </button>
+                                    <h1 className="text-xl font-black text-slate-800 tracking-tight">History</h1>
+                                </div>
+                                <button 
+                                    onClick={fetchTransactions} 
+                                    className="w-10 h-10 rounded-full bg-slate-50 text-slate-500 hover:text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-all shadow-sm border border-slate-100 active:rotate-180"
+                                >
+                                    <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                                </button>
+                            </div>
+
+                            {/* Filter Tabs */}
+                            <div className="flex p-1 bg-slate-100 rounded-xl overflow-hidden shadow-inner">
+                                <FilterTab label="All" active={filter === 'all'} onClick={() => setFilter('all')} />
+                                <FilterTab label="Deposit" active={filter === 'deposit'} onClick={() => setFilter('deposit')} />
+                                <FilterTab label="Withdraw" active={filter === 'withdrawal'} onClick={() => setFilter('withdrawal')} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-2xl mx-auto px-5 mt-6 pb-20">
+                        {/* Content Area */}
+                        {loading ? (
+                            <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+                                <div className="w-16 h-16 bg-white border border-slate-100 rounded-full flex items-center justify-center mb-4 shadow-lg">
+                                    <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                                </div>
+                                <p className="text-slate-400 text-sm font-bold tracking-wide">Syncing Wallet Data...</p>
+                            </div>
+                        ) : filteredData.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-24 text-center px-6 fade-in">
+                                <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-xl shadow-slate-200/50 border border-slate-50">
+                                    <FileText className="w-10 h-10 text-slate-300" />
+                                </div>
+                                <h3 className="text-lg font-black text-slate-800 mb-2">No Transactions</h3>
+                                <p className="text-slate-400 text-sm max-w-xs font-medium">
+                                    Your {filter !== 'all' ? filter : ''} history is currently empty.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4 fade-in">
+                                {filteredData.map((tx, index) => (
+                                    <TransactionCard 
+                                        key={tx.id || index} 
+                                        tx={tx} 
+                                        style={{ animationDelay: `${index * 50}ms` }}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const FilterTab = ({ label, active, onClick }) => (
+            <button 
+                onClick={onClick}
+                className={`flex-1 py-2.5 text-xs sm:text-sm font-bold transition-all duration-300 rounded-lg ${
+                    active 
+                    ? 'bg-white text-slate-800 shadow-sm transform scale-100' 
+                    : 'text-slate-400 hover:text-slate-600 scale-95'
+                }`}
+            >
+                {label}
+            </button>
+        );
+
+        const TransactionCard = ({ tx, style }) => {
+            const [copied, setCopied] = useState(false);
+
+            // Logic for visual status
+            const getStatusConfig = (status) => {
+                const s = status?.toLowerCase() || 'pending';
+                switch(s) {
+                    case 'success':
+                    case 'successful':
+                        return { dot: 'status-success', text: 'text-emerald-600', label: 'Success', bg: 'bg-emerald-50' };
+                    case 'pending':
+                        return { dot: 'status-pending', text: 'text-amber-600', label: 'Pending', bg: 'bg-amber-50' };
+                    case 'processing':
+                        return { dot: 'status-processing', text: 'text-blue-600', label: 'Processing', bg: 'bg-blue-50' };
+                    case 'canceled':
+                    case 'cancelled':
+                        return { dot: 'status-canceled', text: 'text-rose-600', label: 'Canceled', bg: 'bg-rose-50' };
+                    default:
+                        return { dot: 'bg-slate-400', text: 'text-slate-500', label: status, bg: 'bg-slate-50' };
+                }
+            };
+
+            const config = getStatusConfig(tx.status);
+            const isDeposit = tx.type.toLowerCase() === 'deposit';
+
+            const handleCopy = () => {
+                if (tx.order_id) {
+                    navigator.clipboard.writeText(tx.order_id);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                }
+            };
+
+            // Formatting
+            const dateObj = new Date(tx.created_at);
+            const dateStr = dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+            const timeStr = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            const desc = tx.description || generateDescription(tx.type, tx.status);
+
+            return (
+                <div className="tx-card slide-up rounded-3xl p-5 relative overflow-hidden group" style={style}>
+                    
+                    {/* Header Row */}
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-105 ${isDeposit ? 'bg-gradient-to-tr from-emerald-400 to-teal-500 text-white shadow-emerald-500/30' : 'bg-gradient-to-tr from-rose-400 to-pink-500 text-white shadow-rose-500/30'}`}>
+                                {isDeposit ? <ArrowDownLeft className="w-6 h-6" /> : <ArrowUpRight className="w-6 h-6" />}
+                            </div>
+                            <div>
+                                <h3 className="font-black text-slate-800 capitalize text-base">{tx.type}</h3>
+                                <p className="text-xs text-slate-400 font-bold">{tx.method || 'Wallet'}</p>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <span className={`block text-lg font-black font-mono tracking-tight ${isDeposit ? 'text-emerald-500' : 'text-slate-800'}`}>
+                                {isDeposit ? '+' : '-'} ₹{Number(tx.amount).toLocaleString('en-IN')}
+                            </span>
+                            <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase mt-1 ${config.bg} ${config.text}`}>
+                                <span className={`status-dot ${config.dot}`}></span>
+                                {config.label}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="h-px bg-slate-50 w-full mb-3"></div>
+
+                    {/* Details Row */}
+                    <div className="flex justify-between items-center text-xs">
+                        <div className="flex items-center gap-2 text-slate-400 font-bold">
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>{dateStr}, {timeStr}</span>
+                        </div>
+                        
+                        {tx.order_id && (
+                            <button onClick={handleCopy} className="flex items-center gap-1.5 text-slate-500 hover:text-blue-600 transition-colors font-mono font-bold bg-slate-50 px-2 py-1 rounded-lg">
+                                {copied ? <CheckCircle2 className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                <span className="max-w-[80px] truncate">{tx.order_id}</span>
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Description (Collapsible style visually) */}
+                    <div className="mt-3 bg-slate-50 rounded-xl p-3 border border-slate-100/50">
+                        <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                            <span className="font-bold text-slate-400 uppercase text-[9px] block mb-0.5">Info</span>
+                            {desc}
+                        </p>
+                    </div>
+
+                </div>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<WalletTransactions />);
+    </script>
+</body>
+</html>
