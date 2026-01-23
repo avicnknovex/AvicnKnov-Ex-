@@ -251,6 +251,34 @@
           return result;
       }
       
+      // New functions for Wallet Creation
+      function generateWalletID() {
+          const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+          let result = '';
+          for (let i = 0; i < 12; i++) {
+              result += characters.charAt(Math.floor(Math.random() * characters.length));
+          }
+          return result;
+      }
+
+      function generateRecoveryID() {
+          const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+          let result = '';
+          for (let i = 0; i < 24; i++) {
+              result += characters.charAt(Math.floor(Math.random() * characters.length));
+          }
+          return result;
+      }
+
+      function generateWalletAddress() {
+          const hex = '0123456789abcdef';
+          let result = '0x';
+          for (let i = 0; i < 40; i++) {
+              result += hex.charAt(Math.floor(Math.random() * 16));
+          }
+          return result;
+      }
+
       function redirectToAgent(action) {
           const wtqId = document.getElementById('generated-wtq-id').textContent;
           if (action === 'register' && wtqId) {
@@ -460,6 +488,33 @@
         }
       }
 
+      // Helper function to create wallet data
+      async function createWalletForUser(userId, fullName, username) {
+          const { data: existingWallet } = await sb.from('wallet_user_profile').select('id').eq('uid', userId).maybeSingle();
+          if (!existingWallet) {
+              const walletId = generateWalletID();
+              const recoveryId = generateRecoveryID();
+              const walletAddr = generateWalletAddress();
+              
+              await sb.from('wallet_user_profile').insert([{
+                  uid: userId,
+                  full_name: fullName,
+                  username: username,
+                  wallet_name: `${username}`, // Wallet Name
+                  wallet_id: walletId,
+                  recovery_id: recoveryId,
+                  lock_code: '000000', // Default lock code
+                  status: 'active'
+              }]);
+              
+              await sb.from('user_wallet_balance').insert([{
+                  uid: userId,
+                  wallet_address: walletAddr,
+                  balance: 0.00
+              }]);
+          }
+      }
+
       // Gmail and Phone verification sync logic
       sb.auth.onAuthStateChange(async (event, session) => {
           if (event === 'SIGNED_IN' && session?.user) {
@@ -472,7 +527,19 @@
                       await sb.from('user-profile-data').insert([{ full_name: tempUser.full_name, username: tempUser.username, country: tempUser.country, gender: tempUser.gender, dob: tempUser.dob, email: tempUser.email, phone_number: tempUser.phone_number, created_at: new Date() }]);
                       await sb.from('user-details').insert([{ full_name: tempUser.full_name, username: tempUser.username, country: tempUser.country, gender: tempUser.gender, dob: tempUser.dob, email: tempUser.email, password: tempUser.password, created_at: new Date() }]);
                       await sb.from('qineq_users').insert([{ user_id: session.user.id, username: tempUser.username, full_name: tempUser.full_name, country: tempUser.country, gender: tempUser.gender, followers_count: 0, following_count: 0, post_count: 0, verify_tick: null }]);
+                      
+                      // Auto-Create Wallet
+                      await createWalletForUser(session.user.id, tempUser.full_name, tempUser.username);
+
                       await sb.from('user-verify-gmail').delete().eq('email', userEmail);
+                      window.location.href = "main.html";
+                  } else {
+                      // Already verified but logging in again? Check if wallet exists just in case
+                      // (Optional, but good for safety if sync happened but wallet failed)
+                      const { data: pData } = await sb.from('user-profile-data').select('full_name, username').eq('email', userEmail).maybeSingle();
+                      if (pData) {
+                          await createWalletForUser(session.user.id, pData.full_name, pData.username);
+                      }
                       window.location.href = "main.html";
                   }
               } 
@@ -497,6 +564,15 @@
                               post_count: 0,
                               verify_tick: null
                           }]);
+                          
+                          // Auto-Create Wallet
+                          await createWalletForUser(session.user.id, profileData.full_name, profileData.username);
+                      }
+                  } else {
+                      // Existing user logging in
+                      const { data: pData } = await sb.from('user-profile-data').select('full_name, username').eq('phone_number', cleanPhone).maybeSingle();
+                      if (pData) {
+                          await createWalletForUser(session.user.id, pData.full_name, pData.username);
                       }
                   }
                   window.location.href = "main.html";
