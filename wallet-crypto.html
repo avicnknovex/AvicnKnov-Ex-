@@ -1,0 +1,490 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Deposit Crypto - Wallet</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+      
+      body {
+        font-family: 'Outfit', sans-serif;
+        background-color: #f8f9fc;
+        color: #1e293b;
+        -webkit-tap-highlight-color: transparent;
+      }
+      
+      /* --- Custom Scrollbar --- */
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: #f1f5f9; }
+      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+      
+      /* --- Animations --- */
+      .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+      .slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      .zoom-in { animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+      .pulse-soft { animation: pulseSoft 2s infinite; }
+      
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+      @keyframes pulseSoft { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+      /* --- Premium Inputs --- */
+      .premium-input {
+          transition: all 0.3s ease;
+          border: 1px solid #e2e8f0;
+          background: #f8fafc;
+      }
+      .premium-input:focus {
+          background: #ffffff;
+          border-color: #f59e0b; /* Amber for Crypto */
+          box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
+      }
+
+      /* Coin Card Hover */
+      .coin-card {
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .coin-card:active {
+          transform: scale(0.97);
+          background-color: #fffbeb; /* Light Amber */
+      }
+    </style>
+
+    <!-- Import Map for React & Supabase -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.292.0",
+        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.3"
+      }
+    }
+    </script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-[#f8f9fc] pb-10 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useRef } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { createClient } from '@supabase/supabase-js';
+        import { 
+            ArrowLeft, X, Copy, CheckCircle2, UploadCloud, 
+            Search, AlertCircle, Loader2, ChevronRight, Wallet, QrCode
+        } from 'lucide-react';
+
+        // --- Supabase Configuration ---
+        const supabaseUrl = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        // --- Tables (Wallet Prefix Added) ---
+        const TABLES = {
+            CONTROL: 'wallet-user-crypto-control',
+            DEPOSIT: 'wallet-user-crypto-deposit',
+            TRANSACTIONS: 'wallet-user-transactions',
+            BUCKET: 'wallet-crypto-deposits'
+        };
+
+        const DepositCrypto = () => {
+            const [tokens, setTokens] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [search, setSearch] = useState('');
+            const [selectedTokenSymbol, setSelectedTokenSymbol] = useState(null);
+            const [selectedNetworkData, setSelectedNetworkData] = useState(null);
+            const [amount, setAmount] = useState('');
+            const [screenshot, setScreenshot] = useState(null);
+            const [submitting, setSubmitting] = useState(false);
+            const [successMsg, setSuccessMsg] = useState('');
+
+            // --- Navigation ---
+            const handleBack = () => {
+                window.location.href = 'wallet-deposit.html';
+            };
+
+            // --- Fetch Tokens ---
+            useEffect(() => {
+                const fetchTokens = async () => {
+                    try {
+                        const { data, error } = await supabase
+                            .from(TABLES.CONTROL)
+                            .select('*')
+                            .eq('is_active', true)
+                            .order('token_symbol', { ascending: true });
+                        
+                        if (error) throw error;
+                        setTokens(data || []);
+                    } catch (err) { 
+                        console.error(err); 
+                    } finally { 
+                        setLoading(false); 
+                    }
+                };
+                fetchTokens();
+            }, []);
+
+            // --- Derived State ---
+            // Get unique tokens for the list (since DB might have USDT multiple times for different networks)
+            const uniqueTokens = Array.from(new Set(tokens.map(t => t.token_symbol)))
+                .map(symbol => tokens.find(t => t.token_symbol === symbol));
+
+            const filteredTokens = uniqueTokens.filter(t => 
+                t.token_name.toLowerCase().includes(search.toLowerCase()) || 
+                t.token_symbol.toLowerCase().includes(search.toLowerCase())
+            );
+
+            // Get available networks for selected token
+            const availableNetworks = selectedTokenSymbol 
+                ? tokens.filter(t => t.token_symbol === selectedTokenSymbol) 
+                : [];
+
+            // --- Handlers ---
+            const handleTokenClick = (symbol) => {
+                setSelectedTokenSymbol(symbol);
+                setSearch('');
+                const nets = tokens.filter(t => t.token_symbol === symbol);
+                // If only one network exists, auto-select it
+                if (nets.length === 1) setSelectedNetworkData(nets[0]);
+                else setSelectedNetworkData(null);
+            };
+
+            const handleCloseModal = () => {
+                setSelectedTokenSymbol(null);
+                setSelectedNetworkData(null);
+                setAmount('');
+                setScreenshot(null);
+                setSuccessMsg('');
+            };
+
+            const handleSubmit = async () => {
+                if (!selectedNetworkData || !amount || !screenshot) {
+                    alert("Please fill all details and upload the transaction screenshot.");
+                    return;
+                }
+                const numAmt = parseFloat(amount);
+                if (isNaN(numAmt) || numAmt < selectedNetworkData.min_deposit) {
+                    alert(`Minimum deposit amount is ${selectedNetworkData.min_deposit} ${selectedTokenSymbol}`);
+                    return;
+                }
+
+                setSubmitting(true);
+                try {
+                    const { data: { user }, error: authError } = await supabase.auth.getUser();
+                    
+                    if (authError || !user) {
+                        alert("Authentication required. Please log in.");
+                        setSubmitting(false);
+                        return;
+                    }
+
+                    const userId = user.id;
+                    const timestamp = new Date().toISOString();
+
+                    // 1. Upload Screenshot to 'wallet-crypto-deposits'
+                    const fileExt = screenshot.name.split('.').pop();
+                    const fileName = `${userId}/${Date.now()}.${fileExt}`;
+                    
+                    const { error: uploadError } = await supabase.storage
+                        .from(TABLES.BUCKET)
+                        .upload(fileName, screenshot);
+                    
+                    if (uploadError) throw uploadError;
+
+                    const { data: { publicUrl } } = supabase.storage
+                        .from(TABLES.BUCKET)
+                        .getPublicUrl(fileName);
+
+                    // 2. Insert into 'wallet-user-crypto-deposit'
+                    const { error: depositError } = await supabase
+                        .from(TABLES.DEPOSIT)
+                        .insert([{
+                            user_id: userId,
+                            token_name: selectedNetworkData.token_name,
+                            network: selectedNetworkData.network,
+                            amount: numAmt,
+                            screenshot_url: publicUrl,
+                            status: 'pending',
+                            created_at: timestamp
+                        }]);
+                    
+                    if (depositError) throw depositError;
+
+                    // 3. Insert into 'wallet-user-transactions'
+                    const { error: txError } = await supabase
+                        .from(TABLES.TRANSACTIONS)
+                        .insert([{
+                            user_id: userId,
+                            type: 'deposit',
+                            method: 'Crypto',
+                            amount: numAmt,
+                            status: 'pending',
+                            description: `Deposit ${selectedTokenSymbol} (${selectedNetworkData.network})`,
+                            created_at: timestamp
+                        }]);
+                    
+                    if (txError) throw txError;
+
+                    setSuccessMsg(`Deposit submitted successfully! Check History for status.`);
+                    setTimeout(handleCloseModal, 3000);
+
+                } catch (e) {
+                    console.error(e);
+                    alert("Error submitting deposit: " + e.message);
+                } finally {
+                    setSubmitting(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen text-slate-800 relative font-sans">
+                     
+                     {/* Sticky Header */}
+                     <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm px-5 py-4 flex items-center justify-between">
+                        <button 
+                            onClick={handleBack} 
+                            className="w-10 h-10 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-slate-100 transition-colors shadow-sm border border-slate-100 active:scale-90"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                        <h1 className="text-xl font-black text-slate-800 tracking-tight">Deposit Crypto</h1>
+                        <div className="w-10"></div>
+                     </div>
+
+                     <div className="relative z-10 max-w-xl mx-auto px-5 pt-6 pb-20">
+                        
+                        {/* Search Bar */}
+                        <div className="relative mb-6 shadow-sm group fade-in">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-amber-500 transition-colors" />
+                            <input 
+                                className="w-full bg-white border border-slate-200 rounded-2xl py-3.5 pl-12 pr-4 text-slate-700 font-bold focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 outline-none transition-all placeholder-slate-400" 
+                                placeholder="Search Coin (e.g., USDT, BTC)"
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                            />
+                        </div>
+
+                        {loading ? (
+                            <div className="flex flex-col items-center justify-center py-20">
+                                <Loader2 className="w-10 h-10 text-amber-500 animate-spin mb-3" />
+                                <p className="text-slate-400 text-sm font-bold animate-pulse">Loading Assets...</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3 slide-up">
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest px-2 mb-2">Select Coin</p>
+                                {filteredTokens.map(t => (
+                                    <div 
+                                        key={t.id} 
+                                        onClick={() => handleTokenClick(t.token_symbol)} 
+                                        className="coin-card flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl cursor-pointer hover:shadow-lg hover:-translate-y-0.5 group shadow-sm shadow-slate-200/50"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            {t.icon_url ? (
+                                                <img src={t.icon_url} alt={t.token_symbol} className="w-12 h-12 rounded-full object-cover border border-slate-100 bg-white" />
+                                            ) : (
+                                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center font-black text-slate-600 shadow-inner group-hover:from-amber-500 group-hover:to-orange-600 group-hover:text-white transition-all duration-300 border border-slate-100">
+                                                    {t.token_symbol[0]}
+                                                </div>
+                                            )}
+                                            
+                                            <div>
+                                                <p className="font-bold text-slate-800 text-lg group-hover:text-amber-600 transition-colors">{t.token_symbol}</p>
+                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">{t.token_name}</p>
+                                            </div>
+                                        </div>
+                                        <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-amber-50 group-hover:text-amber-500 transition-colors">
+                                            <ChevronRight className="w-5 h-5" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                     </div>
+
+                     {/* Modal */}
+                     {selectedTokenSymbol && (
+                         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-end sm:items-center justify-center sm:p-4 fade-in">
+                            <div className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-[2rem] border border-slate-100 shadow-2xl h-[90vh] flex flex-col slide-up overflow-hidden">
+                                
+                                {/* Modal Header */}
+                                <div className="flex justify-between items-center p-5 border-b border-slate-100 bg-white z-10 sticky top-0">
+                                    <div>
+                                        <h2 className="font-black text-xl text-slate-800 flex items-center gap-2">
+                                            Deposit {selectedTokenSymbol}
+                                        </h2>
+                                        <p className="text-xs text-slate-400 font-bold mt-0.5">Select network & deposit</p>
+                                    </div>
+                                    <button onClick={handleCloseModal} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors">
+                                        <X className="w-6 h-6" />
+                                    </button>
+                                </div>
+
+                                <div className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar bg-[#f8f9fc]">
+                                    {successMsg ? (
+                                        <div className="flex flex-col items-center justify-center py-16 text-center zoom-in">
+                                            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-green-500/20">
+                                                <CheckCircle2 className="w-10 h-10 text-green-600" />
+                                            </div>
+                                            <h3 className="text-2xl font-black text-slate-800 mb-2">Deposit Submitted!</h3>
+                                            <p className="text-slate-500 font-medium px-6">{successMsg}</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">Select Blockchain Network</label>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {availableNetworks.map(n => (
+                                                        <button 
+                                                            key={n.id} 
+                                                            onClick={() => setSelectedNetworkData(n)}
+                                                            className={`p-3 rounded-xl border text-sm font-bold transition-all duration-200 shadow-sm ${
+                                                                selectedNetworkData?.id === n.id 
+                                                                ? 'bg-amber-500 text-white border-amber-500 shadow-amber-500/30 transform scale-105' 
+                                                                : 'bg-white text-slate-600 border-slate-200 hover:border-amber-300 hover:bg-amber-50'
+                                                            }`}
+                                                        >
+                                                            {n.network}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {selectedNetworkData && (
+                                                <div className="space-y-6 fade-in">
+                                                    
+                                                    {/* Info Cards */}
+                                                    <div className="flex gap-4 text-center">
+                                                        <div className="flex-1 bg-white border border-slate-100 p-4 rounded-2xl shadow-sm">
+                                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Fee</p>
+                                                            <p className="font-mono font-bold text-slate-700 text-sm bg-slate-50 rounded-lg py-1">{selectedNetworkData.network_fee}</p>
+                                                        </div>
+                                                        <div className="flex-1 bg-white border border-slate-100 p-4 rounded-2xl shadow-sm">
+                                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Min Deposit</p>
+                                                            <p className="font-mono font-bold text-slate-700 text-sm bg-slate-50 rounded-lg py-1">{selectedNetworkData.min_deposit}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Address */}
+                                                    <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+                                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Deposit Address</label>
+                                                        <div className="flex justify-center mb-4">
+                                                            {/* Placeholder QR if no API */}
+                                                            <div className="w-32 h-32 bg-white p-2 rounded-xl border border-slate-200 shadow-inner flex items-center justify-center">
+                                                               <QrCode className="w-20 h-20 text-slate-800" />
+                                                            </div>
+                                                        </div>
+                                                        <div 
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(selectedNetworkData.address);
+                                                                alert('Address Copied!');
+                                                            }} 
+                                                            className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between cursor-pointer hover:border-amber-400 hover:bg-blue-50 transition-all group active:scale-[0.98]"
+                                                        >
+                                                            <span className="font-mono text-xs sm:text-sm text-slate-700 font-bold truncate pr-2 select-all">{selectedNetworkData.address}</span>
+                                                            <div className="bg-white p-1.5 rounded-lg shadow-sm border border-slate-100 group-hover:border-blue-200">
+                                                                <Copy className="w-4 h-4 text-slate-400 group-hover:text-blue-500" />
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-[10px] text-amber-600 mt-2 font-bold flex items-center gap-1">
+                                                            <AlertCircle className="w-3 h-3" />
+                                                            Send only {selectedTokenSymbol} ({selectedNetworkData.network}) to this address.
+                                                        </p>
+                                                    </div>
+
+                                                    {selectedNetworkData.memo && (
+                                                        <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+                                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Memo (Required)</label>
+                                                            <div 
+                                                                onClick={() => navigator.clipboard.writeText(selectedNetworkData.memo)} 
+                                                                className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-center justify-between cursor-pointer hover:border-amber-400 transition-all group"
+                                                            >
+                                                                <span className="font-mono text-sm text-amber-900 font-bold">{selectedNetworkData.memo}</span>
+                                                                <Copy className="w-4 h-4 text-amber-600 group-hover:scale-110 transition-transform" />
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Amount & Upload */}
+                                                    <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-4">
+                                                        <div>
+                                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Amount</label>
+                                                            <div className="relative">
+                                                                <input 
+                                                                    type="number" 
+                                                                    value={amount} 
+                                                                    onChange={e => setAmount(e.target.value)} 
+                                                                    className="premium-input w-full rounded-xl py-3.5 pl-4 pr-12 text-slate-800 font-mono text-lg font-bold outline-none transition-all placeholder-slate-300" 
+                                                                    placeholder="0.00" 
+                                                                />
+                                                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{selectedTokenSymbol}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Upload Proof</label>
+                                                            <div className="relative group">
+                                                                <input 
+                                                                    type="file" 
+                                                                    id="file-upload"
+                                                                    className="hidden" 
+                                                                    onChange={e => setScreenshot(e.target.files[0])} 
+                                                                />
+                                                                <label 
+                                                                    htmlFor="file-upload"
+                                                                    className={`flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
+                                                                        screenshot 
+                                                                        ? 'border-emerald-500 bg-emerald-50' 
+                                                                        : 'border-slate-200 hover:border-amber-400 hover:bg-amber-50'
+                                                                    }`}
+                                                                >
+                                                                    <UploadCloud className={`w-5 h-5 ${screenshot ? 'text-emerald-500' : 'text-slate-400'}`} />
+                                                                    <span className={`text-sm font-bold ${screenshot ? 'text-emerald-600' : 'text-slate-500'}`}>
+                                                                        {screenshot ? "Screenshot Selected" : "Tap to Upload"}
+                                                                    </span>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <button 
+                                                        onClick={handleSubmit} 
+                                                        disabled={submitting} 
+                                                        className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-slate-800 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                                    >
+                                                        {submitting ? (
+                                                            <>
+                                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                                                Processing...
+                                                            </>
+                                                        ) : (
+                                                            "Confirm Deposit"
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                         </div>
+                     )}
+                </div>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<DepositCrypto />);
+    </script>
+</body>
+</html>
