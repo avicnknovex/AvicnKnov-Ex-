@@ -1,0 +1,668 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Withdraw UPI - Wallet</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+      
+      body {
+        font-family: 'Outfit', sans-serif;
+        background-color: #f8f9fc;
+        color: #1e293b;
+        -webkit-tap-highlight-color: transparent;
+      }
+      
+      /* --- Custom Scrollbar --- */
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: #f1f5f9; }
+      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+      
+      /* --- Animations --- */
+      .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+      .slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      .slide-in-right { animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      .zoom-in { animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+      
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      @keyframes slideInRight { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+      @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+      /* --- Premium Inputs (Modern) --- */
+      .input-group {
+          position: relative;
+          transition: all 0.3s ease;
+      }
+      .input-premium-modern {
+          width: 100%;
+          background: #ffffff;
+          border: 2px solid #f1f5f9;
+          border-radius: 16px;
+          padding: 16px 16px 16px 50px; /* Space for icon */
+          font-weight: 600;
+          color: #1e293b;
+          outline: none;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+      }
+      .input-premium-modern:focus {
+          border-color: #3b82f6;
+          box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);
+          transform: translateY(-1px);
+      }
+      .input-premium-modern::placeholder {
+          color: #94a3b8;
+          font-weight: 500;
+      }
+      .input-icon-wrapper {
+          position: absolute;
+          left: 16px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #94a3b8;
+          transition: color 0.3s ease;
+          pointer-events: none;
+      }
+      .input-group:focus-within .input-icon-wrapper {
+          color: #3b82f6;
+      }
+
+      /* QR Upload Area */
+      .qr-upload-box {
+          border: 2px dashed #cbd5e1;
+          border-radius: 20px;
+          transition: all 0.3s ease;
+          background: #f8fafc;
+      }
+      .qr-upload-box:hover {
+          border-color: #3b82f6;
+          background: #eff6ff;
+      }
+      .qr-upload-box.has-file {
+          border-color: #10b981;
+          background: #ecfdf5;
+      }
+
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+
+    <!-- Import Map -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.292.0",
+        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.3"
+      }
+    }
+    </script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-[#f8f9fc] pb-10 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useRef } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { createClient } from '@supabase/supabase-js';
+        import { 
+            ArrowLeft, Plus, Wallet, ShieldCheck, Clock, 
+            Headphones, Info, CheckCircle2, Loader2, X, 
+            Banknote, Trash2, UploadCloud, ChevronRight,
+            User, Smartphone, Hash, Landmark, CreditCard, AtSign, Image as ImageIcon
+        } from 'lucide-react';
+
+        // --- Supabase Config ---
+        const supabaseUrl = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        // --- Table Constants ---
+        const TABLES = {
+            DETAILS: 'wallet-user-withdrawal-details',
+            HISTORY: 'wallet-user-withdrawal-history',
+            TRANSACTIONS: 'wallet-user-transactions',
+            BUCKET: 'wallet-withdrawal-qr',
+            WALLET: 'user_wallet_balance'
+        };
+
+        // --- Animated Number Component ---
+        const AnimatedBalance = ({ value }) => {
+            const [displayValue, setDisplayValue] = useState(0);
+
+            useEffect(() => {
+                let start = displayValue;
+                const end = value;
+                if (start === end) return;
+
+                const duration = 1000; // 1 second animation
+                const startTime = performance.now();
+
+                const animate = (currentTime) => {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    // Ease out quart
+                    const ease = 1 - Math.pow(1 - progress, 4);
+
+                    const current = start + (end - start) * ease;
+                    setDisplayValue(current);
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        setDisplayValue(end);
+                    }
+                };
+                requestAnimationFrame(animate);
+            }, [value]);
+
+            return (
+                <span className="tabular-nums">
+                    {displayValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+            );
+        };
+
+        const WalletWithdrawalUPI = () => {
+            // --- State ---
+            const [userBalance, setUserBalance] = useState(0);
+            const [userId, setUserId] = useState(null);
+            
+            const [view, setView] = useState('main'); 
+            const [activeModalMethod, setActiveModalMethod] = useState(null); 
+            
+            const [savedAccounts, setSavedAccounts] = useState([]);
+            const [loadingData, setLoadingData] = useState(true);
+
+            // Withdraw Form
+            const [withdrawAmount, setWithdrawAmount] = useState('');
+            const [processing, setProcessing] = useState(false);
+            const [successMsg, setSuccessMsg] = useState('');
+            
+            // Add Account Form
+            const [addFormType, setAddFormType] = useState('UPI');
+            const [addFormData, setAddFormData] = useState({
+                name: '', identifier: '', confirmIdentifier: '', secondary: '', contactType: 'phone', qrImage: null
+            });
+            const [addingAccount, setAddingAccount] = useState(false);
+
+            // --- Init ---
+            useEffect(() => {
+                const init = async () => {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if(user) {
+                        setUserId(user.id);
+                        await checkAndProcessRefunds(user.id);
+                        fetchUserData(user.id);
+                    }
+                };
+                init();
+            }, []);
+
+            // --- 24h Auto Refund Logic ---
+            const checkAndProcessRefunds = async (uid) => {
+                try {
+                    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+                    const { data: expired } = await supabase
+                        .from(TABLES.HISTORY)
+                        .select('*')
+                        .eq('user_id', uid)
+                        .eq('status', 'pending')
+                        .lt('created_at', twentyFourHoursAgo);
+
+                    if (expired && expired.length > 0) {
+                        for (const tx of expired) {
+                            const refundAmount = parseFloat(tx.amount);
+                            const { error: updateError } = await supabase.from(TABLES.HISTORY)
+                                .update({ status: 'cancelled' })
+                                .eq('id', tx.id);
+                            
+                            if (!updateError) {
+                                const { data: wallet } = await supabase
+                                    .from(TABLES.WALLET)
+                                    .select('balance')
+                                    .eq('uid', uid)
+                                    .single();
+                                
+                                const currentBal = wallet ? parseFloat(wallet.balance) : 0;
+                                const newBal = currentBal + refundAmount;
+                                
+                                await supabase.from(TABLES.WALLET)
+                                    .update({ balance: newBal })
+                                    .eq('uid', uid);
+                            }
+                        }
+                        fetchUserData(uid);
+                    }
+                } catch (e) { console.error("Refund check error", e); }
+            };
+
+            const fetchUserData = async (uid) => {
+                setLoadingData(true);
+                const { data: wallet } = await supabase
+                    .from(TABLES.WALLET)
+                    .select('balance')
+                    .eq('uid', uid)
+                    .single();
+                
+                if(wallet) setUserBalance(parseFloat(wallet.balance) || 0);
+
+                const { data: methods } = await supabase.from(TABLES.DETAILS)
+                    .select('*')
+                    .eq('user_id', uid)
+                    .eq('is_active', true)
+                    .order('created_at', {ascending: false});
+                
+                setSavedAccounts(methods || []);
+                setLoadingData(false);
+            };
+
+            // --- Handlers ---
+            const handleBack = () => {
+                if(view === 'add_account') {
+                    setView('main');
+                } else if (activeModalMethod) {
+                    setActiveModalMethod(null);
+                    setSuccessMsg('');
+                    setWithdrawAmount('');
+                } else {
+                    window.location.href = 'wallet-withdrawal.html';
+                }
+            };
+
+            // --- Add Account Logic ---
+            const handleSaveAccount = async () => {
+                setAddingAccount(true);
+                try {
+                    if (!addFormData.name || !addFormData.identifier) throw new Error("Please complete all required fields.");
+                    
+                    if (addFormType === 'Bank Transfer') {
+                        if (addFormData.identifier !== addFormData.confirmIdentifier) throw new Error("Account numbers do not match.");
+                        if (!addFormData.secondary) throw new Error("IFSC Code is mandatory.");
+                    }
+
+                    let qrUrl = null;
+                    if (addFormData.qrImage) {
+                        const fileExt = addFormData.qrImage.name.split('.').pop();
+                        const fileName = `${userId}/${Date.now()}.${fileExt}`;
+                        const { error: upErr } = await supabase.storage.from(TABLES.BUCKET).upload(fileName, addFormData.qrImage);
+                        if(upErr) throw upErr;
+                        const { data } = supabase.storage.from(TABLES.BUCKET).getPublicUrl(fileName);
+                        qrUrl = data.publicUrl;
+                    }
+
+                    const { error } = await supabase.from(TABLES.DETAILS).insert([{
+                        user_id: userId,
+                        method_name: addFormType,
+                        account_holder_name: addFormData.name,
+                        identifier: addFormData.identifier,
+                        secondary_identifier: addFormType === 'Bank Transfer' ? addFormData.secondary : null,
+                        qr_image_url: qrUrl
+                    }]);
+                    if(error) throw error;
+
+                    await fetchUserData(userId); 
+                    alert("Account Details Saved Successfully!");
+                    setView('main'); 
+                    setAddFormData({ name: '', identifier: '', confirmIdentifier: '', secondary: '', contactType: 'phone', qrImage: null });
+
+                } catch(e) {
+                    alert(e.message);
+                } finally {
+                    setAddingAccount(false);
+                }
+            };
+
+            // --- Withdraw Logic (UPDATED) ---
+            const handleWithdraw = async (account) => {
+                const amt = parseFloat(withdrawAmount);
+                if(isNaN(amt) || amt < 200) { alert("Minimum withdrawal amount is ₹200"); return; }
+                if(amt > userBalance) { alert("Insufficient wallet balance."); return; }
+                
+                setProcessing(true);
+                try {
+                    // 1. Calculate New Balance (Locally)
+                    const newBalance = userBalance - amt;
+
+                    // 2. Deduct Balance in DB
+                    const { error: balanceError } = await supabase
+                        .from(TABLES.WALLET)
+                        .update({ balance: newBalance })
+                        .eq('uid', userId);
+
+                    if (balanceError) throw new Error("Failed to deduct balance. Please check your connection.");
+                    
+                    // 3. Trigger Animation Immediately (Visual Feedback)
+                    setUserBalance(newBalance);
+
+                    // 4. Insert into Transactions
+                    const { error: txError } = await supabase.from(TABLES.TRANSACTIONS).insert([{
+                        user_id: userId, 
+                        type: 'withdrawal', 
+                        method: account.method_name, 
+                        amount: amt, 
+                        status: 'pending',
+                        description: `Withdraw to ${account.method_name} (${account.identifier})`
+                    }]);
+                    if (txError) throw txError;
+
+                    // 5. Insert into History
+                    const { error: histError } = await supabase.from(TABLES.HISTORY).insert([{
+                        user_id: userId, 
+                        method_name: account.method_name,
+                        amount: amt, 
+                        status: 'pending', 
+                        details_snapshot: account
+                    }]);
+                    if (histError) throw histError;
+
+                    // 6. Set Success Message (Custom Text)
+                    setSuccessMsg("Withdrawal request submitted successfully! Funds will be transferred to your account shortly.");
+                    
+                    setTimeout(() => window.location.reload(), 4000);
+
+                } catch(e) {
+                    console.error(e);
+                    // Custom Error Message
+                    alert("Unable to process your withdrawal at this moment. Please try again or contact support.");
+                    setProcessing(false);
+                    fetchUserData(userId); // Refresh data on error
+                }
+            };
+
+            // --- Components ---
+            const MethodIcon = ({ type }) => {
+                switch(type) {
+                    case 'Google Pay': return <span className="font-bold text-blue-600 text-lg">GPay</span>;
+                    case 'PhonePe': return <span className="font-bold text-purple-600 text-lg">Pe</span>;
+                    case 'Paytm': return <span className="font-bold text-cyan-500 text-lg">Paytm</span>;
+                    case 'UPI': return <span className="font-bold text-orange-500 text-lg">UPI</span>;
+                    default: return <Banknote className="w-6 h-6 text-emerald-500" />;
+                }
+            };
+
+            return (
+                <div className="min-h-screen text-slate-800 font-sans relative">
+                    
+                    {/* Header */}
+                    <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm px-5 py-4 flex items-center justify-between">
+                        <button onClick={handleBack} className="w-10 h-10 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-slate-100 transition-colors shadow-sm border border-slate-100 active:scale-90">
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                        <h1 className="text-xl font-black text-slate-800 tracking-tight">
+                            {view === 'add_account' ? 'Add Account' : 'Withdraw Funds'}
+                        </h1>
+                        {view === 'main' && !activeModalMethod ? (
+                            <button onClick={() => setView('add_account')} className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-lg active:scale-90 transition-transform">
+                                <Plus className="w-5 h-5" />
+                            </button>
+                        ) : <div className="w-10"></div>}
+                    </div>
+
+                    <div className="relative z-10 max-w-xl mx-auto px-5 pt-6 pb-20">
+                        
+                        {/* ================= MAIN VIEW ================= */}
+                        {view === 'main' && !activeModalMethod && (
+                            <div className="fade-in space-y-6">
+                                {/* Balance Card with Animation */}
+                                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-[2rem] p-6 relative overflow-hidden shadow-xl shadow-slate-900/20 text-white">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 rounded-full -mr-8 -mt-8 blur-3xl opacity-20"></div>
+                                    <div className="relative z-10">
+                                        <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Available Balance</p>
+                                        <h2 className="text-4xl font-black tracking-tight">
+                                            ₹<AnimatedBalance value={userBalance} />
+                                        </h2>
+                                    </div>
+                                    <Wallet className="absolute bottom-5 right-5 w-10 h-10 text-slate-700" />
+                                </div>
+
+                                {/* Methods Grid */}
+                                <div>
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Select Method</p>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {['Google Pay', 'Paytm', 'PhonePe', 'UPI', 'Bank Transfer'].map(method => (
+                                            <button 
+                                                key={method}
+                                                onClick={() => { setActiveModalMethod(method); setWithdrawAmount(''); }}
+                                                className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-center gap-3 group active:scale-95"
+                                            >
+                                                <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center group-hover:bg-blue-50 transition-colors">
+                                                    <MethodIcon type={method} />
+                                                </div>
+                                                <span className="text-xs font-bold text-slate-600 group-hover:text-blue-600">{method === 'Bank Transfer' ? 'Bank' : method}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Info Section */}
+                                <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-4">
+                                    <div className="flex gap-3 items-center">
+                                        <div className="bg-blue-50 p-2 rounded-full text-blue-500"><Info className="w-4 h-4" /></div>
+                                        <p className="text-xs text-slate-500 font-medium">Add accounts to withdraw instantly. Funds usually reflect within 24 hours.</p>
+                                    </div>
+                                    <button onClick={() => window.location.href='help.html#/help'} className="w-full py-3 bg-slate-50 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center justify-center gap-2">
+                                        <Headphones className="w-4 h-4" /> Contact Support
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ================= ADD ACCOUNT VIEW (PREMIUM UI UPDATE) ================= */}
+                        {view === 'add_account' && (
+                            <div className="slide-in-right space-y-6">
+                                <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                                    {['UPI', 'PhonePe', 'Google Pay', 'Paytm', 'Bank Transfer'].map(type => (
+                                        <button 
+                                            key={type}
+                                            onClick={() => { setAddFormType(type); setAddFormData({...addFormData, qrImage: null}); }}
+                                            className={`whitespace-nowrap px-6 py-3 rounded-2xl text-xs font-extrabold tracking-wide transition-all shadow-sm border ${addFormType === type ? 'bg-slate-900 text-white border-slate-900 shadow-lg scale-105' : 'bg-white text-slate-500 border-slate-100 hover:bg-slate-50'}`}
+                                        >
+                                            {type}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="bg-white p-6 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-50 space-y-6">
+                                    
+                                    {/* Name Input */}
+                                    <div className="input-group">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-2 mb-1.5 block tracking-wider">Account Holder Name</label>
+                                        <div className="relative">
+                                            <div className="input-icon-wrapper"><User className="w-5 h-5" /></div>
+                                            <input 
+                                                type="text" 
+                                                value={addFormData.name} 
+                                                onChange={e => setAddFormData({...addFormData, name: e.target.value})} 
+                                                className="input-premium-modern" 
+                                                placeholder="e.g. Rahul Sharma" 
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {addFormType === 'Bank Transfer' ? (
+                                        <>
+                                            {/* Account Number */}
+                                            <div className="input-group">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase ml-2 mb-1.5 block tracking-wider">Account Number</label>
+                                                <div className="relative">
+                                                    <div className="input-icon-wrapper"><CreditCard className="w-5 h-5" /></div>
+                                                    <input 
+                                                        type="text" 
+                                                        value={addFormData.identifier} 
+                                                        onChange={e => setAddFormData({...addFormData, identifier: e.target.value.replace(/\D/g, '')})} 
+                                                        className="input-premium-modern font-mono tracking-widest" 
+                                                        placeholder="XXXX XXXX XXXX" 
+                                                    />
+                                                </div>
+                                            </div>
+                                            {/* Confirm Account */}
+                                            <div className="input-group">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase ml-2 mb-1.5 block tracking-wider">Confirm Account No.</label>
+                                                <div className="relative">
+                                                    <div className="input-icon-wrapper"><Hash className="w-5 h-5" /></div>
+                                                    <input 
+                                                        type="text" 
+                                                        value={addFormData.confirmIdentifier} 
+                                                        onChange={e => setAddFormData({...addFormData, confirmIdentifier: e.target.value.replace(/\D/g, '')})} 
+                                                        className="input-premium-modern font-mono tracking-widest" 
+                                                        placeholder="Re-enter Number" 
+                                                    />
+                                                </div>
+                                            </div>
+                                            {/* IFSC */}
+                                            <div className="input-group">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase ml-2 mb-1.5 block tracking-wider">IFSC Code</label>
+                                                <div className="relative">
+                                                    <div className="input-icon-wrapper"><Landmark className="w-5 h-5" /></div>
+                                                    <input 
+                                                        type="text" 
+                                                        value={addFormData.secondary} 
+                                                        onChange={e => setAddFormData({...addFormData, secondary: e.target.value.toUpperCase()})} 
+                                                        className="input-premium-modern font-mono uppercase" 
+                                                        placeholder="SBIN000XXXX" 
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            {/* UPI ID / Mobile */}
+                                            <div className="input-group">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase ml-2 mb-1.5 block tracking-wider">{addFormType === 'UPI' ? 'UPI ID' : 'Mobile Number / UPI'}</label>
+                                                <div className="relative">
+                                                    <div className="input-icon-wrapper">
+                                                        {addFormType === 'UPI' ? <AtSign className="w-5 h-5" /> : <Smartphone className="w-5 h-5" />}
+                                                    </div>
+                                                    <input 
+                                                        type="text" 
+                                                        value={addFormData.identifier} 
+                                                        onChange={e => setAddFormData({...addFormData, identifier: e.target.value})} 
+                                                        className="input-premium-modern" 
+                                                        placeholder={addFormType === 'UPI' ? "username@oksbi" : "9876543210"} 
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* QR Upload */}
+                                    <div className="pt-2">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-2 mb-2 block tracking-wider">QR Code (Optional)</label>
+                                        <div className="relative">
+                                            <input type="file" id="qr" className="hidden" accept="image/*" onChange={e => e.target.files && setAddFormData({...addFormData, qrImage: e.target.files[0]})} />
+                                            <label htmlFor="qr" className={`qr-upload-box flex flex-col items-center justify-center gap-2 w-full h-32 cursor-pointer ${addFormData.qrImage ? 'has-file' : ''}`}>
+                                                {addFormData.qrImage ? (
+                                                    <>
+                                                        <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                                                        <span className="text-xs font-bold text-emerald-600">QR Selected</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
+                                                            <UploadCloud className="w-5 h-5" />
+                                                        </div>
+                                                        <span className="text-xs font-bold text-slate-400">Tap to upload image</span>
+                                                    </>
+                                                )}
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <button onClick={handleSaveAccount} disabled={addingAccount} className="w-full py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl font-bold shadow-xl shadow-slate-900/20 flex justify-center items-center gap-2 active:scale-95 transition-transform hover:shadow-2xl">
+                                        {addingAccount ? <Loader2 className="animate-spin" /> : "Save Account Details"}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ================= MODAL: WITHDRAW ================= */}
+                        {activeModalMethod && (
+                            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-slate-900/60 backdrop-blur-md fade-in">
+                                <div className="w-full max-w-lg bg-white sm:rounded-[2rem] rounded-t-[2rem] border border-slate-100 shadow-2xl slide-up overflow-hidden max-h-[90vh] flex flex-col">
+                                    
+                                    <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-white sticky top-0 z-10">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center"><MethodIcon type={activeModalMethod} /></div>
+                                            <h2 className="text-lg font-black text-slate-800">{activeModalMethod}</h2>
+                                        </div>
+                                        <button onClick={() => setActiveModalMethod(null)} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+                                    </div>
+
+                                    <div className="p-6 overflow-y-auto bg-[#f8f9fc]">
+                                        {successMsg ? (
+                                            <div className="text-center py-10 zoom-in">
+                                                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600 shadow-lg shadow-green-500/20"><CheckCircle2 className="w-10 h-10" /></div>
+                                                <h3 className="text-2xl font-black text-slate-800">Success!</h3>
+                                                <p className="text-slate-500 font-medium mt-2 leading-relaxed px-4">{successMsg}</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-6">
+                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Select Saved Account</p>
+                                                
+                                                {savedAccounts.filter(acc => acc.method_name === activeModalMethod).length > 0 ? (
+                                                    <div className="space-y-4">
+                                                        {savedAccounts.filter(acc => acc.method_name === activeModalMethod).map((acc) => (
+                                                            <div key={acc.id} className="bg-white border border-slate-200 rounded-[1.5rem] overflow-hidden shadow-sm hover:shadow-md transition-all">
+                                                                <div className="p-4 flex items-center justify-between">
+                                                                    <div>
+                                                                        <p className="font-bold text-slate-800">{acc.account_holder_name}</p>
+                                                                        <p className="text-xs font-mono text-slate-500 font-medium mt-0.5">{acc.identifier}</p>
+                                                                    </div>
+                                                                    <button onClick={async (e) => {
+                                                                        e.stopPropagation();
+                                                                        if(confirm("Delete this account?")) {
+                                                                            await supabase.from(TABLES.DETAILS).delete().eq('id', acc.id);
+                                                                            fetchUserData(userId);
+                                                                        }
+                                                                    }} className="p-2 text-slate-300 hover:text-rose-500"><Trash2 className="w-4 h-4" /></button>
+                                                                </div>
+                                                                
+                                                                <div className="bg-slate-50 p-4 border-t border-slate-100">
+                                                                    <div className="relative mb-3">
+                                                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                                                                        <input type="number" placeholder="Amount" className="w-full bg-white border-2 border-slate-200 rounded-xl py-3 pl-8 pr-4 text-slate-800 font-bold outline-none focus:border-blue-500 transition-all" onChange={(e) => setWithdrawAmount(e.target.value)} />
+                                                                    </div>
+                                                                    <button onClick={() => handleWithdraw(acc)} disabled={processing} className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2">
+                                                                        {processing ? <Loader2 className="animate-spin" /> : "Withdraw Now"}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-center py-10 bg-white rounded-3xl border border-dashed border-slate-300">
+                                                        <p className="text-sm font-bold text-slate-400 mb-4">No saved accounts</p>
+                                                        <button onClick={() => { setActiveModalMethod(null); setView('add_account'); setAddFormType(activeModalMethod); }} className="px-5 py-2.5 bg-blue-50 text-blue-600 text-xs font-bold rounded-full hover:bg-blue-100 transition-all">
+                                                            + Add {activeModalMethod} Account
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<WalletWithdrawalUPI />);
+    </script>
+</body>
+</html>
