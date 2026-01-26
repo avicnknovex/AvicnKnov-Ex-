@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -69,55 +70,6 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
         const supabase = createClient(supabaseUrl, supabaseKey);
 
-        // --- SHARED HOLDINGS LOGIC (Connecting to favourites-holdings.js/favourites-all.js) ---
-        // We use the same storage key and logic to ensure balance synchronization.
-        const HOLD_KEY = 'AVX_holdings_test';
-
-        const getSharedHoldingBalance = (symbol) => {
-            try {
-                const raw = localStorage.getItem(HOLD_KEY);
-                const data = raw ? JSON.parse(raw) : {};
-                // Handle case sensitivity as seen in referenced JS files
-                const item = data[symbol.toUpperCase()];
-                return item ? Number(item.qty || 0) : 0;
-            } catch (e) {
-                console.error("Error reading shared holdings:", e);
-                return 0;
-            }
-        };
-
-        const updateSharedHoldingBalance = (symbol, deductQty) => {
-            try {
-                const raw = localStorage.getItem(HOLD_KEY);
-                const data = raw ? JSON.parse(raw) : {};
-                const sym = symbol.toUpperCase();
-                const item = data[sym];
-
-                if (item) {
-                    const currentQty = Number(item.qty || 0);
-                    const currentCost = Number(item.cost_inr || 0);
-
-                    // Calculate average cost to deduct cost proportionally
-                    const avgCost = currentQty > 0 ? currentCost / currentQty : 0;
-                    
-                    const newQty = Math.max(0, currentQty - deductQty);
-                    const newCost = Math.max(0, currentCost - (deductQty * avgCost));
-
-                    if (newQty <= 0) {
-                        delete data[sym]; // Remove if empty
-                    } else {
-                        data[sym] = { qty: newQty, cost_inr: newCost };
-                    }
-                    localStorage.setItem(HOLD_KEY, JSON.stringify(data));
-                    return true;
-                }
-                return false;
-            } catch (e) {
-                console.error("Error updating shared holdings:", e);
-                return false;
-            }
-        };
-
         const WithdrawalCrypto = () => {
             // --- State ---
             const [step, setStep] = useState(1); // 1: Select Token, 2: Select Network, 3: Form
@@ -153,10 +105,84 @@
                 }
             };
 
-            // --- Fetch Config ---
+            // --- 1. Auto Refund Logic (24h Check - UPDATED TO ADD BACK TO EXISTING ROW) ---
+            const checkAutoRefunds = async (userId) => {
+                try {
+                    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+                    
+                    const { data: expiredWithdrawals, error } = await supabase
+                        .from('withdrawal-crypto-history')
+                        .select('*')
+                        .eq('user_id', userId)
+                        .eq('status', 'pending')
+                        .lt('created_at', twentyFourHoursAgo);
+
+                    if (error) console.error("Error checking refunds:", error);
+
+                    if (expiredWithdrawals && expiredWithdrawals.length > 0) {
+                        for (const tx of expiredWithdrawals) {
+                            // A. Mark as cancelled in history
+                            await supabase
+                                .from('withdrawal-crypto-history')
+                                .update({ status: 'cancelled' })
+                                .eq('id', tx.id);
+
+                            // B. REFUND: Find existing holding row and ADD back quantity
+                            // We look for a row that is NOT a 'sell' or 'withdrawal' row (meaning a buy/holding row)
+                            const { data: holdingRow, error: fetchError } = await supabase
+                                .from('crypto_token_histry')
+                                .select('id, qty')
+                                .eq('user_id', userId)
+                                .eq('symbol', tx.token_symbol)
+                                // We try to find the "Buying" or "deposit" row to add back to
+                                .not('action', 'eq', 'sell') 
+                                .not('action', 'eq', 'withdrawal')
+                                .order('created_at', { ascending: false }) // Get the latest one
+                                .limit(1)
+                                .single();
+
+                            if (holdingRow) {
+                                const currentQty = parseFloat(holdingRow.qty) || 0;
+                                const refundQty = parseFloat(tx.amount) || 0;
+                                const newQty = currentQty + refundQty;
+
+                                // Update the existing row
+                                await supabase
+                                    .from('crypto_token_histry')
+                                    .update({ qty: newQty })
+                                    .eq('id', holdingRow.id);
+                            } else {
+                                // Fallback: If for some reason no holding row exists (rare), insert a new one
+                                await supabase
+                                .from('crypto_token_histry')
+                                .insert({
+                                    user_id: userId,
+                                    symbol: tx.token_symbol,
+                                    action: 'refund',
+                                    qty: parseFloat(tx.amount),
+                                    price_at_transaction: 0,
+                                    total_amount: 0,
+                                    blockchain_used: 'Refund: ' + tx.network,
+                                    status: 'active',
+                                    created_at: new Date().toISOString()
+                                });
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error("Auto refund exception:", e);
+                }
+            };
+
+            // --- 2. Fetch Config & Init ---
             useEffect(() => {
                 const fetchConfig = async () => {
                     try {
+                        const { data: { user } } = await supabase.auth.getUser();
+                        if(user) {
+                            await checkAutoRefunds(user.id);
+                        }
+
                         const { data, error } = await supabase
                             .from('user-withdrawal-control')
                             .select('*')
@@ -165,7 +191,6 @@
                         if (error) throw error;
                         setAllConfig(data || []);
 
-                        // Extract unique tokens
                         const unique = [...new Set(data.map(item => item.token_symbol))]
                             .map(symbol => data.find(item => item.token_symbol === symbol));
                         setUniqueTokens(unique);
@@ -178,11 +203,48 @@
                 fetchConfig();
             }, []);
 
+            // --- 3. Fetch Real Balance from crypto_token_histry ---
+            const fetchLiveBalance = async (symbol) => {
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) return 0;
+
+                    const { data: history, error } = await supabase
+                        .from('crypto_token_histry')
+                        .select('action, qty')
+                        .eq('user_id', user.id)
+                        .eq('symbol', symbol);
+
+                    if (error) throw error;
+
+                    let totalQty = 0;
+                    if (history) {
+                        history.forEach(row => {
+                            // Only sum up valid positive rows now, since we are updating them directly
+                            // If 'sell' rows exist from old logic, we subtract them, but new logic just updates qty
+                            const action = row.action ? row.action.toLowerCase().trim() : '';
+                            const qty = parseFloat(row.qty) || 0;
+
+                            if (['buy', 'buying', 'deposit', 'receive', 'refund', 'call'].includes(action)) {
+                                totalQty += qty;
+                            } 
+                            // Legacy support: if there are old 'sell' rows, subtract them
+                            else if (['sell', 'selling', 'withdrawal', 'withdraw', 'send', 'put'].includes(action)) {
+                                totalQty -= qty;
+                            }
+                        });
+                    }
+                    return Math.max(0, totalQty);
+                } catch (e) {
+                    console.error("Balance fetch error:", e);
+                    return 0;
+                }
+            };
+
             // --- Actions ---
 
             const handleTokenSelect = (tokenSymbol) => {
                 setSelectedToken(tokenSymbol);
-                // Filter networks for this token
                 const networks = allConfig.filter(item => item.token_symbol === tokenSymbol);
                 setAvailableNetworks(networks);
                 setStep(2);
@@ -193,10 +255,8 @@
                 setLoading(true);
                 
                 try {
-                    // --- CONNECTION TO JS FILE LOGIC ---
-                    const balance = getSharedHoldingBalance(networkData.token_symbol);
+                    const balance = await fetchLiveBalance(networkData.token_symbol);
                     setUserBalance(balance);
-
                 } catch (e) {
                     console.error("Balance check failed", e);
                 } finally {
@@ -214,10 +274,10 @@
                     return;
                 }
                 
-                // Re-check balance at moment of submission to prevent race conditions
-                const currentBalance = getSharedHoldingBalance(selectedToken);
+                // Re-fetch balance to be sure
+                const currentBalance = await fetchLiveBalance(selectedToken);
                 if (amt > currentBalance) {
-                    alert(`Insufficient ${selectedToken} balance.`);
+                    alert(`Insufficient ${selectedToken} balance. You have ${currentBalance.toFixed(4)} ${selectedToken}.`);
                     return;
                 }
 
@@ -238,7 +298,7 @@
 
                     const timestamp = new Date().toISOString();
 
-                    // 1. Insert into withdrawal-crypto-history
+                    // 1. Insert into withdrawal-crypto-history (ADMIN RECORD)
                     const { error: histError } = await supabase
                         .from('withdrawal-crypto-history')
                         .insert([{
@@ -248,11 +308,12 @@
                             amount: amt,
                             address: address,
                             memo: memo || null,
+                            status: 'pending',
                             created_at: timestamp
                         }]);
                     if (histError) throw histError;
 
-                    // 2. Insert into user-transactions
+                    // 2. Insert into user-transactions (USER LOG)
                     const { error: txError } = await supabase
                         .from('user-transactions')
                         .insert([{
@@ -265,18 +326,51 @@
                         }]);
                     if (txError) throw txError;
 
-                    // 3. DEDUCT BALANCE (Connect to favourites-holdings.js logic)
-                    updateSharedHoldingBalance(selectedToken, amt);
+                    // 3. DEDUCT BALANCE (UPDATE EXISTING ROW INSTEAD OF INSERTING NEW ROW)
+                    
+                    // A. Find the row to deduct from (The "Buying" or "deposit" row)
+                    const { data: holdingRow, error: fetchError } = await supabase
+                        .from('crypto_token_histry')
+                        .select('id, qty')
+                        .eq('user_id', user.id)
+                        .eq('symbol', selectedToken)
+                        // Filter for positive asset rows
+                        .filter('action', 'in', '("buy","Buying","deposit","receive","call")')
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .single();
+
+                    if (fetchError || !holdingRow) {
+                        throw new Error("Could not find token holding row to deduct from.");
+                    }
+
+                    // B. Calculate new quantity
+                    const currentQty = parseFloat(holdingRow.qty);
+                    const newQty = currentQty - amt;
+
+                    // C. Update the specific row
+                    const { error: updateError } = await supabase
+                        .from('crypto_token_histry')
+                        .update({ qty: newQty })
+                        .eq('id', holdingRow.id);
+                    
+                    if (updateError) {
+                        throw new Error("Failed to update token balance: " + updateError.message);
+                    }
+
+                    // 4. Update UI Balance (Double Check)
+                    const updatedBalance = await fetchLiveBalance(selectedToken);
+                    setUserBalance(updatedBalance);
 
                     setSuccessMsg("Withdrawal Submitted Successfully!");
                     
-                    // Refresh after 3 seconds
                     setTimeout(() => {
                         window.location.reload();
                     }, 3000);
 
                 } catch (err) {
-                    alert(err.message);
+                    console.error(err);
+                    alert("Error: " + (err.message || "Unknown error"));
                     setSubmitting(false);
                 }
             };
@@ -390,7 +484,7 @@
                                         
                                         {/* Available Balance Display */}
                                         <div className="bg-slate-900 p-5 rounded-3xl border border-slate-800 shadow-xl shadow-slate-200/50 relative overflow-hidden group">
-                                            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500 rounded-full -mr-10 -mt-10 blur-3xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                                            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-full -mr-10 -mt-10 blur-3xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
                                             <div className="flex justify-between items-center relative z-10">
                                                 <span className="text-xs text-slate-400 font-bold uppercase tracking-widest">Available Balance</span>
                                                 <div className="flex items-center gap-2">
