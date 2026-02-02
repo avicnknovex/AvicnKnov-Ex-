@@ -224,18 +224,18 @@
             </div>
 
             <div class="action-grid">
-                <div class="act-btn act-deposit" onclick="location.href='deposit.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>Deposit</div>
-                <div class="act-btn act-withdraw" onclick="location.href='withdrawal.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>Withdraw</div>
-                <div class="act-btn act-history" onclick="location.href='transaction.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>History</div>
+                <div class="act-btn act-deposit" onclick="location.href='wallet-deposit.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>Deposit</div>
+                <div class="act-btn act-withdraw" onclick="location.href='wallet-withdrawal.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>Withdraw</div>
+                <div class="act-btn act-history" onclick="location.href='wallet-transaction.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>History</div>
             </div>
 
             <div class="sec-nav-grid">
                 <a href="wallet-nex.html" class="sec-btn"><div class="sec-icon si-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><span class="sec-label">WALLET&NEX</span></a>
-                <a href="AVINQ.html" class="sec-btn"><div class="sec-icon si-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg></div><span class="sec-label">AVINQ</span></a>
-                <a href="trade.html" class="sec-btn"><div class="sec-icon si-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span class="sec-label">TRADE</span></a>
-                <a href="event.html" class="sec-btn"><div class="sec-icon si-4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><span class="sec-label">EVENT</span></a>
+                <a href="avinq.html" class="sec-btn"><div class="sec-icon si-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg></div><span class="sec-label">AVINQ</span></a>
+                <a href="wallet-trade.html" class="sec-btn"><div class="sec-icon si-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span class="sec-label">TRADE</span></a>
+                <a href="wallet-event.html" class="sec-btn"><div class="sec-icon si-4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><span class="sec-label">EVENT</span></a>
                 <a href="smart-adix.html" class="sec-btn"><div class="sec-icon si-5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/><path d="M8.5 8.5v.01"/><path d="M16 16v.01"/><path d="M12 12v.01"/></svg></div><span class="sec-label">SMART&ADIX</span></a>
-                <a href="more.html" class="sec-btn"><div class="sec-icon si-6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></div><span class="sec-label">MORE</span></a>
+                <a href="wallet-more.html" class="sec-btn"><div class="sec-icon si-6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></div><span class="sec-label">MORE</span></a>
             </div>
 
             <div class="news-frame">
@@ -243,7 +243,7 @@
             </div>
 
             <div class="tab-bar">
-                <div class="tab-pill active" onclick="WalletApp.switchTab('all')">All Assets</div>
+                <div class="tab-pill active" onclick="WalletApp.switchTab('all')">All </div>
                 <div class="tab-pill" onclick="WalletApp.switchTab('crypto')">Crypto</div>
                 <div class="tab-pill" onclick="WalletApp.switchTab('spot')">Spot</div>
                 <div class="tab-pill" onclick="WalletApp.switchTab('holdings')">Holdings</div>
