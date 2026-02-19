@@ -264,9 +264,9 @@
         </div>
 
         <!-- TRADE VIEW (Connector for wallet-trade.js) -->
-        <div id="view-trade" class="main-view">
+        <div id="view-convert" class="main-view">
             <!-- wallet-trade.js will inject content here -->
-            <div id="trade-root" style="padding-top:20px;"></div>
+            <div id="convert-root" style="padding-top:20px;"></div>
         </div>
 
         <!-- PRO VIEW (Connector for wallet-pro.js) -->
@@ -289,11 +289,11 @@
                 </div>
                 <span class="b-nav-label">Market</span>
             </div>
-            <div class="b-nav-item" id="nav-trade" onclick="WalletApp.switchBottomNav('trade')">
+            <div class="b-nav-item" id="nav-convert" onclick="WalletApp.switchBottomNav('convert')">
                 <div class="b-nav-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
                 </div>
-                <span class="b-nav-label">Trade</span>
+                <span class="b-nav-label">convert</span>
             </div>
             <div class="b-nav-item" id="nav-pro" onclick="WalletApp.switchBottomNav('pro')">
                 <div class="b-nav-icon">
@@ -323,7 +323,7 @@
     
     <!-- External Module Scripts -->
     <script src="wallet-market.js"></script>
-    <script src="wallet-trade.js"></script>
+    <script src="wallet-convert.js"></script>
     <script src="wallet-pro.js"></script>
 
     <script>
@@ -378,21 +378,32 @@
             }
         },
 
-        // --- NAVIGATION LOGIC ---
+                // --- ULTRA FAST INSTANT NAVIGATION ---
         switchBottomNav(viewId) {
-            // 1. Hide all main views
+            // Turant view switch karo
             document.querySelectorAll('.main-view').forEach(v => v.classList.remove('active'));
-            // 2. Show target view
-            document.getElementById(`view-${viewId}`).classList.add('active');
+            const targetView = document.getElementById(`view-${viewId}`);
+            if(targetView) targetView.classList.add('active');
             
-            // 3. Update Bottom Nav UI
+            // Bottom Nav active state update karo
             document.querySelectorAll('.b-nav-item').forEach(i => i.classList.remove('active'));
-            document.getElementById(`nav-${viewId}`).classList.add('active');
+            const navId = (viewId === 'convert') ? 'nav-convert' : `nav-${viewId}`;
+            const activeNav = document.getElementById(navId);
+            if(activeNav) activeNav.classList.add('active');
 
-            // 4. Scroll to top
+            // Agar data purana hai ya pehle load nahi hua, tabhi init chalao
+            // Isse click karne par baar-baar loading nahi hogi
+            if (viewId === 'market' && typeof MarketApp !== 'undefined') {
+                MarketApp.render(); // Render function fast hota hai
+            } else if (viewId === 'convert' && typeof ConvertApp !== 'undefined') {
+                ConvertApp.render();
+            } else if (viewId === 'pro' && typeof ProApp !== 'undefined') {
+                ProApp.render();
+            }
+
             window.scrollTo(0, 0);
         },
-
+        
         // --- DASHBOARD LOGIC (Home View) ---
         async loadDashboard() {
             document.getElementById('dashboard-view').style.display = 'block';
@@ -536,3 +547,4 @@
     </script>
 </body>
 </html>
+
