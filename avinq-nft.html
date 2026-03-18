@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NFT Marketplace - AvicnKnov Ex</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <style>
+        /* Premium Font Styling */
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f8f9fc;
+            color: #1e293b;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Hide Scrollbar */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Animations */
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .scale-in { animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+
+        /* Modal Backdrop */
+        .modal-backdrop {
+            background-color: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+        }
+        
+        /* NFT Image Placeholder Gradient */
+        .nft-gradient {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+        }
+
+        .input-premium {
+            background-color: #f1f5f9;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .input-premium:focus {
+            background-color: white;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-[#f8f9fc] min-h-screen pb-20">
+
+    <div class="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-gray-100 shadow-sm px-4 py-3 flex justify-between items-center">
+        <button onclick="goToDashboard()" class="w-10 h-10 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-slate-100 transition-colors shadow-sm border border-slate-100">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h1 class="text-lg font-black text-slate-800 tracking-tight">NFT Marketplace</h1>
+        <button onclick="showPortfolio()" class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/30 hover:scale-105 transition-transform active:scale-95">
+            <i class="fas fa-wallet"></i>
+        </button>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 pt-6">
+        
+        <div class="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100 mb-8 relative overflow-hidden group">
+            <div class="absolute top-0 right-0 w-40 h-40 bg-purple-50 rounded-full -mr-10 -mt-10 blur-3xl opacity-60 group-hover:opacity-100 transition-opacity"></div>
+            <div class="relative z-10 text-center">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Available Balance</p>
+                <h2 class="text-4xl font-black text-slate-800 tracking-tight" id="userBalance">₹0</h2>
+                <div class="mt-4 flex justify-center gap-2">
+                    <span class="px-3 py-1 rounded-full bg-slate-50 text-slate-500 text-[10px] font-bold border border-slate-100"><i class="fas fa-shield-alt mr-1"></i>Secure</span>
+                    <span class="px-3 py-1 rounded-full bg-slate-50 text-slate-500 text-[10px] font-bold border border-slate-100"><i class="fas fa-bolt mr-1"></i>Instant</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between mb-4 px-2">
+            <h3 class="text-xl font-bold text-slate-800">Trending Collections</h3>
+            <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-lg">Live Updates</span>
+        </div>
+
+        <div id="nftGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-10">
+            <div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-400">
+                <i class="fas fa-circle-notch fa-spin text-3xl mb-3 text-indigo-500"></i>
+                <span class="text-sm font-medium">Loading NFTs...</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="portfolioModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 modal-backdrop transition-opacity" onclick="closePortfolio()"></div>
+        <div class="absolute bottom-0 inset-x-0 md:top-1/2 md:bottom-auto md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-2xl w-full bg-[#f8f9fc] h-[85vh] md:h-[600px] rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden scale-in">
+            
+            <div class="bg-white px-6 py-4 border-b border-slate-100 flex justify-between items-center shadow-sm z-10">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Your Collection</h2>
+                        <p class="text-xs text-slate-400">Manage your assets</p>
+                    </div>
+                </div>
+                <button class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 flex items-center justify-center transition-colors" onclick="closePortfolio()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div id="portfolioGrid" class="flex-1 overflow-y-auto p-4 space-y-4">
+                </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[70] transition-all duration-300 opacity-0 translate-y-10 pointer-events-none">
+        </div>
+
+    <script>
+        // Supabase configuration
+        var SUPA_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+        var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+        var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+        
+        let currentUser = null;
+        let userBalance = 0;
+        let nftList = [];
+        let userPortfolio = [];
+        let priceUpdateInterval = null;
+
+        // Initialize the page
+        async function init() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    showToast('Please log in to access NFT marketplace', 'error');
+                    setTimeout(() => goToDashboard(), 2000);
+                    return;
+                }
+                
+                currentUser = user;
+                await loadUserBalance();
+                await loadNFTs();
+                await loadUserPortfolio();
+                
+                // Start price updates every 30 seconds
+                priceUpdateInterval = setInterval(updatePrices, 30000);
+                
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showToast('Failed to load NFT marketplace', 'error');
+            }
+        }
+
+        // Load user balance
+        async function loadUserBalance() {
+            try {
+                const { data, error } = await supabase
+                    .from('user_wallet_balance')
+                    .select('balance')
+                    .eq('uid', currentUser.id)
+                    .single();
+                
+                if (!error && data) {
+                    userBalance = Number(data.balance || 0);
+                    document.getElementById('userBalance').textContent = `₹${userBalance.toLocaleString()}`;
+                }
+            } catch (error) {
+                console.error('Error loading balance:', error);
+            }
+        }
+
+        // Load available NFTs
+        async function loadNFTs() {
+            try {
+                const { data, error } = await supabase
+                    .from('wallet_nft_add')
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    console.error('Error loading NFTs:', error);
+                    return;
+                }
+                
+                nftList = data || [];
+                renderNFTs();
+                
+            } catch (error) {
+                console.error('Error loading NFTs:', error);
+            }
+        }
+
+        // Load user portfolio
+        async function loadUserPortfolio() {
+            try {
+                const { data, error } = await supabase
+                    .from('wallet_nft_history')
+                    .select(`*, wallet_nft_add!inner(*)`)
+                    .eq('user_id', currentUser.id);
+                
+                if (!error && data) {
+                    const portfolioMap = {};
+                    for (const transaction of data) {
+                        const nftId = transaction.nft_id;
+                        if (!portfolioMap[nftId]) {
+                            portfolioMap[nftId] = { nft: transaction.wallet_nft_add, quantity: 0 };
+                        }
+                        
+                        if(transaction.transaction_type === 'BUY') {
+                            portfolioMap[nftId].quantity += transaction.quantity;
+                        } else {
+                            portfolioMap[nftId].quantity -= transaction.quantity;
+                        }
+                    }
+                    userPortfolio = Object.values(portfolioMap).filter(item => item.quantity > 0);
+                }
+            } catch (error) {
+                console.error('Error loading portfolio:', error);
+            }
+        }
+
+        // Render NFTs (Updated with Quantity Input)
+        function renderNFTs() {
+            const grid = document.getElementById('nftGrid');
+            grid.innerHTML = '';
+            
+            if (nftList.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full flex flex-col items-center justify-center py-20 opacity-50">
+                        <i class="fas fa-box-open text-4xl text-slate-300 mb-2"></i>
+                        <p class="text-sm font-bold text-slate-400">No NFTs Available</p>
+                    </div>`;
+                return;
+            }
+            
+            nftList.forEach(nft => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-3xl p-4 shadow-lg shadow-slate-200/50 border border-slate-100 relative group overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl fade-in';
+                
+                const isPositive = Math.random() > 0.5;
+                const changeVal = (Math.random() * 5).toFixed(2);
+                const priceChange = isPositive 
+                    ? `<span class="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded ml-2">+${changeVal}%</span>`
+                    : `<span class="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded ml-2">-${changeVal}%</span>`;
+                
+                const imageContent = nft.image_url 
+                    ? `<img src="${nft.image_url}" alt="${nft.nft_name}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" onerror="this.style.display='none'">`
+                    : `<div class="w-full h-full flex items-center justify-center text-4xl bg-indigo-50">${getEmojiForNFT(nft.nft_name)}</div>`;
+
+                card.innerHTML = `
+                    <div class="relative h-48 rounded-2xl overflow-hidden mb-4 nft-gradient shadow-inner">
+                        ${imageContent}
+                        <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-slate-700 shadow-sm border border-white/50">
+                            ${nft.rarity_level || 'Rare'}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h3 class="text-lg font-black text-slate-800 leading-tight mb-1 truncate">${nft.nft_name}</h3>
+                        <p class="text-xs text-slate-400 line-clamp-1 leading-relaxed">${nft.description}</p>
+                    </div>
+
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 mb-3">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Current Price</p>
+                        <div class="flex items-center">
+                            <span class="text-base font-black text-slate-800">₹${Number(nft.current_price).toLocaleString()}</span>
+                            ${priceChange}
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 mb-3">
+                        <input type="number" id="qty-${nft.id}" value="1" min="1" class="input-premium w-20 rounded-xl px-3 py-2 text-sm font-bold text-center outline-none" placeholder="Qty">
+                        <button class="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-2.5 rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2" onclick="buyNFT(${nft.id})">
+                            <span>Buy</span>
+                            <i class="fas fa-shopping-bag text-xs"></i>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function getEmojiForNFT(nftName) {
+            const emojiMap = { 'CryptoPunks': '👾', 'Bored Ape Yacht Club': '🐵', 'Mutant Ape Yacht Club': '🦍', 'Azuki': '🌸', 'CloneX': '🤖', 'Doodles': '🎨', 'Cool Cats': '🐱', 'World of Women': '👩', 'VeeFriends': '🐻', 'Art Blocks Curated': '🎯' };
+            return emojiMap[nftName] || '🎨';
+        }
+
+        // Buy NFT with Quantity
+        async function buyNFT(nftId) {
+            try {
+                const nft = nftList.find(n => n.id === nftId);
+                const qtyInput = document.getElementById(`qty-${nftId}`);
+                const quantity = parseInt(qtyInput.value) || 0;
+
+                if (quantity <= 0) { showToast('Enter valid quantity', 'error'); return; }
+                if (!nft) { showToast('NFT not found', 'error'); return; }
+                
+                const totalPrice = Number(nft.current_price) * quantity;
+                if (userBalance < totalPrice) { showToast('Insufficient balance', 'error'); return; }
+                
+                const btn = event.currentTarget;
+                const originalContent = btn.innerHTML;
+                btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i>`;
+                btn.disabled = true;
+                
+                const { error: historyError } = await supabase.from('wallet_nft_history').insert({
+                    user_id: currentUser.id, nft_id: nftId, transaction_type: 'BUY', price: Number(nft.current_price), quantity: quantity, transaction_date: new Date().toISOString()
+                });
+                if (historyError) throw historyError;
+                
+                const newBalance = userBalance - totalPrice;
+                const { error: balanceError } = await supabase.from('wallet_user_wallets').update({ balance: newBalance }).eq('uid', currentUser.id);
+                if (balanceError) throw balanceError;
+                
+                userBalance = newBalance;
+                document.getElementById('userBalance').textContent = `₹${userBalance.toLocaleString()}`;
+                await loadUserPortfolio();
+                showToast(`Purchased ${quantity} ${nft.nft_name}!`, 'success');
+                
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            } catch (error) {
+                console.error(error);
+                showToast('Purchase failed', 'error');
+            }
+        }
+
+        // Sell NFT with Quantity
+        async function sellNFT(nftId) {
+            try {
+                const portfolioItem = userPortfolio.find(item => item.nft.id === nftId);
+                const sellQtyInput = document.getElementById(`sell-qty-${nftId}`);
+                const sellQuantity = parseInt(sellQtyInput.value) || 0;
+
+                if (!portfolioItem || portfolioItem.quantity < sellQuantity || sellQuantity <= 0) { 
+                    showToast('Invalid quantity', 'error'); 
+                    return; 
+                }
+
+                const nft = portfolioItem.nft;
+                const totalPrice = Number(nft.current_price) * sellQuantity;
+                
+                const btn = event.currentTarget;
+                const originalContent = btn.innerHTML;
+                btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i>`;
+                btn.disabled = true;
+                
+                const { error: historyError } = await supabase.from('wallet_nft_history').insert({
+                    user_id: currentUser.id, nft_id: nftId, transaction_type: 'SELL', price: Number(nft.current_price), quantity: sellQuantity, transaction_date: new Date().toISOString()
+                });
+                if (historyError) throw historyError;
+                
+                const newBalance = userBalance + totalPrice;
+                const { error: balanceError } = await supabase.from('wallet_user_wallets').update({ balance: newBalance }).eq('uid', currentUser.id);
+                if (balanceError) throw balanceError;
+                
+                userBalance = newBalance;
+                document.getElementById('userBalance').textContent = `₹${userBalance.toLocaleString()}`;
+                await loadUserPortfolio();
+                renderPortfolio();
+                showToast(`Sold ${sellQuantity} ${nft.nft_name}!`, 'success');
+            } catch (error) {
+                console.error(error);
+                showToast('Sale failed', 'error');
+            }
+        }
+
+        function showPortfolio() {
+            renderPortfolio();
+            const modal = document.getElementById('portfolioModal');
+            modal.classList.remove('hidden');
+        }
+
+        // Render Portfolio (Premium Visual Fix)
+        function renderPortfolio() {
+            const grid = document.getElementById('portfolioGrid');
+            grid.innerHTML = '';
+            
+            if (userPortfolio.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full flex flex-col items-center justify-center py-10 opacity-50">
+                        <i class="fas fa-ghost text-3xl text-slate-300 mb-2"></i>
+                        <p class="text-xs font-bold text-slate-400">Your collection is empty.</p>
+                    </div>`;
+                return;
+            }
+            
+            userPortfolio.forEach(item => {
+                const nft = item.nft;
+                const quantity = item.quantity;
+                
+                const card = document.createElement('div');
+                card.className = 'bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 fade-in';
+                
+                const imageContent = nft.image_url 
+                    ? `<img src="${nft.image_url}" class="w-16 h-16 rounded-xl object-cover">`
+                    : `<div class="w-16 h-16 rounded-xl bg-indigo-50 flex items-center justify-center text-2xl">${getEmojiForNFT(nft.nft_name)}</div>`;
+
+                card.innerHTML = `
+                    ${imageContent}
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-start">
+                            <h4 class="font-black text-slate-800 text-sm truncate pr-2">${nft.nft_name}</h4>
+                            <span class="bg-indigo-50 text-indigo-600 text-[10px] font-bold px-2 py-0.5 rounded-full">x${quantity}</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase mb-2">Value: ₹${(Number(nft.current_price) * quantity).toLocaleString()}</p>
+                        
+                        <div class="flex gap-2">
+                            <input type="number" id="sell-qty-${nft.id}" value="1" min="1" max="${quantity}" class="input-premium w-16 rounded-lg px-2 py-1 text-xs font-bold outline-none" placeholder="Qty">
+                            <button class="flex-1 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold py-1.5 rounded-lg text-xs transition-colors flex items-center justify-center gap-1" onclick="sellNFT(${nft.id})">
+                                <i class="fas fa-tag"></i> Sell
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function closePortfolio() {
+            document.getElementById('portfolioModal').classList.add('hidden');
+        }
+
+        function updatePrices() {
+            nftList.forEach(nft => {
+                const change = (Math.random() - 0.5) * 0.05;
+                const newPrice = Number(nft.current_price) * (1 + change);
+                nft.current_price = Math.max(newPrice, 10);
+            });
+            renderNFTs();
+            if (!document.getElementById('portfolioModal').classList.contains('hidden')) {
+                renderPortfolio();
+            }
+        }
+
+        function goToDashboard() {
+            if (priceUpdateInterval) clearInterval(priceUpdateInterval);
+            window.location.href = 'wallet.html';
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const bgClass = type === 'error' ? 'bg-rose-500' : 'bg-emerald-500';
+            const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+            
+            toast.className = `fixed bottom-10 left-1/2 -translate-x-1/2 z-[70] transition-all duration-300 flex items-center gap-3 px-6 py-3 rounded-full shadow-2xl text-white font-bold text-sm min-w-[200px] justify-center ${bgClass}`;
+            toast.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+            
+            requestAnimationFrame(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translate(-50%, 0)';
+            });
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, 20px)';
+            }, 3000);
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('portfolioModal');
+            if (event.target === modal) closePortfolio();
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
