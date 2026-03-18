@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>More Options - Premium Wallet</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ==========================================
+           ULTRA PREMIUM CSS STYLING & ANIMATIONS
+           ========================================== */
+        :root {
+            --bg-dark: #050b14;
+            --primary: #6366f1;
+            --secondary: #8b5cf6;
+            --accent: #10b981;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: #f8fafc;
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+        }
+
+        /* Animated Background Orbs */
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.4;
+            animation: float 10s infinite ease-in-out alternate;
+        }
+        .orb-1 { top: -10%; left: -10%; width: 300px; height: 300px; background: var(--primary); }
+        .orb-2 { bottom: -10%; right: -10%; width: 400px; height: 400px; background: var(--secondary); animation-delay: -5s; }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, 50px) scale(1.1); }
+        }
+
+        /* Glassmorphism Header */
+        .glass-header {
+            background: rgba(5, 11, 20, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        /* Premium Menu Cards */
+        .menu-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 24px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: slideUpFade 0.6s forwards;
+        }
+
+        .menu-card:nth-child(1) { animation-delay: 0.1s; }
+        .menu-card:nth-child(2) { animation-delay: 0.2s; }
+        .menu-card:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes slideUpFade {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Card Hover Effects */
+        .menu-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: 0;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 0 20px rgba(99, 102, 241, 0.15);
+        }
+
+        .menu-card:hover::before {
+            opacity: 1;
+        }
+
+        .menu-card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Icon Container */
+        .icon-box {
+            width: 56px;
+            height: 56px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+            box-shadow: inset 0 0 20px rgba(255,255,255,0.1);
+            transition: transform 0.4s ease;
+        }
+
+        .menu-card:hover .icon-box {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        /* Gradients for Icons */
+        .grad-nex { background: linear-gradient(135deg, #3b82f6, #2dd4bf); color: white; }
+        .grad-ai { background: linear-gradient(135deg, #6366f1, #d946ef); color: white; }
+        .grad-event { background: linear-gradient(135deg, #f59e0b, #ef4444); color: white; }
+
+        /* Future Info Box */
+        .future-box {
+            background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%);
+            border: 1px dashed rgba(255,255,255,0.15);
+            border-radius: 20px;
+            padding: 24px;
+            text-align: center;
+            margin-top: 40px;
+            opacity: 0;
+            animation: slideUpFade 0.6s forwards 0.5s;
+        }
+
+        .heading-font {
+            font-family: 'Outfit', sans-serif;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Orbs -->
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+
+    <!-- Header -->
+    <header class="glass-header px-5 py-4 flex items-center justify-between">
+        <button onclick="window.location.href='wallet.html'" class="w-10 h-10 rounded-full bg-white/5 text-white flex items-center justify-center hover:bg-white/10 transition-all border border-white/10 shadow-lg active:scale-95">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h1 class="text-xl font-bold text-white heading-font tracking-wide">Explore More</h1>
+        <div class="w-10 h-10"></div> <!-- Spacer for centering -->
+    </header>
+
+    <!-- Main Content -->
+    <main class="p-5 max-w-md mx-auto w-full pb-10">
+        
+        <div class="mb-8">
+            <h2 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 heading-font mb-2">Discover Features</h2>
+            <p class="text-sm text-slate-400">Unlock the full potential of your premium wallet ecosystem.</p>
+        </div>
+
+        <!-- Menu Grid -->
+        <div class="flex flex-col gap-4">
+            
+            <!-- Wallet Nex Card -->
+            <div class="menu-card group" onclick="window.location.href='wallet-nex.html'">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="icon-box grad-nex">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white heading-font mb-1">Wallet Nex</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">Access advanced next-generation wallet features, cross-chain swaps, and premium asset management.</p>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                        <i class="fas fa-chevron-right text-xs"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Smart Adix AI Card -->
+            <div class="menu-card group" onclick="window.location.href='smart-adix.html'">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="icon-box grad-ai">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white heading-font mb-1">Smart Adix AI</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">Your personal AI trading assistant. Get live market signals, top coin prices, and expert trading strategies.</p>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                        <i class="fas fa-chevron-right text-xs"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Events Card -->
+            <div class="menu-card group" onclick="window.location.href='wallet-event.html'">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="icon-box grad-event">
+                            <i class="fas fa-calendar-star"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white heading-font mb-1">Exclusive Events</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">Participate in premium trading tournaments, airdrops, and community events to earn massive rewards.</p>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 group-hover:bg-rose-500 group-hover:text-white transition-colors">
+                        <i class="fas fa-chevron-right text-xs"></i>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Future Info Box -->
+        <div class="future-box">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white/5 text-indigo-400 mb-4 border border-white/10">
+                <i class="fas fa-rocket text-xl"></i>
+            </div>
+            <h4 class="text-lg font-bold text-white heading-font mb-2">More Features Coming Soon!</h4>
+            <p class="text-sm text-slate-400 leading-relaxed">
+                Stay tuned! In the future, many more exciting options will be introduced. The platform will be continuously upgraded to deliver an even more premium, advanced, and seamless exchangeable experience.
+            </p>
+            <div class="mt-4 flex justify-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                <span class="w-2 h-2 rounded-full bg-purple-500 animate-pulse" style="animation-delay: 0.2s"></span>
+                <span class="w-2 h-2 rounded-full bg-teal-500 animate-pulse" style="animation-delay: 0.4s"></span>
+            </div>
+        </div>
+
+    </main>
+
+</body>
+</html>
