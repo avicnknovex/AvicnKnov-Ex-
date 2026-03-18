@@ -113,7 +113,7 @@
             <h2 style="color:var(--primary)">Participation Records</h2>
             <i class="fas fa-times" style="font-size:28px" onclick="toggleDetails(false)"></i>
         </div>
-        <div id="wallet-user-history-content"></div>
+        <div id="user-history-content"></div>
     </div>
 
     <script>
@@ -125,7 +125,7 @@
         const MY_ID = "USER_PERMANENT_001"; 
 
         async function loadSystem() {
-            const { data: events } = await sb.from('walle_events_control').select('*').order('created_at', { ascending: false });
+            const { data: events } = await sb.from('wallet_events_control').select('*').order('created_at', { ascending: false });
             const { data: joined } = await sb.from('wallet_user_events').select('event_id').eq('user_id', MY_ID);
             
             const joinedList = joined ? joined.map(item => item.event_id) : [];
@@ -231,7 +231,7 @@
             btn.disabled = true;
             btn.innerText = "Verifying...";
 
-            const { error } = await sb.from('user_events').insert([{ event_id: id, user_id: MY_ID }]);
+            const { error } = await sb.from('wallet_user_events').insert([{ event_id: id, user_id: MY_ID }]);
 
             if (!error) {
                 alert("Successfully Registered for Event!");
@@ -250,7 +250,7 @@
         }
 
         async function fetchUserHistory() {
-            const historyList = document.getElementById('wallet-user-history-content');
+            const historyList = document.getElementById('user-history-content');
             historyList.innerHTML = '<div style="text-align:center; padding:30px;">Fetching records...</div>';
 
             const { data } = await sb.from('wallet_user_events').select('*, wallet_events_control(title)').eq('user_id', MY_ID).order('joined_at', { ascending: false });
@@ -258,7 +258,7 @@
             if (data && data.length > 0) {
                 historyList.innerHTML = data.map(item => `
                     <div class="result-card">
-                        <h3 style="margin:0; color:var(--primary)">${item.events_control.title}</h3>
+                        <h3 style="margin:0; color:var(--primary)">${item.wallet_events_control.title}</h3>
                         <p style="font-size:11px; color:var(--text-dim)">Joined on: ${new Date(item.joined_at).toLocaleString()}</p>
                         <hr border="0" style="border-bottom:1px solid #333; margin:15px 0;">
                         <div style="font-size:14px;">
