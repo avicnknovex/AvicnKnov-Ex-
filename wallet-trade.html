@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pre-Launch Tokens - AvicnKnov Ex</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <style>
+        /* Premium Font Styling */
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f8f9fc;
+            color: #1e293b;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Hide Scrollbar */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Animations */
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .scale-in { animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .pulse-soft { animation: pulseSoft 2s infinite; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        @keyframes pulseSoft { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
+
+        /* Modal Backdrop */
+        .modal-backdrop {
+            background-color: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+        }
+
+        /* Gradient Text */
+        .text-gradient {
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-image: linear-gradient(to right, #ef4444, #f97316);
+        }
+
+        /* Input Premium */
+        .input-premium {
+            background-color: #f1f5f9;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .input-premium:focus {
+            background-color: white;
+            border-color: #fb923c;
+            box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-[#f8f9fc] min-h-screen pb-20">
+
+    <div class="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-gray-100 shadow-sm px-4 py-3 flex justify-between items-center">
+        <button onclick="goToDashboard()" class="w-10 h-10 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-slate-100 transition-colors shadow-sm border border-slate-100">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h1 class="text-lg font-black text-slate-800 tracking-tight">Pre-Launch Tokens</h1>
+        <button onclick="showPortfolio()" class="w-10 h-10 rounded-full bg-gradient-to-r from-red-500 to-orange-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/30 hover:scale-105 transition-transform active:scale-95">
+            <i class="fas fa-briefcase"></i>
+        </button>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 pt-6">
+        
+        <div class="bg-white rounded-3xl p-8 shadow-xl shadow-slate-200/50 border border-slate-100 mb-8 relative overflow-hidden group text-center fade-in">
+            <div class="absolute top-0 right-0 w-64 h-64 bg-red-50 rounded-full -mr-20 -mt-20 blur-3xl opacity-60 group-hover:opacity-100 transition-opacity"></div>
+            <div class="absolute bottom-0 left-0 w-40 h-40 bg-orange-50 rounded-full -ml-10 -mb-10 blur-3xl opacity-60"></div>
+            
+            <div class="relative z-10">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Available Balance</p>
+                <h2 class="text-5xl font-black text-slate-800 tracking-tighter" id="userBalance">₹0</h2>
+                <p class="text-sm text-slate-500 mt-2 font-medium">Early access to revolutionary tokens</p>
+            </div>
+        </div>
+
+        <div id="tokenGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-10">
+            <div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-400">
+                <i class="fas fa-circle-notch fa-spin text-3xl mb-3 text-orange-500"></i>
+                <span class="text-sm font-medium">Loading Tokens...</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="portfolioModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 modal-backdrop transition-opacity" onclick="closePortfolio()"></div>
+        <div class="absolute bottom-0 inset-x-0 md:top-1/2 md:bottom-auto md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-2xl w-full bg-[#f8f9fc] h-[85vh] md:h-[600px] rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden scale-in">
+            
+            <div class="bg-white px-6 py-4 border-b border-slate-100 flex justify-between items-center shadow-sm z-10">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Your Portfolio</h2>
+                        <p class="text-xs text-slate-400">Pre-Launch Assets</p>
+                    </div>
+                </div>
+                <button class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 flex items-center justify-center transition-colors" onclick="closePortfolio()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 p-4 bg-white border-b border-slate-100">
+                <div class="text-center p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tokens</p>
+                    <p class="text-lg font-black text-slate-800 mt-1" id="totalTokens">0</p>
+                </div>
+                <div class="text-center p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Current Value</p>
+                    <p class="text-lg font-black text-emerald-500 mt-1" id="totalValue">₹0</p>
+                </div>
+                <div class="text-center p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Invested</p>
+                    <p class="text-lg font-black text-slate-800 mt-1" id="totalInvested">₹0</p>
+                </div>
+            </div>
+
+            <div id="portfolioGrid" class="flex-1 overflow-y-auto p-4 space-y-4">
+                </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[70] transition-all duration-300 opacity-0 translate-y-10 pointer-events-none">
+        </div>
+
+    <script>
+        // Supabase configuration
+        var SUPA_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+        var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+        var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+        
+        let currentUser = null;
+        let userBalance = 0;
+        let tokenList = [];
+        let userPortfolio = [];
+        let priceUpdateInterval = null;
+
+        // Initialize the page
+        async function init() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    showToast('Please log in to access pre-launch tokens', 'error');
+                    setTimeout(() => goToDashboard(), 2000);
+                    return;
+                }
+                
+                currentUser = user;
+                await loadUserBalance();
+                await loadTokens();
+                await loadUserPortfolio();
+                
+                // Start price updates every hour (as per original logic)
+                priceUpdateInterval = setInterval(updatePrices, 3600000); 
+                
+                // Update countdown timers every second
+                setInterval(updateCountdowns, 1000);
+                
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showToast('Failed to load pre-launch tokens', 'error');
+            }
+        }
+
+        // Load user balance
+        async function loadUserBalance() {
+            try {
+                const { data, error } = await supabase
+                    .from('user_wallet_balance')
+                    .select('balance')
+                    .eq('uid', currentUser.id)
+                    .single();
+                
+                if (!error && data) {
+                    userBalance = Number(data.balance || 0);
+                    document.getElementById('userBalance').textContent = `₹${userBalance.toLocaleString()}`;
+                }
+            } catch (error) {
+                console.error('Error loading balance:', error);
+            }
+        }
+
+        // Load available tokens
+        async function loadTokens() {
+            try {
+                const { data, error } = await supabase
+                    .from('wallet_pre_launch_token')
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('launch_date', { ascending: true });
+                
+                if (error) {
+                    console.error('Error loading tokens:', error);
+                    showNoTokens();
+                    return;
+                }
+                
+                tokenList = data || [];
+                
+                if (tokenList.length === 0) {
+                    showNoTokens();
+                } else {
+                    renderTokens();
+                }
+                
+            } catch (error) {
+                console.error('Error loading tokens:', error);
+                showNoTokens();
+            }
+        }
+
+        // Load user portfolio
+        async function loadUserPortfolio() {
+            try {
+                const { data, error } = await supabase
+                    .from('wallet_pre_launch_history')
+                    .select(`
+                        *,
+                        wallet_pre_launch_token!inner(*)
+                    `)
+                    .eq('user_id', currentUser.id);
+                
+                if (!error && data) {
+                    // Group by token and calculate net quantity
+                    const portfolioMap = {};
+                    
+                    for (const transaction of data) {
+                        const tokenId = transaction.token_id;
+                        if (!portfolioMap[tokenId]) {
+                            portfolioMap[tokenId] = {
+                                token: transaction.wallet_pre_launch_token,
+                                quantity: 0,
+                                totalInvested: 0
+                            };
+                        }
+                        
+                        if (transaction.transaction_type === 'BUY') {
+                            portfolioMap[tokenId].quantity += transaction.quantity;
+                            portfolioMap[tokenId].totalInvested += transaction.total_amount;
+                        } else if (transaction.transaction_type === 'SELL') {
+                            portfolioMap[tokenId].quantity -= transaction.quantity;
+                            portfolioMap[tokenId].totalInvested -= transaction.total_amount;
+                        }
+                    }
+                    
+                    // Filter out zero quantities
+                    userPortfolio = Object.values(portfolioMap).filter(item => item.quantity > 0);
+                }
+                
+            } catch (error) {
+                console.error('Error loading portfolio:', error);
+            }
+        }
+
+        // Render tokens (Premium Tailwind UI)
+        function renderTokens() {
+            const grid = document.getElementById('tokenGrid');
+            grid.innerHTML = '';
+            
+            tokenList.forEach(token => {
+                const card = createTokenCard(token);
+                grid.appendChild(card);
+            });
+        }
+
+        // Logic for handling Icon/Emoji/Image
+        function renderIconHtml(iconValue, sizeClass = "w-14 h-14", textSize = "text-3xl") {
+            if (!iconValue || iconValue.trim() === "") return "";
+            
+            const isUrl = iconValue.startsWith('http') || iconValue.includes('.');
+            
+            if (isUrl) {
+                // If it's a URL, show as Image from crypto-image bucket logic
+                return `<div class="${sizeClass} rounded-full overflow-hidden shadow-inner border border-slate-100">
+                            <img src="${iconValue}" alt="Token Icon" class="w-full h-full object-cover">
+                        </div>`;
+            } else {
+                // If it's just a character/emoji
+                return `<div class="${sizeClass} rounded-2xl bg-gradient-to-br from-slate-100 to-white flex items-center justify-center ${textSize} shadow-inner border border-slate-100">
+                            ${iconValue}
+                        </div>`;
+            }
+        }
+
+        // Create token card HTML
+        function createTokenCard(token) {
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-3xl p-5 shadow-xl shadow-slate-200/50 border border-slate-100 relative group overflow-hidden hover:-translate-y-1 transition-all duration-300 fade-in';
+            
+            const launchDate = new Date(token.launch_date);
+            const now = new Date();
+            const isLaunched = now >= launchDate;
+            const badgeClass = isLaunched ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100';
+            const badgeText = isLaunched ? 'LAUNCHED' : 'PRE-LAUNCH';
+
+            const priceChange = Math.random() > 0.5 ? 
+                { direction: 'up', value: (Math.random() * 5).toFixed(2), class: 'text-emerald-500 bg-emerald-50' } :
+                { direction: 'down', value: (Math.random() * 3).toFixed(2), class: 'text-rose-500 bg-rose-50' };
+            
+            const iconHtml = renderIconHtml(token.icon);
+            
+            card.innerHTML = `
+                <div class="absolute top-4 right-4 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${badgeClass} shadow-sm">
+                    ${badgeText}
+                </div>
+                
+                <div class="flex items-center gap-4 mb-5">
+                    ${iconHtml}
+                    <div>
+                        <h3 class="text-lg font-black text-slate-800 leading-tight">${token.token_name}</h3>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">${token.token_symbol}</span>
+                    </div>
+                </div>
+                
+                <p class="text-xs text-slate-500 font-medium mb-5 line-clamp-2 min-h-[2.5em] leading-relaxed">
+                    ${token.description || 'Revolutionary blockchain token with amazing potential for early investors.'}
+                </p>
+                
+                <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100 mb-4">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Current Price</span>
+                        <div class="flex items-center gap-1">
+                            <span class="${priceChange.class} px-1.5 py-0.5 rounded text-[10px] font-bold">
+                                ${priceChange.direction === 'up' ? '+' : '-'}${priceChange.value}%
+                            </span>
+                        </div>
+                    </div>
+                    <div class="text-2xl font-black text-slate-800">₹${Number(token.current_price).toLocaleString()}</div>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase mb-1">
+                        <span>Launch Countdown</span>
+                        <span class="text-orange-500 countdown-time" data-launch-date="${token.launch_date}">Loading...</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                        <div class="bg-gradient-to-r from-orange-400 to-red-500 h-full rounded-full w-2/3 pulse-soft"></div>
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    <div class="relative">
+                        <input type="number" id="quantity-${token.id}" placeholder="Qty" min="1" step="1" 
+                            class="input-premium w-full rounded-xl px-4 py-3 text-sm font-bold text-slate-700 outline-none"
+                            oninput="calculateTotal(${token.id})">
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Tokens</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center px-2">
+                        <span class="text-xs font-bold text-slate-400">Total:</span>
+                        <span class="text-sm font-black text-slate-800" id="total-${token.id}">₹0</span>
+                    </div>
+
+                    <button class="w-full bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-slate-900/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2" onclick="buyToken(${token.id})">
+                        <span>Buy Now</span>
+                        <i class="fas fa-arrow-right text-xs"></i>
+                    </button>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // Calculate total amount
+        function calculateTotal(tokenId) {
+            const quantityInput = document.getElementById(`quantity-${tokenId}`);
+            const totalElement = document.getElementById(`total-${tokenId}`);
+            const token = tokenList.find(t => t.id === tokenId);
+            
+            if (!token) return;
+            
+            const quantity = parseInt(quantityInput.value) || 0;
+            const total = quantity * Number(token.current_price);
+            
+            totalElement.textContent = `₹${total.toLocaleString()}`;
+            
+            if (total >= 100) totalElement.classList.add('text-emerald-600');
+            else totalElement.classList.remove('text-emerald-600');
+        }
+
+        // Buy token
+        async function buyToken(tokenId) {
+            try {
+                const token = tokenList.find(t => t.id === tokenId);
+                const quantityInput = document.getElementById(`quantity-${tokenId}`);
+                const quantity = parseInt(quantityInput.value);
+                
+                if (!token || !quantity || quantity <= 0) {
+                    showToast('Please enter a valid quantity', 'error');
+                    return;
+                }
+                
+                const totalAmount = quantity * Number(token.current_price);
+                
+                if (totalAmount < 100) {
+                    showToast('Minimum purchase amount is ₹100', 'error');
+                    return;
+                }
+                
+                if (userBalance < totalAmount) {
+                    showToast('Insufficient balance', 'error');
+                    return;
+                }
+                
+                const button = event.currentTarget;
+                const originalContent = button.innerHTML;
+                button.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i>`;
+                button.disabled = true;
+                
+                const { error: historyError } = await supabase.from('wallet_pre_launch_history').insert({
+                    user_id: currentUser.id, token_id: tokenId, transaction_type: 'BUY',
+                    quantity: quantity, price_per_token: Number(token.current_price),
+                    total_amount: totalAmount, transaction_date: new Date().toISOString()
+                });
+                
+                if (historyError) throw historyError;
+                
+                const newBalance = userBalance - totalAmount;
+                const { error: balanceError } = await supabase.from('wallet_user_wallets').update({ balance: newBalance }).eq('uid', currentUser.id);
+                
+                if (balanceError) throw balanceError;
+                
+                userBalance = newBalance;
+                document.getElementById('userBalance').textContent = `₹${userBalance.toLocaleString()}`;
+                
+                quantityInput.value = '';
+                document.getElementById(`total-${tokenId}`).textContent = '₹0';
+                
+                await loadUserPortfolio();
+                showToast(`Successfully purchased ${quantity} ${token.token_symbol}!`, 'success');
+                
+                button.innerHTML = originalContent;
+                button.disabled = false;
+                
+            } catch (error) {
+                console.error('Error buying token:', error);
+                showToast('Failed to purchase token', 'error');
+                const btn = event.target.closest('button');
+                if(btn) { btn.innerHTML = '<span>Buy Now</span><i class="fas fa-arrow-right text-xs"></i>'; btn.disabled = false; }
+            }
+        }
+
+        // Sell token
+        async function sellToken(tokenId, sellQuantity) {
+            try {
+                const portfolioItem = userPortfolio.find(item => item.token.id === tokenId);
+                if (!portfolioItem || portfolioItem.quantity < sellQuantity) {
+                    showToast('Insufficient tokens to sell', 'error');
+                    return;
+                }
+                
+                const token = portfolioItem.token;
+                const totalAmount = sellQuantity * Number(token.current_price);
+                
+                const button = event.currentTarget;
+                const originalContent = button.innerHTML;
+                button.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i>`;
+                button.disabled = true;
+                
+                const { error: historyError } = await supabase.from('wallet_pre_launch_history').insert({
+                    user_id: currentUser.id, token_id: tokenId, transaction_type: 'SELL',
+                    quantity: sellQuantity, price_per_token: Number(token.current_price),
+                    total_amount: totalAmount, transaction_date: new Date().toISOString()
+                });
+                
+                if (historyError) throw historyError;
+                
+                const newBalance = userBalance + totalAmount;
+                const { error: balanceError } = await supabase.from('wallet_user_wallets').update({ balance: newBalance }).eq('uid', currentUser.id);
+                
+                if (balanceError) throw balanceError;
+                
+                userBalance = newBalance;
+                document.getElementById('userBalance').textContent = `₹${userBalance.toLocaleString()}`;
+                
+                await loadUserPortfolio();
+                renderPortfolio();
+                updatePortfolioStats();
+                
+                showToast(`Sold ${sellQuantity} ${token.token_symbol}!`, 'success');
+                button.innerHTML = originalContent;
+                button.disabled = false;
+                
+            } catch (error) {
+                console.error('Error selling token:', error);
+                showToast('Failed to sell token', 'error');
+                const btn = event.target.closest('button');
+                if(btn) { btn.innerHTML = 'Sell'; btn.disabled = false; }
+            }
+        }
+
+        // Update countdown timers
+        function updateCountdowns() {
+            document.querySelectorAll('.countdown-time').forEach(element => {
+                const launchDate = new Date(element.dataset.launchDate);
+                const now = new Date();
+                const diff = launchDate - now;
+                
+                if (diff <= 0) {
+                    element.textContent = 'Launched!';
+                    element.className = 'text-emerald-500 font-bold countdown-time';
+                } else {
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    element.textContent = `${days}d ${hours}h ${minutes}m`;
+                }
+            });
+        }
+
+        // Update prices (DB Sync)
+        function updatePrices() {
+            tokenList.forEach(async (token) => {
+                const basePrice = Number(token.base_price);
+                const maxChange = 0.1; // ±10%
+                const change = (Math.random() - 0.5) * 2 * maxChange;
+                const newPrice = basePrice * (1 + change);
+                
+                await supabase.from('wallet_pre_launch_token').update({ 
+                    current_price: newPrice, updated_at: new Date().toISOString()
+                }).eq('id', token.id);
+                
+                token.current_price = newPrice;
+            });
+            
+            renderTokens();
+            if (!document.getElementById('portfolioModal').classList.contains('hidden')) {
+                renderPortfolio();
+                updatePortfolioStats();
+            }
+        }
+
+        // Show portfolio
+        function showPortfolio() {
+            renderPortfolio();
+            updatePortfolioStats();
+            document.getElementById('portfolioModal').classList.remove('hidden');
+        }
+
+        // Render portfolio items
+        function renderPortfolio() {
+            const grid = document.getElementById('portfolioGrid');
+            grid.innerHTML = '';
+            
+            if (userPortfolio.length === 0) {
+                grid.innerHTML = `
+                    <div class="text-center py-10 opacity-50">
+                        <i class="fas fa-rocket text-4xl text-slate-300 mb-2"></i>
+                        <p class="text-sm font-bold text-slate-400">No assets yet</p>
+                    </div>`;
+                return;
+            }
+            
+            userPortfolio.forEach(item => {
+                const token = item.token;
+                const quantity = item.quantity;
+                const currentValue = quantity * Number(token.current_price);
+                const portfolioIcon = renderIconHtml(token.icon, "w-8 h-8", "text-lg");
+                
+                const card = document.createElement('div');
+                card.className = 'bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between';
+                
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center gap-2">
+                                ${portfolioIcon}
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-sm leading-tight">${token.token_name}</h4>
+                                    <span class="text-[10px] text-slate-400 font-bold">${token.token_symbol}</span>
+                                </div>
+                            </div>
+                            <span class="bg-indigo-50 text-indigo-600 text-[10px] font-bold px-2 py-0.5 rounded-full">x${quantity}</span>
+                        </div>
+                        <p class="text-xs text-slate-500 font-medium mb-3">Value: <span class="text-emerald-600 font-bold">₹${currentValue.toLocaleString()}</span></p>
+                        
+                        <div class="flex gap-2">
+                            <input type="number" class="input-premium w-full rounded-lg px-2 py-1.5 text-xs font-bold" placeholder="Qty" id="sell-qty-${token.id}" min="1" max="${quantity}">
+                            <button class="bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold px-4 py-1.5 rounded-lg text-xs transition-colors" onclick="sellFromPortfolio(${token.id})">
+                                Sell
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function sellFromPortfolio(tokenId) {
+            const sellInput = document.getElementById(`sell-qty-${tokenId}`);
+            const sellQuantity = parseInt(sellInput.value);
+            
+            if (!sellQuantity || sellQuantity <= 0) {
+                showToast('Enter quantity', 'error');
+                return;
+            }
+            sellToken(tokenId, sellQuantity);
+        }
+
+        function updatePortfolioStats() {
+            let totalTokens = 0;
+            let totalValue = 0;
+            let totalInvested = 0;
+            
+            userPortfolio.forEach(item => {
+                totalTokens += item.quantity;
+                totalValue += item.quantity * Number(item.token.current_price);
+                totalInvested += item.totalInvested;
+            });
+            
+            document.getElementById('totalTokens').textContent = totalTokens.toLocaleString();
+            document.getElementById('totalValue').textContent = `₹${totalValue.toLocaleString()}`;
+            document.getElementById('totalInvested').textContent = `₹${Math.max(0, totalInvested).toLocaleString()}`;
+        }
+
+        function closePortfolio() {
+            document.getElementById('portfolioModal').classList.add('hidden');
+        }
+
+        function showNoTokens() {
+            const grid = document.getElementById('tokenGrid');
+            grid.innerHTML = `
+                <div class="col-span-full text-center py-16 bg-white rounded-3xl border border-dashed border-slate-300">
+                    <i class="fas fa-rocket text-4xl text-slate-200 mb-3"></i>
+                    <h3 class="text-slate-500 font-bold">No Pre-Launch Tokens</h3>
+                    <p class="text-xs text-slate-400 mt-1">Check back soon for new listings!</p>
+                </div>
+            `;
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const bgClass = type === 'error' ? 'bg-rose-500' : 'bg-emerald-500';
+            const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+            
+            toast.className = `fixed bottom-10 left-1/2 -translate-x-1/2 z-[70] transition-all duration-300 flex items-center gap-3 px-6 py-3 rounded-full shadow-2xl text-white font-bold text-sm min-w-[200px] justify-center ${bgClass}`;
+            toast.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+            
+            requestAnimationFrame(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translate(-50%, 0)';
+            });
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, 20px)';
+            }, 3000);
+        }
+
+        function goToDashboard() {
+            if (priceUpdateInterval) clearInterval(priceUpdateInterval);
+            window.location.href = 'wallet.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
