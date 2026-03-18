@@ -1,0 +1,491 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Earn NX - Premium Rewards</title>
+    
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Confetti Animation -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg: #ffffff;
+            --surface: #f8fafc;
+            --text-main: #0f172a;
+            --text-sub: #64748b;
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #e2e8f0;
+            --shadow: 0 10px 30px -10px rgba(0,0,0,0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text-main); min-height: 100vh; padding-bottom: 80px; }
+
+        /* HEADER */
+        .header {
+            position: sticky; top: 0; z-index: 50;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 20px; background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
+        }
+        .nav-btn {
+            width: 40px; height: 40px; border-radius: 12px; background: var(--surface);
+            border: 1px solid var(--border); color: var(--text-main);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.2s;
+        }
+        .nav-btn:active { transform: scale(0.95); }
+        .page-title { font-size: 20px; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; }
+        .hist-btn { background: #eef2ff; color: var(--primary); border-color: #c7d2fe; }
+
+        /* CONTAINER */
+        .container { padding: 20px; max-width: 600px; margin: 0 auto; }
+
+        /* HERO CARD */
+        .hero-banner {
+            background: linear-gradient(135deg, #4f46e5, #3730a3);
+            border-radius: 24px; padding: 25px; color: #fff;
+            margin-bottom: 25px; box-shadow: 0 15px 30px -5px rgba(79, 70, 229, 0.3);
+            position: relative; overflow: hidden;
+        }
+        .hero-banner::before {
+            content: ''; position: absolute; top: -50%; right: -20%;
+            width: 200px; height: 200px; background: rgba(255,255,255,0.1);
+            border-radius: 50%; filter: blur(40px);
+        }
+        .hb-title { font-size: 22px; font-weight: 800; margin-bottom: 8px; position: relative; }
+        .hb-sub { font-size: 13px; opacity: 0.9; font-weight: 500; position: relative; max-width: 80%; }
+
+        /* TASK LIST */
+        .task-card {
+            background: var(--surface); border-radius: 20px; padding: 18px;
+            margin-bottom: 15px; border: 1px solid var(--border);
+            position: relative; transition: transform 0.2s;
+            box-shadow: 0 4px 6px -2px rgba(0,0,0,0.03);
+        }
+        .task-card:hover { transform: translateY(-2px); border-color: #cbd5e1; }
+        
+        .tc-header { display: flex; gap: 15px; align-items: flex-start; margin-bottom: 15px; }
+        .tc-icon {
+            width: 52px; height: 52px; border-radius: 16px; background: #fff;
+            border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+            font-size: 24px; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.02); overflow: hidden;
+        }
+        .tc-icon img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .tc-info { flex: 1; }
+        .tc-title { font-size: 16px; font-weight: 800; color: var(--text-main); margin-bottom: 4px; line-height: 1.2; }
+        .tc-desc { font-size: 12px; color: var(--text-sub); line-height: 1.4; margin-bottom: 8px; font-weight: 500; }
+        
+        .tc-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+        .tag { font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; }
+        .tag-reward { background: #fffbeb; color: #b45309; border: 1px solid #fcd34d; }
+        .tag-limit { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+
+        /* Actions */
+        .tc-action { margin-top: 10px; }
+        .btn-action {
+            width: 100%; padding: 12px; border-radius: 14px; border: none;
+            font-weight: 700; font-size: 13px; cursor: pointer; text-transform: uppercase;
+            letter-spacing: 0.5px; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        
+        .btn-claim { background: var(--primary); color: #fff; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2); }
+        .btn-claim:active { transform: scale(0.98); }
+        
+        .btn-check { background: var(--text-main); color: #fff; }
+        
+        .btn-locked { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
+        .btn-done { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; cursor: default; }
+        .btn-expired { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; cursor: default; }
+
+        /* Progress Bar */
+        .limit-bar { height: 4px; background: #e2e8f0; border-radius: 4px; margin-top: 12px; overflow: hidden; }
+        .limit-fill { height: 100%; background: var(--primary); width: 0%; border-radius: 4px; }
+        .limit-txt { font-size: 10px; color: var(--text-sub); text-align: right; margin-top: 4px; font-weight: 600; }
+
+        /* MODALS */
+        .modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100;
+            display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px);
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .modal.show { opacity: 1; display: flex; }
+        .modal-card {
+            background: #fff; width: 90%; max-width: 400px; border-radius: 24px;
+            padding: 30px; text-align: center; position: relative;
+            transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+        }
+        .modal.show .modal-card { transform: scale(1); }
+
+        /* Reward Reveal */
+        .reward-anim { font-size: 60px; margin-bottom: 15px; animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        
+        .reward-amt { font-size: 36px; font-weight: 800; color: var(--success); margin: 10px 0; font-family: monospace; }
+        .reward-sub { font-size: 12px; color: var(--text-sub); margin-top: 5px; }
+
+        /* History List */
+        .hist-list { text-align: left; max-height: 50vh; overflow-y: auto; margin-top: 10px; }
+        .h-item { padding: 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .h-item:last-child { border-bottom: none; }
+        .h-title { font-size: 13px; font-weight: 700; color: var(--text-main); }
+        .h-time { font-size: 10px; color: var(--text-sub); }
+        .h-val { font-size: 14px; font-weight: 700; color: var(--success); }
+
+        /* Loader */
+        .loader-overlay { position: fixed; inset: 0; background: #fff; z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #e0e7ff; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .close-btn { position: absolute; top: 15px; right: 15px; background: #f1f5f9; border: none; width: 30px; height: 30px; border-radius: 50%; font-size: 18px; color: var(--text-sub); cursor: pointer; }
+
+    </style>
+</head>
+<body>
+
+    <!-- LOADER -->
+    <div id="loader" class="loader-overlay">
+        <div class="spinner"></div>
+        <p style="margin-top:15px; font-size:12px; color:#64748b; font-weight: 700;">SYNCING REWARDS...</p>
+    </div>
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="nav-btn back-btn" onclick="window.location.href='wallet.html'">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </div>
+        <div class="page-title">Earn NX</div>
+        <div class="nav-btn hist-btn" onclick="app.openHistory()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Hero -->
+        <div class="hero-banner">
+            <div class="hb-title">Complete & Earn</div>
+            <div class="hb-sub">Finish tasks to unlock USD rewards directly to your wallet.</div>
+        </div>
+
+        <!-- Task List -->
+        <div id="task-list"></div>
+    </div>
+
+    <!-- REWARD MODAL -->
+    <div id="reward-modal" class="modal">
+        <div class="modal-card">
+            <div class="reward-anim">🎉</div>
+            <h2 style="color:var(--text-main);">Awesome!</h2>
+            <div class="reward-amt" id="win-usd">$0.00</div>
+            <p style="font-size:14px; color:var(--text-main); font-weight:600;">Reward Added Successfully</p>
+            <div class="reward-sub" id="win-inr">≈ ₹0.00 Added to Wallet</div>
+            <button class="btn-action btn-claim" style="margin-top:20px;" onclick="app.closeModals()">Continue</button>
+        </div>
+    </div>
+
+    <!-- HISTORY MODAL -->
+    <div id="history-modal" class="modal">
+        <div class="modal-card">
+            <h3 style="margin-bottom:15px; text-align:left;">Reward History</h3>
+            <button class="close-btn" onclick="app.closeModals()">×</button>
+            <div id="hist-content" class="hist-list"></div>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================
+           EARN NX ENGINE (Real Working Logic)
+           ========================================================== */
+        const CONFIG = {
+            SUPA_URL: 'https://hwrvqyipozrsxyjdpqag.supabase.co',
+            SUPA_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM',
+            USD_RATE: 86, // 1 USD = 86 INR (Display purpose)
+            TABLES: {
+                TASKS: 'wallet_control_earn_nx',
+                HISTORY: 'wallet_user_nx_history',
+                WALLET: 'wallet_user_wallets'
+            }
+        };
+
+        const supa = supabase.createClient(CONFIG.SUPA_URL, CONFIG.SUPA_KEY);
+
+        const app = {
+            user: null,
+            tasks: [],
+            history: [],
+
+            // --- 1. INITIALIZATION ---
+            async init() {
+                try {
+                    const { data: { user } } = await supa.auth.getUser();
+                    if(!user) {
+                        window.location.href = 'index.html';
+                        return;
+                    }
+                    this.user = user;
+
+                    await this.loadData();
+                    this.render();
+                    
+                    document.getElementById('loader').style.display = 'none';
+                } catch (e) {
+                    console.error("Init Error:", e);
+                    document.getElementById('task-list').innerHTML = `<div style="text-align:center; padding:20px; color:red;">Error loading tasks.</div>`;
+                    document.getElementById('loader').style.display = 'none';
+                }
+            },
+
+            // --- 2. DATA LOADING ---
+            async loadData() {
+                // Fetch Tasks
+                const { data: tData } = await supa.from(CONFIG.TABLES.TASKS)
+                    .select('*')
+                    .order('id', {ascending: true});
+                this.tasks = tData || [];
+
+                // Fetch User History
+                const { data: hData } = await supa.from(CONFIG.TABLES.HISTORY)
+                    .select('*')
+                    .eq('user_id', this.user.id);
+                this.history = hData || [];
+            },
+
+            // --- 3. STATUS CHECKER (The Brain) ---
+            async checkStatus(task) {
+                // 1. Already Claimed?
+                const claimed = this.history.find(h => h.task_id === task.id);
+                if (claimed) return { state: 'claimed', label: 'Claimed' };
+
+                // 2. Global Limit Reached?
+                if (task.global_limit && task.claimed_count >= task.global_limit) {
+                    return { state: 'expired', label: 'Limit Reached' };
+                }
+
+                // 3. Unlock Conditions
+                // A. Free
+                if (task.task_type === 'free') return { state: 'ready', label: 'Claim Reward' };
+
+                // B. Manual Unlock (Specific User)
+                if (task.unlock_uid === this.user.id) return { state: 'ready', label: 'Reward Unlocked' };
+
+                // C. Table Check (Dynamic)
+                if (task.task_type === 'check_table' && task.check_table_name) {
+                    try {
+                        // Check if user has ANY record in the target table
+                        // Using count for efficiency
+                        const { count, error } = await supa.from(task.check_table_name)
+                            .select('*', { count: 'exact', head: true })
+                            .eq('user_id', this.user.id);
+                        
+                        if (!error && count > 0) return { state: 'ready', label: 'Task Completed' };
+                    } catch (e) {
+                        console.warn("Table check failed for", task.check_table_name);
+                    }
+                }
+
+                // Default: Locked
+                return { state: 'locked', label: 'Check Status' };
+            },
+
+            // --- 4. RENDER UI ---
+            async render() {
+                const container = document.getElementById('task-list');
+                container.innerHTML = '';
+
+                if (this.tasks.length === 0) {
+                    container.innerHTML = `<div style="text-align:center; color:#94a3b8; padding:40px;">No active tasks found.</div>`;
+                    return;
+                }
+
+                for (const task of this.tasks) {
+                    const status = await this.checkStatus(task);
+                    
+                    // Icon Handling
+                    let iconHTML = '';
+                    if (task.icon_type === 'image') iconHTML = `<img src="${task.icon_url}">`;
+                    else iconHTML = task.icon_url || '🎁';
+
+                    // Progress
+                    let progressHTML = '';
+                    if (task.global_limit) {
+                        const pct = Math.min(100, (task.claimed_count / task.global_limit) * 100);
+                        progressHTML = `
+                            <div class="limit-bar"><div class="limit-fill" style="width:${pct}%"></div></div>
+                            <div class="limit-txt">${task.claimed_count} / ${task.global_limit} Claimed</div>
+                        `;
+                    }
+
+                    // Button Logic
+                    let btnHTML = '';
+                    if (status.state === 'claimed') {
+                        btnHTML = `<button class="btn-action btn-done">✅ Already Claimed</button>`;
+                    } else if (status.state === 'expired') {
+                        btnHTML = `<button class="btn-action btn-expired">🚫 Limit Expired</button>`;
+                    } else if (status.state === 'ready') {
+                        btnHTML = `<button class="btn-action btn-claim" onclick="app.claim(${task.id})">🎁 Claim Reward</button>`;
+                    } else {
+                        // Locked -> Check Button
+                        // If it's a check_table task, allow re-checking.
+                        btnHTML = `<button class="btn-action btn-check" onclick="app.reCheck(${task.id})">🔄 Check Status</button>`;
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = 'task-card';
+                    card.innerHTML = `
+                        <div class="tc-top">
+                            <div class="tc-icon">${iconHTML}</div>
+                            <div class="tc-info">
+                                <div class="tc-title">${task.title}</div>
+                                <div class="tc-desc">${task.description || 'Complete this task to earn rewards.'}</div>
+                                <div class="tc-tags">
+                                    <span class="tag tag-reward">$${task.min_reward_usd} - $${task.max_reward_usd}</span>
+                                    ${task.task_type === 'free' ? '<span class="tag tag-limit">FREE</span>' : ''}
+                                </div>
+                            </div>
+                        </div>
+                        ${progressHTML}
+                        <div class="tc-action">${btnHTML}</div>
+                    `;
+                    container.appendChild(card);
+                }
+            },
+
+            // --- 5. ACTIONS ---
+            
+            // Re-render specifically for checking
+            async reCheck(taskId) {
+                const btn = document.querySelector(`button[onclick="app.reCheck(${taskId})"]`);
+                if(btn) {
+                    btn.innerText = "Checking...";
+                    btn.disabled = true;
+                }
+                // Small delay to simulate check
+                setTimeout(() => {
+                    this.render(); // Re-runs all checks
+                }, 1000);
+            },
+
+            async claim(taskId) {
+                const task = this.tasks.find(t => t.id === taskId);
+                if (!task) return;
+
+                // Optimistic UI Update
+                const btn = document.querySelector(`button[onclick="app.claim(${taskId})"]`);
+                if(btn) { btn.innerText = "Claiming..."; btn.disabled = true; }
+
+                try {
+                    // 1. Calculate Reward (Fixed Base + Small Variance)
+                    // The user said "Confirmed Reward" is hidden and used for payout.
+                    // "Har user ko alag alag milega" -> Add +/- 2% variance
+                    const baseINR = Number(task.confirmed_reward_inr);
+                    const variance = baseINR * 0.02; 
+                    const finalINR = baseINR + (Math.random() * variance * (Math.random() > 0.5 ? 1 : -1));
+                    const displayUSD = finalINR / CONFIG.USD_RATE;
+
+                    // 2. Add to Wallet
+                    const { data: wData } = await supa.from(CONFIG.TABLES.WALLET).select('balance').eq('uid', this.user.id).single();
+                    if(!wData) throw new Error("Wallet not found");
+                    const newBal = Number(wData.balance) + finalINR;
+
+                    const { error: wErr } = await supa.from(CONFIG.TABLES.WALLET)
+                        .update({ balance: newBal })
+                        .eq('uid', this.user.id);
+                    if(wErr) throw wErr;
+
+                    // 3. Add History
+                    await supa.from(CONFIG.TABLES.HISTORY).insert({
+                        user_id: this.user.id,
+                        task_id: task.id,
+                        reward_inr: finalINR,
+                        reward_usd_display: displayUSD,
+                        task_title: task.title
+                    });
+
+                    // 4. Update Counter (Simple increment)
+                    // Note: In production, use RPC. Here, simple read-update for MVP.
+                    await supa.from(CONFIG.TABLES.TASKS)
+                        .update({ claimed_count: task.claimed_count + 1 })
+                        .eq('id', task.id);
+
+                    // 5. Success
+                    this.showReward(displayUSD, finalINR);
+                    
+                    // Reload Data
+                    await this.loadData();
+                    this.render();
+
+                } catch (e) {
+                    console.error(e);
+                    alert("Claim Failed. Please try again.");
+                    if(btn) { btn.innerText = "Retry"; btn.disabled = false; }
+                }
+            },
+
+            showReward(usd, inr) {
+                const m = document.getElementById('reward-modal');
+                document.getElementById('win-usd').innerText = `$${usd.toFixed(2)}`;
+                document.getElementById('win-inr').innerText = `≈ ₹${inr.toFixed(2)} Added to Wallet`;
+                m.classList.add('show');
+                
+                confetti({
+                    particleCount: 150,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#4f46e5', '#10b981', '#f59e0b']
+                });
+            },
+
+            openHistory() {
+                const m = document.getElementById('history-modal');
+                const list = document.getElementById('hist-content');
+                list.innerHTML = '';
+
+                if (this.history.length === 0) {
+                    list.innerHTML = `<div style="text-align:center; padding:20px; color:#94a3b8;">No history yet.</div>`;
+                } else {
+                    // Sort Newest First
+                    const sorted = [...this.history].sort((a,b) => new Date(b.claimed_at) - new Date(a.claimed_at));
+                    
+                    sorted.forEach(h => {
+                        const date = new Date(h.claimed_at).toLocaleDateString();
+                        const time = new Date(h.claimed_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                        
+                        list.innerHTML += `
+                            <div class="h-item">
+                                <div>
+                                    <div class="h-title">${h.task_title || 'Reward Claim'}</div>
+                                    <div class="h-time">${date} • ${time}</div>
+                                </div>
+                                <div class="h-val">$${Number(h.reward_usd_display).toFixed(2)}</div>
+                            </div>
+                        `;
+                    });
+                }
+                m.classList.add('show');
+            },
+
+            closeModals() {
+                document.querySelectorAll('.modal').forEach(m => m.classList.remove('show'));
+            }
+        };
+
+        // Bootstrap
+        document.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+
+    </script>
+</body>
+</html>
