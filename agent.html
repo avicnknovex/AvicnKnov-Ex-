@@ -3,535 +3,834 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AVX Premium Wallet</title>
-    
-    <!-- Supabase -->
+    <title>AvicnKnov Agent</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
     <style>
-        :root {
-            --bg: #ffffff;
-            --card: #f8fafc;
-            --text: #0f172a;
-            --sub: #64748b;
-            --acc: #4f46e5; /* Indigo */
-            --acc-g: linear-gradient(135deg, #4f46e5, #4338ca);
-            --danger: #ef4444;
-            --border: 1px solid #e2e8f0;
-            --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08);
+        /* General Styling */
+        * { margin:0; padding:0; box-sizing:border-box; font-family: sans-serif; }
+        body, html {
+            height: 100%;
+            width: 100%;
+            background: #222;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: var(--text); overflow-x: hidden; height: 100vh; position: relative; padding-bottom: 90px; /* Space for Bottom Nav */ }
-
-        /* --- LOADERS & ANIMATIONS --- */
-        #loading-screen {
-            position: fixed; inset: 0; z-index: 9999; background: #fff;
-            display: none; flex-direction: column; align-items: center; justify-content: flex-end;
-            padding-bottom: 80px; transition: opacity 0.5s;
+        /* Header Bar */
+        .header {
+            width: 100%;
+            background: #000;
+            padding: 15px 20px;
+            box-shadow: 0 2px 10px rgba(0, 255, 225, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-        #loading-bg {
-            position: absolute; inset: 0; background-size: cover; background-position: center;
-            opacity: 0.1; transition: background-image 1s ease-in-out; filter: grayscale(1);
+        .back-btn {
+            background: none;
+            border: none;
+            color: #00ffe1;
+            font-size: 1.1rem;
+            cursor: pointer;
         }
-        .load-content { position: relative; z-index: 2; text-align: center; width: 85%; }
-        .load-bar-wrap { width: 100%; height: 6px; background: #e2e8f0; border-radius: 10px; margin: 20px 0; overflow: hidden; }
-        .load-bar { height: 100%; background: var(--acc); width: 0%; transition: width 0.3s; }
-        .load-txt { font-size: 14px; color: var(--sub); font-weight: 600; letter-spacing: 0.5px; animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-        /* --- DASHBOARD --- */
-        #dashboard-view { display: none; width: 100%; }
+        .header-title {
+            color: #00ffe1;
+            font-weight: bold;
+        }
+        .language-selector {
+            position: relative;
+        }
+        .lang-btn {
+            background: #00ffe1;
+            color: black;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
         
-        /* VIEWS (Home, Market, Trade, Pro) */
-        .main-view { display: none; animation: fadeIn 0.3s ease; }
-        .main-view.active { display: block; }
-        @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
-
-        /* Header */
-        .dash-header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 15px 20px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); 
-            position: sticky; top: 0; z-index: 50; border-bottom: var(--border); 
+        /* Chat Container */
+        .chat-container {
+            flex: 1;
+            width: 100%;
+            max-width: 600px;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
-        .profile-btn { position: relative; width: 44px; height: 44px; border-radius: 50%; padding: 2px; border: 1px solid #e2e8f0; cursor: pointer; z-index: 2; }
-        .profile-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: #e2e8f0; }
-        
-        .nav-toggle-container {
-            position: absolute; left: 0; right: 0; display: flex; justify-content: center; pointer-events: none; z-index: 1;
+        .message-bubble {
+            padding: 10px 15px;
+            border-radius: 15px;
+            max-width: 80%;
+            word-wrap: break-word;
+            animation: fadeIn 0.3s ease-in-out;
         }
-        .nav-toggle { 
-            background: #f1f5f9; border-radius: 20px; padding: 4px; 
-            display: flex; border: 1px solid #e2e8f0; pointer-events: auto;
-            flex-direction: row-reverse;
+        .agent-msg {
+            background: #00ffe1;
+            color: #000;
+            align-self: flex-start;
+            border-bottom-left-radius: 0;
         }
-        .nav-opt { padding: 6px 16px; border-radius: 16px; font-size: 12px; font-weight: 700; color: var(--sub); cursor: pointer; transition: 0.3s; }
-        .nav-opt.active { background: #fff; color: var(--text); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-
-        .header-icons { display: flex; gap: 12px; z-index: 2; }
-        .icon-btn { width: 40px; height: 40px; border-radius: 12px; background: #fff; display: flex; align-items: center; justify-content: center; color: var(--text); border: var(--border); cursor: pointer; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        .notif-badge { position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; background: var(--danger); border-radius: 50%; display: none; }
-
-        /* Balance Card */
-        .bal-card { margin: 20px; padding: 25px; background: linear-gradient(135deg, #1e293b, #0f172a); border-radius: 28px; box-shadow: 0 15px 40px -10px rgba(15, 23, 42, 0.4); text-align: center; position: relative; overflow: hidden; color: #fff; }
-        .bal-card::before { content:''; position: absolute; top: -50px; left: -50px; width: 150px; height: 150px; background: var(--acc); filter: blur(80px); opacity: 0.4; }
-        .bal-label { font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-        .bal-amount { font-size: 36px; font-weight: 800; margin: 10px 0; color: #fff; }
-        .curr-sel { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 8px; padding: 4px 8px; font-size: 11px; outline: none; }
-
-        .addr-box { background: rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; display: flex; align-items: center; justify-content: space-between; font-family: monospace; font-size: 12px; color: #cbd5e1; margin-top: 15px; border: 1px dashed rgba(255,255,255,0.2); }
-        .addr-txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80%; }
-        
-        /* Main Actions */
-        .action-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 0 20px 20px 20px; }
-        .act-btn { 
-            border: none; border-radius: 18px; padding: 15px 0; color: #fff; font-size: 12px; font-weight: 700; 
-            cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; 
-            transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+        .user-msg {
+            background: #444;
+            color: #fff;
+            align-self: flex-end;
+            border-bottom-right-radius: 0;
         }
-        .act-btn:active { transform: scale(0.98); }
-        .act-btn svg { width: 24px; height: 24px; color: #fff; }
-        .act-deposit { background: linear-gradient(135deg, #3b82f6, #8b5cf6); }
-        .act-withdraw { background: linear-gradient(135deg, #10b981, #047857); }
-        .act-history { background: linear-gradient(135deg, #f97316, #9a3412); }
-
-        /* Secondary Nav Grid */
-        .sec-nav-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 0 20px 20px 20px; }
-        .sec-btn {
-            background: #fff; border: 1px solid #e2e8f0; border-radius: 20px;
-            padding: 15px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px;
-            text-decoration: none; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        .message-header {
+            font-size: 0.75rem;
+            color: #aaa;
+            margin-bottom: 5px;
+            font-weight: bold;
         }
-        .sec-btn:active { transform: scale(0.97); background: #f8fafc; }
-        .sec-icon { width: 42px; height: 42px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
-        .sec-icon svg { width: 24px; height: 24px; stroke-width: 2; }
-        .si-1 { background: #e0e7ff; color: #4338ca; } 
-        .si-2 { background: #dbeafe; color: #1d4ed8; } 
-        .si-3 { background: #d1fae5; color: #047857; } 
-        .si-4 { background: #ffedd5; color: #c2410c; } 
-        .si-5 { background: #fce7f3; color: #be185d; } 
-        .si-6 { background: #f3f4f6; color: #374151; } 
-        .sec-label { font-size: 11px; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: 0.5px; text-align: center; }
-
-        /* News Carousel */
-        .news-frame {
-            margin: 0 20px 25px 20px; height: 140px; background: #fff; border-radius: 20px;
-            border: 1px solid #e2e8f0; overflow: hidden; position: relative;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); display: flex; align-items: center;
+        .agent-msg .message-header {
+            color: #333;
         }
-        .news-track { display: flex; height: 100%; transition: transform 0.5s ease-in-out; width: 100%; }
-        .news-slide {
-            min-width: 100%; height: 100%; display: flex; align-items: center;
-            justify-content: center; padding: 0; box-sizing: border-box; cursor: pointer; text-decoration: none; position: relative;
+
+        /* Option and Input Area */
+        .input-area {
+            width: 100%;
+            max-width: 600px;
+            padding: 15px;
+            background: #111;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
-        .ns-img { width: 100%; height: 100%; object-fit: cover; }
-        .ns-video { width: 100%; height: 100%; object-fit: cover; }
-        .ns-text { padding: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; }
-        .ns-badge { background: #e0e7ff; color: var(--acc); padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
-        .ns-msg { font-size: 16px; font-weight: 700; color: var(--text); line-height: 1.4; }
-
-        /* Tabs & Content */
-        .tab-bar { display: flex; padding: 0 20px; gap: 10px; margin-bottom: 15px; justify-content: space-between; }
-        .tab-pill { flex: 1; padding: 10px 0; border-radius: 12px; background: transparent; border: 1px solid #e2e8f0; color: var(--sub); font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; transition: 0.2s; }
-        .tab-pill.active { background: var(--text); color: #fff; border-color: var(--text); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .content-area { padding: 0 20px; min-height: 300px; }
-
-        /* BOTTOM NAVIGATION BAR */
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px);
-            border-top: 1px solid #e2e8f0; 
-            /* Fixed: Reduced bottom padding to 4px */
-            padding: 8px 20px 4px 20px; 
-            display: flex; justify-content: space-between; align-items: center;
-            z-index: 9000; box-shadow: 0 -5px 20px rgba(0,0,0,0.03);
+        .option-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
-        .b-nav-item {
-            flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
-            cursor: pointer; color: #94a3b8; transition: all 0.3s;
+        .option-button, .support-button {
+            background: rgba(0, 255, 225, 0.2);
+            color: #00ffe1;
+            border: 1px solid #00ffe1;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            font-weight: bold;
         }
-        .b-nav-item.active { color: var(--acc); transform: translateY(-2px); }
-        .b-nav-icon { width: 24px; height: 24px; }
-        .b-nav-icon svg { width: 100%; height: 100%; stroke-width: 2; }
-        .b-nav-item.active .b-nav-icon svg { stroke-width: 2.5; fill: rgba(99, 102, 241, 0.1); }
-        .b-nav-label { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
+        .option-button:hover, .support-button:hover {
+            background: #00ffe1;
+            color: black;
+        }
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+        #user-input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background: #333;
+            color: white;
+            outline: none;
+        }
+        #send-btn {
+            background: #00ffe1;
+            color: black;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #send-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
 
-        /* Notifications Panel */
-        #notif-panel { position: fixed; top: 0; right: -100%; width: 100%; height: 100%; background: #fff; z-index: 9500; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); padding: 20px; }
-        #notif-panel.active { right: 0; }
-        .notif-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; }
-        .notif-item { background: #f8fafc; border-radius: 16px; padding: 15px; margin-bottom: 10px; border: var(--border); position: relative; }
-        .notif-title { font-weight: 700; font-size: 14px; margin-bottom: 5px; color: var(--text); }
-        .notif-msg { font-size: 12px; color: var(--sub); line-height: 1.4; }
-        .notif-btn { display: inline-block; margin-top: 10px; padding: 6px 12px; background: #eef2ff; color: var(--acc); border-radius: 8px; font-size: 11px; font-weight: 700; text-decoration: none; }
+        /* File Upload Styling (Step 3: Verification) */
+        .file-upload-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px dashed #00ffe1;
+            border-radius: 8px;
+        }
+        .file-upload-container input[type="file"] {
+            color: #00ffe1;
+        }
+        .file-upload-container button {
+            background: #ffe100;
+            color: black;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
 
-        /* Helpers */
-        .hidden { display: none !important; }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Confirmation Modal */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.8);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 300px;
+            text-align: center;
+            border: 2px solid #00ffe1;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        .modal-buttons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #confirm-cancel {
+            background: #f44336;
+            color: white;
+        }
+        #confirm-confirm {
+            background: #00ffe1;
+            color: black;
+        }
     </style>
 </head>
 <body>
 
-    <!-- 1. LOADING SCREEN -->
-    <div id="loading-screen">
-        <div id="loading-bg"></div>
-        <div class="load-content">
-            <h2 id="load-msg" style="color:#0f172a">Loading Wallet...</h2>
-            <div class="load-bar-wrap"><div class="load-bar" id="prog-bar"></div></div>
-            <div class="load-txt" id="pct-txt">0%</div>
+    <div id="back-modal" class="modal">
+        <div class="modal-content">
+            <p id="modal-text">Are you sure you want to exit? Your current session will be lost.</p>
+            <div class="modal-buttons">
+                <button id="confirm-cancel">Cancel</button>
+                <button id="confirm-confirm">Confirm</button>
+            </div>
         </div>
     </div>
 
-    <!-- 4. DASHBOARD WRAPPER -->
-    <div id="dashboard-view">
+    <div class="header">
+        <button class="back-btn" onclick="openBackModal()">← Back</button>
+        <div class="header-title">AvicnKnov Agent Chat</div>
+        <div class="language-selector">
+            <button class="lang-btn" id="lang-btn" onclick="toggleLanguage()">Language: Hindi</button>
+        </div>
+    </div>
+
+    <div id="chat-container" class="chat-container">
+        </div>
+
+    <div class="input-area">
+        <div class="option-buttons" id="initial-options">
+            </div>
         
-        <!-- HOME VIEW (Active Default) -->
-        <div id="view-home" class="main-view active">
-            <!-- Header (Attached to Home) -->
-            <div class="dash-header">
-                <div class="profile-btn" onclick="location.href='wallet-profile.html'">
-                    <img id="dash-profile-img" src="" class="profile-img">
-                </div>
-                <div class="nav-toggle-container">
-                    <div class="nav-toggle">
-                        <div class="nav-opt active" onclick="location.reload()">Wallet</div>
-                        <div class="nav-opt" onclick="WalletApp.goToExchange()">Exchange</div>
-                    </div>
-                </div>
-                <div class="header-icons">
-                    <div class="icon-btn" onclick="location.href='help.html'">?</div>
-                    <div class="icon-btn" onclick="WalletApp.toggleNotif()">🔔<div class="notif-badge" id="notif-dot"></div></div>
-                </div>
-            </div>
-
-            <!-- Home Content -->
-            <div class="bal-card">
-                <select class="curr-sel" id="curr-switch" onchange="WalletApp.updateBalanceDisplay()">
-                    <option value="INR" selected>INR</option>
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                </select>
-                <div class="bal-label">Total Balance</div>
-                <div class="bal-amount" id="dash-balance">₹0.00</div>
-                <div class="addr-box">
-                    <span class="addr-txt" id="dash-addr">Loading...</span>
-                    <span style="cursor:pointer; color:#fff;" onclick="WalletApp.copyText('dash-addr')">📋</span>
-                </div>
-            </div>
-
-            <div class="action-grid">
-                <div class="act-btn act-deposit" onclick="location.href='deposit.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>Deposit</div>
-                <div class="act-btn act-withdraw" onclick="location.href='withdrawal.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>Withdraw</div>
-                <div class="act-btn act-history" onclick="location.href='transaction.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>History</div>
-            </div>
-
-            <div class="sec-nav-grid">
-                <a href="wallet-nex.html" class="sec-btn"><div class="sec-icon si-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><span class="sec-label">WALLET&NEX</span></a>
-                <a href="AVINQ.html" class="sec-btn"><div class="sec-icon si-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg></div><span class="sec-label">AVINQ</span></a>
-                <a href="trade.html" class="sec-btn"><div class="sec-icon si-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span class="sec-label">TRADE</span></a>
-                <a href="event.html" class="sec-btn"><div class="sec-icon si-4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><span class="sec-label">EVENT</span></a>
-                <a href="smart-adix.html" class="sec-btn"><div class="sec-icon si-5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/><path d="M8.5 8.5v.01"/><path d="M16 16v.01"/><path d="M12 12v.01"/></svg></div><span class="sec-label">SMART&ADIX</span></a>
-                <a href="more.html" class="sec-btn"><div class="sec-icon si-6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></div><span class="sec-label">MORE</span></a>
-            </div>
-
-            <div class="news-frame">
-                <div id="news-track" class="news-track"><!-- JS Injected --></div>
-            </div>
-
-            <div class="tab-bar">
-                <div class="tab-pill active" onclick="WalletApp.switchTab('all')">All Assets</div>
-                <div class="tab-pill" onclick="WalletApp.switchTab('crypto')">Crypto</div>
-                <div class="tab-pill" onclick="WalletApp.switchTab('spot')">Spot</div>
-                <div class="tab-pill" onclick="WalletApp.switchTab('holdings')">Holdings</div>
-            </div>
-
-            <div id="wallet-content" class="content-area">
-                <div id="all"></div>
-                <div id="crypto" style="display:none"></div>
-                <div id="spot" style="display:none"></div>
-                <div id="holdings" style="display:none"></div>
-            </div>
+        <div id="file-upload-section" class="file-upload-container" style="display:none;">
+            <input type="file" id="verification-file" accept="video/*, image/*, .pdf">
+            <button id="upload-btn" onclick="handleFileUpload()">Upload and Send</button>
+            <span id="upload-status" style="color:#ffe100; text-align:center;"></span>
         </div>
 
-        <!-- MARKET VIEW (Connector for wallet-market.js) -->
-        <div id="view-market" class="main-view">
-            <!-- wallet-market.js will inject content here if ID matches its config -->
-            <div id="market-root" style="padding-top:20px;"></div> 
+        <div class="chat-input">
+            <input type="text" id="user-input" placeholder="Type your message, ID or password here...">
+            <button id="send-btn" onclick="handleUserInput()">Send</button>
         </div>
-
-        <!-- TRADE VIEW (Connector for wallet-trade.js) -->
-        <div id="view-trade" class="main-view">
-            <!-- wallet-trade.js will inject content here -->
-            <div id="trade-root" style="padding-top:20px;"></div>
-        </div>
-
-        <!-- PRO VIEW (Connector for wallet-pro.js) -->
-        <div id="view-pro" class="main-view">
-            <!-- wallet-pro.js will inject content here -->
-            <div id="pro-root" style="padding-top:20px;"></div>
-        </div>
-
-        <!-- BOTTOM NAVIGATION -->
-        <div class="bottom-nav">
-            <div class="b-nav-item active" id="nav-home" onclick="WalletApp.switchBottomNav('home')">
-                <div class="b-nav-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                </div>
-                <span class="b-nav-label">Home</span>
-            </div>
-            <div class="b-nav-item" id="nav-market" onclick="WalletApp.switchBottomNav('market')">
-                <div class="b-nav-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-                </div>
-                <span class="b-nav-label">Market</span>
-            </div>
-            <div class="b-nav-item" id="nav-trade" onclick="WalletApp.switchBottomNav('trade')">
-                <div class="b-nav-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-                </div>
-                <span class="b-nav-label">Trade</span>
-            </div>
-            <div class="b-nav-item" id="nav-pro" onclick="WalletApp.switchBottomNav('pro')">
-                <div class="b-nav-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                </div>
-                <span class="b-nav-label">Wallet&Pro</span>
-            </div>
-        </div>
-
     </div>
-
-    <!-- 5. NOTIFICATION PANEL -->
-    <div id="notif-panel">
-        <div class="notif-header">
-            <h2 style="color:var(--text)">Notifications</h2>
-            <button class="close-btn" onclick="WalletApp.toggleNotif()">×</button>
-        </div>
-        <div id="notif-list"></div>
-    </div>
-
-    <!-- SCRIPTS -->
-    <!-- Home Tab Scripts -->
-    <script src="wallet-all.js"></script>
-    <script src="wallet-crypto.js"></script>
-    <script src="wallet-spot.js"></script>
-    <script src="wallet-holding.js"></script>
-    
-    <!-- External Module Scripts -->
-    <script src="wallet-market.js"></script>
-    <script src="wallet-trade.js"></script>
-    <script src="wallet-pro.js"></script>
 
     <script>
-    /* ==========================================================
-       PREMIUM WALLET LOGIC + NEWS ENGINE + BOTTOM NAV
-       ========================================================== */
-    const CONFIG = {
-        SUPA_URL: 'https://hwrvqyipozrsxyjdpqag.supabase.co',
-        SUPA_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM',
-        BUCKET: 'user-wallet-image',
-        NEWS_TABLE: 'wallet_news'
-    };
+        // Supabase Credentials
+        const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const supa = supabase.createClient(CONFIG.SUPA_URL, CONFIG.SUPA_KEY);
+        // --- START NEW CODE BLOCK: Edge Function Configuration ---
+        const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/create-phone-user`; 
+        // --- END NEW CODE BLOCK ---
 
-    const WalletApp = {
-        user: null,
-        profile: null,
-        balanceData: null,
-        baseBalance: 0,
-        tempImageFile: null,
-        generatedRecoveryId: '',
-        
-        // News State
-        newsData: [],
-        currentSlide: 0,
-        newsInterval: null,
-        
-        // --- INIT ---
-        async init() {
-            const { data: { user } } = await supa.auth.getUser();
-            if(!user) { alert("Please log in first"); return; }
-            this.user = user;
+        // Constants
+        const USER_DETAILS_TABLE = 'user-details';
+        const USER_VERIFY_TABLE = 'user-verify';
+        const VERIFY_BUCKET = 'user-verify-number';
+        const MAX_ERRORS = 3;
 
-            // Fetch Profile - Logic simplified for auto-created wallets
-            const { data } = await supa.from('wallet_user_profile')
-                .select('*')
-                .eq('uid', user.id)
-                .neq('status', 'deleted') 
-                .order('created_at', { ascending: true })
-                .limit(1)
-                .maybeSingle();
+        // State Variables
+        let language = 'Hindi'; // Default language
+        let userName = 'User';
+        let currentStep = 'START'; // START, AWAITING_ID_VERIFY, AWAITING_FILE, AWAITING_ID_FORGOT, AWAITING_NEW_PASS, AWAITING_TRY_AGAIN
+        let selectedAction = null; // VERIFY or FORGOT
+        let errorCount = 0;
+        let lastErrorTime = 0;
+        let currentWTQId = null; // Stored WTQ ID for flow continuity
 
-            if (data) {
-                this.profile = data;
-                this.loadDashboard();
-            } else {
-                // If profile is missing (Old User Case), user will instruct later.
-                // For now, load dashboard with placeholders to prevent stuck state
-                this.profile = { full_name: 'User', username: 'user', wallet_name: 'Main Wallet', profile_image_url: null };
-                this.loadDashboard();
+        // --- Localization Strings (L10N) ---
+        const L = {
+            Hindi: {
+                agentName: 'AvicnKnov Agent',
+                initialMsg: (name) => `नमस्ते, ${name}! मैं आपकी क्या मदद कर सकता हूँ? कृपया नीचे दिए गए विकल्पों में से चुनें या चैट में लिखें।`,
+                optionVerify: 'Verify Account Number',
+                optionForgot: 'Forgot Password',
+                promptIDVerify: 'कृपया अपनी 12-अक्षर की **WTQ ID** सबमिट करें जो आपको अकाउंट बनाते समय मिली थी।',
+                promptIDForgot: 'कृपया अपनी 12-अक्षर की **WTQ ID** सबमिट करें ताकि मैं आपका अकाउंट ढूंढ सकूँ।',
+                wait: 'कृपया 5 सेकंड का इंतज़ार करें। मैं WTQ ID को चेक कर रहा हूँ...',
+                idNotFound: '❌ माफ़ करें, यह WTQ ID सिस्टम में नहीं मिली। कृपया WTQ ID को कॉपी करके दोबारा सबमिट करें या "try again" लिखें।',
+                idNotVerified: '❌ माफ़ करें, यह ID सत्यापित नहीं है। यह ID `user-verify` टेबल में है, लेकिन वेरिफिकेशन की प्रक्रिया पूरी नहीं हुई है। "try again" लिखें या अपनी सही WTQ ID सबमिट करें।',
+                promptFileUpload: 'WTQ ID सत्यापित हो गई है। अब, भविष्य की रिकवरी के लिए कृपया अपना **7 सेकंड का लाइव वीडियो, कोई दस्तावेज़ या आईडी कार्ड** नीचे अपलोड करें।',
+                waitFile: 'कृपया 5 सेकंड का इंतज़ार करें। मैं आपका दस्तावेज़ चेक कर रहा हूँ...',
+                fileUploadSuccess: '✅ दस्तावेज़ सफलतापूर्वक चेक कर लिया गया है।',
+                verifySuccess: (time) => `आपका अकाउंट सफलतापूर्वक **सत्यापित** हो गया है। आपको ${time} सेकंड में लॉगिन पेज पर रीडायरेक्ट किया जाएगा।`,
+                verifyWarning: 'ध्यान दें: आपका अकाउंट 72 घंटों के लिए हमारी टीम की निगरानी में रहेगा। यदि कोई गलत गतिविधि पाई जाती है तो अकाउंट स्थायी रूप से बंद किया जा सकता है।',
+                forgotWaitPass: 'कृपया 5 सेकंड का इंतज़ार करें। मैं आपका पासवर्ड बदल रहा हूँ...',
+                forgotPromptNewPass: 'आपकी ID सत्यापित है। कृपया 8 से 16 अंकों के बीच एक **मज़बूत नया पासवर्ड** लिखकर भेजें।',
+                forgotSuccess: (pass) => `✅ आपका पासवर्ड सफलतापूर्वक बदल दिया गया है। नया पासवर्ड: **${pass}**। आपको 7 सेकंड में लॉगिन पेज पर रीडायरेक्ट किया जाएगा। इसे कॉपी करके सुरक्षित रखें।`,
+                forgotPasswordCopy: 'Copy Password',
+                idRecoveryMsg: 'WTQ ID भूल गए? कोई बात नहीं।',
+                idRecoveryButton: 'WTQ ID रिकवरी सपोर्ट',
+                idRecoverySupportNote: 'इस विकल्प पर क्लिक करें और अपनी समस्या रिपोर्ट करें। आपको खाता बनाते समय दिए गए दस्तावेज़/वीडियो को सबमिट करना होगा ताकि टीम आपकी पहचान सत्यापित करके आपकी WTQ ID आपके संपर्क ईमेल/नंबर पर भेज सके।',
+                errorInvalidOption: 'कृपया एक वैध विकल्प चुनें या चैट में "Verify Account" या "Forgot Password" लिखें।',
+                errorGeneral: (msg) => `❌ एक त्रुटि हुई: ${msg}। कृपया "try again" लिखें।`,
+                errorMaxAttempts: '❌ लगातार 3 गलत प्रयासों के कारण, मैं आपकी मदद नहीं कर सकता।',
+                errorSupport: 'कृपया नीचे दिए गए सपोर्ट लिंक का उपयोग करके अपनी समस्या रिपोर्ट करें।',
+                promptTryAgain: '❌ माफ़ करें, कृपया अपनी समस्या का समाधान करने के लिए **सही WTQ ID** या **"try again"** लिखें।',
+                promptTryAgainRecover: 'कृपया "try again" लिखें या अपनी समस्या बताएं।',
+                backModal: 'क्या आप वाकई बाहर निकलना चाहते हैं? आपका वर्तमान सत्र समाप्त हो जाएगा।',
+                cancel: 'Cancel',
+                confirm: 'Confirm',
+                uploadFile: 'अपलोड और भेजें',
+                userInputPlaceholder: 'अपना मैसेज, ID या पासवर्ड यहाँ टाइप करें...',
+                send: 'भेजें',
+                backBtnText: '← Back',
+                langBtnText: 'Language: Hindi'
+            },
+            English: {
+                agentName: 'AvicnKnov Agent',
+                initialMsg: (name) => `Hello, ${name}! How may I assist you? Please select an option below or type in the chat.`,
+                optionVerify: 'Verify Account Number',
+                optionForgot: 'Forgot Password',
+                promptIDVerify: 'Please submit your 12-character **WTQ ID** that you received during account creation.',
+                promptIDForgot: 'Please submit your 12-character **WTQ ID** so I can locate your account.',
+                wait: 'Please wait for 5 seconds. I am checking the WTQ ID...',
+                idNotFound: '❌ Sorry, this WTQ ID was not found in the system. Please submit the correct ID or type "try again".',
+                idNotVerified: '❌ Sorry, this ID is not verified. This ID is in the `user-verify` table, but the verification process is incomplete. Type "try again" or submit your correct WTQ ID.',
+                promptFileUpload: 'WTQ ID verified. Now, please upload your **7-second live video, a document, or an ID card** below for future recovery purposes.',
+                waitFile: 'Please wait for 5 seconds. I am checking your document...',
+                fileUploadSuccess: '✅ Document successfully checked.',
+                verifySuccess: (time) => `Your account has been successfully **Verified**. You will be redirected to the login page in ${time} seconds.`,
+                verifyWarning: 'Note: Your account will be under surveillance by our team for 72 hours. If any fraudulent activity is found, the account may be permanently suspended.',
+                forgotWaitPass: 'Please wait for 5 seconds. I am changing your password...',
+                forgotPromptNewPass: 'Your ID is verified. Please type and send a **strong new password** between 8 and 16 characters.',
+                forgotSuccess: (pass) => `✅ Your password has been successfully changed. New Password: **${pass}**. You will be redirected to the login page in 7 seconds. Copy and keep it safe.`,
+                forgotPasswordCopy: 'Copy Password',
+                idRecoveryMsg: 'Forgot your WTQ ID? No worries.',
+                idRecoveryButton: 'WTQ ID Recovery Support',
+                idRecoverySupportNote: 'Click this option and report your issue. You will need to submit the document/video provided during account creation so the team can verify your identity and send your WTQ ID to your contact email/number.',
+                errorInvalidOption: 'Please select a valid option or type "Verify Account" or "Forgot Password" in the chat.',
+                errorGeneral: (msg) => `❌ An error occurred: ${msg}s. Please type "try again".`,
+                errorMaxAttempts: '❌ Due to 3 consecutive incorrect attempts, I cannot assist you further.',
+                errorSupport: 'Please use the Support link below to report your issue.',
+                promptTryAgain: '❌ Sorry, please type the **correct WTQ ID** or **"try again"** to resolve your issue.',
+                promptTryAgainRecover: 'Please type "try again" or describe your issue.',
+                backModal: 'Are you sure you want to exit? Your current session will be lost.',
+                cancel: 'Cancel',
+                confirm: 'Confirm',
+                uploadFile: 'Upload and Send',
+                userInputPlaceholder: 'Type your message, ID or password here...',
+                send: 'Send',
+                backBtnText: '← Back',
+                langBtnText: 'Language: English'
             }
-        },
+        };
 
-        // --- NAVIGATION LOGIC ---
-        switchBottomNav(viewId) {
-            // 1. Hide all main views
-            document.querySelectorAll('.main-view').forEach(v => v.classList.remove('active'));
-            // 2. Show target view
-            document.getElementById(`view-${viewId}`).classList.add('active');
-            
-            // 3. Update Bottom Nav UI
-            document.querySelectorAll('.b-nav-item').forEach(i => i.classList.remove('active'));
-            document.getElementById(`nav-${viewId}`).classList.add('active');
+        // --- Core Functions ---
+        // ... (rest of the core functions remain unchanged)
 
-            // 4. Scroll to top
-            window.scrollTo(0, 0);
-        },
-
-        // --- DASHBOARD LOGIC (Home View) ---
-        async loadDashboard() {
-            document.getElementById('dashboard-view').style.display = 'block';
-            
-            // Ensure Home is active by default
-            this.switchBottomNav('home');
-
-            if(this.profile.profile_image_url) document.getElementById('dash-profile-img').src = this.profile.profile_image_url;
-
-            // FIX: Use maybeSingle() for balance as well
-            const { data: balData } = await supa.from('user_wallet_balance')
-                .select('*')
-                .eq('uid', this.user.id)
-                .limit(1)
-                .maybeSingle();
-                
-            if(balData) {
-                this.baseBalance = Number(balData.balance);
-                document.getElementById('dash-addr').innerText = balData.wallet_address;
-                this.updateBalanceDisplay();
+        function getL(key, value) {
+            const str = L[language][key];
+            if (typeof str === 'function') {
+                return str(value);
             }
-
-            this.loadNotifications();
-            this.initNewsSystem(); 
-        },
-
-        // --- FORMS ---
-        closeForms() { document.querySelectorAll('.form-screen').forEach(el => el.style.display = 'none'); },
-
-        updateBalanceDisplay() {
-            const curr = document.getElementById('curr-switch').value;
-            let val = this.baseBalance;
-            let sym = '₹';
-            if(curr === 'USD') { val = val * 0.012; sym = '$'; }
-            if(curr === 'EUR') { val = val * 0.011; sym = '€'; }
-            document.getElementById('dash-balance').innerText = sym + val.toLocaleString('en-US', {minimumFractionDigits: 2});
-        },
-
-        // --- NEWS CAROUSEL SYSTEM ---
-        async initNewsSystem() {
-            const { data } = await supa.from(CONFIG.NEWS_TABLE).select('*').eq('is_active', true).order('sort_order');
-            if(data && data.length > 0) {
-                this.newsData = data;
-                this.renderNews();
-                if(data.length > 1) this.startNewsTimer();
-            } else {
-                document.querySelector('.news-frame').style.display = 'none';
-            }
-        },
-
-        renderNews() {
-            const track = document.getElementById('news-track');
-            track.innerHTML = '';
-            
-            this.newsData.forEach(item => {
-                let content = '';
-                let clickAttr = item.action_url ? `onclick="location.href='${item.action_url}'"` : '';
-                
-                if (item.type === 'image') {
-                    content = `<img src="${item.content_url}" class="ns-img">`;
-                } else if (item.type === 'video') {
-                    content = `<video src="${item.content_url}" class="ns-video" controls onplay="WalletApp.pauseNews()" onended="WalletApp.resumeNews()"></video>`;
-                    clickAttr = ''; 
-                } else if (item.type === 'text') {
-                    content = `
-                        <div class="ns-text">
-                            <span class="ns-badge">NEWS</span>
-                            <span class="ns-msg">${item.text_content}</span>
-                        </div>`;
-                }
-
-                const slide = document.createElement('div');
-                slide.className = 'news-slide';
-                slide.innerHTML = content;
-                if(clickAttr && item.type !== 'video') {
-                    slide.setAttribute('onclick', `location.href='${item.action_url}'`);
-                }
-                track.appendChild(slide);
-            });
-        },
-
-        startNewsTimer() {
-            this.clearNewsTimer();
-            this.newsInterval = setInterval(() => {
-                this.nextSlide();
-            }, 8000); // 8 Seconds
-        },
-
-        clearNewsTimer() { if(this.newsInterval) clearInterval(this.newsInterval); },
-        pauseNews() { this.clearNewsTimer(); },
-        resumeNews() { this.nextSlide(); this.startNewsTimer(); },
-
-        nextSlide() {
-            this.currentSlide = (this.currentSlide + 1) % this.newsData.length;
-            const track = document.getElementById('news-track');
-            track.style.transform = `translateX(-${this.currentSlide * 100}%)`;
-        },
-
-        // --- NOTIFICATIONS & TABS ---
-        async loadNotifications() {
-            const { data } = await supa.from('wallet_notification').select('*').or(`target_uid.eq.${this.user.id},target_uid.is.null`).order('created_at', { ascending: false });
-            const list = document.getElementById('notif-list');
-            list.innerHTML = '';
-            if(data && data.length > 0) {
-                document.getElementById('notif-dot').style.display = 'block';
-                data.forEach(n => {
-                    const btn = n.platform_url ? `<a href="${n.platform_url}" target="_blank" class="notif-btn">Open ${n.platform_name || 'Link'}</a>` : '';
-                    list.innerHTML += `<div class="notif-item"><div class="notif-title">${n.title}</div><div class="notif-msg">${n.message}</div>${btn}</div>`;
-                });
-            } else { list.innerHTML = '<div style="text-align:center; color:#64748b; padding:20px;">No notifications</div>'; }
-        },
-
-        toggleNotif() { document.getElementById('notif-panel').classList.toggle('active'); },
-
-        switchTab(tabId) {
-            document.querySelectorAll('.tab-pill').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
-            ['all', 'crypto', 'spot', 'holdings'].forEach(id => document.getElementById(id).style.display = 'none');
-            document.getElementById(tabId).style.display = 'block';
-        },
-
-        goToExchange() { document.body.style.opacity = '0'; setTimeout(() => location.href = 'assets.html', 300); },
-
-        // --- UTILS ---
-        generateId(len) { return Array(len).fill(0).map(()=>'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random()*36)]).join(''); },
-        generateAddress() { return '0x' + Array(28).fill(0).map(()=>'abcdef0123456789'[Math.floor(Math.random()*16)]).join(''); },
-        copyText(id) { navigator.clipboard.writeText(document.getElementById(id).innerText).then(()=>alert("Copied!")); },
-
-        startLoadingSequence(cb) {
-            const s=document.getElementById('loading-screen'), b=document.getElementById('loading-bg'), t=document.getElementById('pct-txt'), p=document.getElementById('prog-bar');
-            s.style.display='flex';
-            let pr=0; const int = setInterval(() => {
-                pr+=5; p.style.width=pr+'%'; t.innerText=pr+'%';
-                if(pr>=100) { clearInterval(int); cb(); }
-            }, 100);
+            return str;
         }
-    };
+        // ... (rest of the core functions remain unchanged)
 
-    window.onload = () => WalletApp.init();
+
+        // Add a message to the chat container
+        function addMessage(sender, content) {
+            const chatContainer = document.getElementById('chat-container');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message-bubble ${sender === 'Agent' ? 'agent-msg' : 'user-msg'}`;
+            
+            const header = document.createElement('div');
+            header.className = 'message-header';
+            header.textContent = sender === 'Agent' ? getL('agentName') : userName;
+            
+            const text = document.createElement('p');
+            text.innerHTML = content;
+            
+            msgDiv.appendChild(header);
+            msgDiv.appendChild(text);
+            chatContainer.appendChild(msgDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Show/Hide initial options (Verify/Forgot)
+        function toggleInitialOptions(show) {
+            const optionsDiv = document.getElementById('initial-options');
+            optionsDiv.innerHTML = '';
+            
+            if (show) {
+                const verifyBtn = document.createElement('button');
+                verifyBtn.className = 'option-button';
+                verifyBtn.textContent = getL('optionVerify');
+                verifyBtn.onclick = () => handleActionSelection('VERIFY');
+                
+                const forgotBtn = document.createElement('button');
+                forgotBtn.className = 'option-button';
+                forgotBtn.textContent = getL('optionForgot');
+                forgotBtn.onclick = () => handleActionSelection('FORGOT');
+
+                optionsDiv.appendChild(verifyBtn);
+                optionsDiv.appendChild(forgotBtn);
+            }
+        }
+
+        // Handles selection from buttons or chat input
+        function handleActionSelection(action) {
+            const command = action === 'VERIFY' ? getL('optionVerify') : getL('optionForgot');
+            addMessage('User', command);
+
+            selectedAction = action;
+            toggleInitialOptions(false);
+            errorCount = 0;
+
+            if (action === 'VERIFY') {
+                currentStep = 'AWAITING_ID_VERIFY';
+                addMessage('Agent', getL('promptIDVerify'));
+            } else if (action === 'FORGOT') {
+                currentStep = 'AWAITING_ID_FORGOT';
+                addMessage('Agent', getL('promptIDForgot'));
+            }
+        }
+
+        // Displays support button and max error message
+        function showSupportOption(messageKey) {
+            const optionsDiv = document.getElementById('initial-options');
+            optionsDiv.innerHTML = ''; 
+            
+            addMessage('Agent', getL(messageKey));
+            
+            const supportBtn = document.createElement('button');
+            supportBtn.className = 'support-button';
+            supportBtn.textContent = getL('errorSupport');
+            supportBtn.onclick = () => window.location.href = "support.html";
+            optionsDiv.appendChild(supportBtn);
+
+            // Reset state
+            currentStep = 'END';
+            selectedAction = null;
+        }
+
+        // Handles main chat input logic
+        async function handleUserInput() {
+            const inputField = document.getElementById('user-input');
+            let input = inputField.value.trim();
+            inputField.value = '';
+            
+            if (!input) return;
+
+            addMessage('User', input);
+            const lowerInput = input.toLowerCase();
+            
+            // Handle Language/Error commands
+            if (lowerInput === 'try again' || lowerInput === getL('promptTryAgainRecover').toLowerCase()) {
+                startChat(); 
+                return;
+            } 
+            if (lowerInput.includes('wtq id') || lowerInput.includes('id bhul gaya') || lowerInput.includes('recover id')) {
+                 addWTQRecoveryOption();
+                 return;
+            }
+            if (currentStep === 'START') {
+                if (lowerInput.includes('verify account') || lowerInput.includes('satyapan')) {
+                    handleActionSelection('VERIFY');
+                } else if (lowerInput.includes('forgot password') || lowerInput.includes('password bhul')) {
+                    handleActionSelection('FORGOT');
+                } else {
+                    addMessage('Agent', getL('errorInvalidOption'));
+                }
+                return;
+            }
+
+            // --- Error Handling ---
+            if (errorCount >= MAX_ERRORS) {
+                showSupportOption('errorMaxAttempts');
+                return;
+            }
+            
+            // --- Steps Logic ---
+            if (selectedAction === 'VERIFY') {
+                await handleVerifyFlow(input);
+            } else if (selectedAction === 'FORGOT') {
+                await handleForgotFlow(input);
+            } else {
+                addMessage('Agent', getL('errorInvalidOption'));
+            }
+        }
+
+        // --- Verification Flow ---
+        async function handleVerifyFlow(input) {
+            if (currentStep === 'AWAITING_ID_VERIFY') {
+                const wtqId = input.toUpperCase();
+                if (wtqId.length !== 12) {
+                    return handleGeneralError(getL('promptTryAgain'), 1);
+                }
+                
+                addMessage('Agent', getL('wait'));
+                
+                // 1. Check ID in user-verify table (FIXED: using maybeSingle() to prevent 406 error)
+                const { data: user, error: verifyError } = await sb
+                    .from(USER_VERIFY_TABLE)
+                    .select('*')
+                    .eq('wtq_id', wtqId)
+                    .maybeSingle();
+
+                if (verifyError) {
+                    return handleGeneralError(getL('errorGeneral', verifyError.message), 1);
+                }
+
+                if (!user) {
+                    return handleGeneralError(getL('idNotFound'), 1);
+                }
+
+                // Check if already verified
+                if (user.is_verified) {
+                    return handleGeneralError("❌ This account is already verified. Please go to the login page.", 3);
+                }
+                
+                // ID Found - Move to File Upload
+                currentWTQId = wtqId; // Store WTQ ID
+                currentStep = 'AWAITING_FILE';
+                addMessage('Agent', getL('promptFileUpload'));
+                document.getElementById('file-upload-section').style.display = 'flex';
+                errorCount = 0; // Reset error count on successful ID validation
+
+            } else if (currentStep === 'AWAITING_FILE') {
+                // User types something instead of uploading
+                handleGeneralError("❌ Please upload the document/video using the file selector above, or type 'try again'.", 1);
+            }
+        }
+
+        // Handles file upload for verification
+        async function handleFileUpload() {
+            const fileInput = document.getElementById('verification-file');
+            const uploadStatus = document.getElementById('upload-status');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                uploadStatus.textContent = 'Please select a file first.';
+                return;
+            }
+            if (!currentWTQId) {
+                uploadStatus.textContent = 'WTQ ID missing. Please type "try again" to restart.';
+                return;
+            }
+
+            uploadStatus.textContent = getL('waitFile');
+            document.getElementById('upload-btn').disabled = true;
+
+            const fileName = `${selectedAction}_${currentWTQId}_${Date.now()}_${file.name}`;
+            
+            // 1. Upload to Supabase Storage Bucket
+            const { error: uploadError } = await sb.storage
+                .from(VERIFY_BUCKET)
+                .upload(fileName, file);
+
+            if (uploadError) {
+                uploadStatus.textContent = `❌ Upload failed: ${uploadError.message}`;
+                document.getElementById('upload-btn').disabled = false;
+                return handleGeneralError('File upload failed. Please try again.', 1);
+            }
+
+            // 2. Simulate document check and final verification
+            setTimeout(async () => {
+                uploadStatus.textContent = getL('fileUploadSuccess');
+                document.getElementById('file-upload-section').style.display = 'none';
+
+                // Get user details from user-verify table
+                const { data: userDetails, error: fetchError } = await sb
+                    .from(USER_VERIFY_TABLE)
+                    .select('*')
+                    .eq('wtq_id', currentWTQId)
+                    .maybeSingle(); 
+
+                if (fetchError || !userDetails) {
+                    return handleGeneralError('Internal error: Could not fetch user data for final verification.', 3);
+                }
+                
+                // -------------------------------------------------------------
+                // 🚀 START EDGE FUNCTION CALL FIX: SYNC WITH SUPABASE AUTH 
+                // Fix: Added the Authorization Header with Anon Key for basic security check
+                // and ensured Content-Type is set.
+                // -------------------------------------------------------------
+                
+                try {
+                    const response = await fetch(EDGE_FUNCTION_URL, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_KEY}` // Using Anon Key 
+                        },
+                        body: JSON.stringify({ 
+                            phoneNumber: userDetails.phone_number, 
+                            password: userDetails.password_hash   
+                        })
+                    });
+
+                    const syncData = await response.json();
+
+                    if (response.ok) {
+                        console.log("Supabase Auth Sync SUCCESS. UID:", syncData.uid);
+                    } else {
+                        console.error("Supabase Auth Sync ERROR:", syncData.error);
+                        // WARNING: Sync failed, but we continue to finalize custom tables.
+                        console.warn("WARNING: Supabase Auth Sync failed. User may experience login issues. Error:", syncData.error);
+                    }
+                } catch (syncError) {
+                    console.error("Network Error calling Edge Function:", syncError);
+                    // Critical Error Handling: If network fails, prompt user to try again
+                    return handleGeneralError('Verification sync failed due to network error. Please try again.', 3);
+                }
+
+                // -------------------------------------------------------------
+                // 🚀 END EDGE FUNCTION CALL FIX
+                // -------------------------------------------------------------
+
+                // 3. Move data from user-verify to user-details (Insert)
+                const { error: insertError } = await sb
+                    .from(USER_DETAILS_TABLE)
+                    .insert([{
+                        phone_number: userDetails.phone_number,
+                        password: userDetails.password_hash, 
+                        wtq_id: userDetails.wtq_id,
+                        full_name: userDetails.full_name,
+                        username: userDetails.username,
+                        country: userDetails.country,
+                        gender: userDetails.gender,
+                        dob: userDetails.dob,
+                    }]);
+                
+                if (insertError) {
+                    if (insertError.code === '23505') { 
+                        addMessage('Agent', 'Account was already verified, but process was not finalized. Finalizing...');
+                    } else {
+                        return handleGeneralError(`Finalization failed: ${insertError.message}`, 3);
+                    }
+                }
+                
+                // 4. Update the user-verify table to mark it verified
+                const { error: updateError } = await sb
+                    .from(USER_VERIFY_TABLE)
+                    .update({ is_verified: true })
+                    .eq('wtq_id', currentWTQId);
+                
+                if (updateError) {
+                    console.warn("Could not update user-verify table:", updateError.message);
+                }
+
+                // 5. Final Message and Redirect
+                addMessage('Agent', getL('verifyWarning'));
+                addMessage('Agent', getL('verifySuccess', 7));
+                
+                setTimeout(() => {
+                    window.location.href = "index.html";
+                }, 7000);
+
+            }, 5000); 
+        }
+
+        // --- Forgot Password Flow ---
+        async function handleForgotFlow(input) {
+            if (currentStep === 'AWAITING_ID_FORGOT') {
+                const wtqId = input.toUpperCase();
+                if (wtqId.length !== 12) {
+                    return handleGeneralError(getL('promptTryAgain'), 1);
+                }
+                
+                addMessage('Agent', getL('wait'));
+                
+                // 1. Check ID in user-details table (must be verified to change password) (FIXED: using maybeSingle())
+                const { data: user, error: detailsError } = await sb
+                    .from(USER_DETAILS_TABLE)
+                    .select('wtq_id, password')
+                    .eq('wtq_id', wtqId)
+                    .maybeSingle();
+
+                if (detailsError) {
+                    return handleGeneralError(getL('errorGeneral', detailsError.message), 1);
+                }
+
+                if (!user) {
+                    return handleGeneralError(getL('idNotFound'), 1);
+                }
+
+                currentWTQId = wtqId; // Store ID for next step
+                currentStep = 'AWAITING_NEW_PASS';
+                addMessage('Agent', getL('forgotPromptNewPass'));
+                errorCount = 0; 
+
+            } else if (currentStep === 'AWAITING_NEW_PASS') {
+                const newPass = input;
+                if (newPass.length < 8 || newPass.length > 16) {
+                    return handleGeneralError('Password must be between 8 and 16 characters. Please try again.', 1);
+                }
+                
+                addMessage('Agent', getL('forgotWaitPass'));
+
+                // 2. Update password in user-details table
+                const { error: updateError } = await sb
+                    .from(USER_DETAILS_TABLE)
+                    .update({ password: newPass }) // IMPORTANT: Should be hashed!
+                    .eq('wtq_id', currentWTQId);
+
+                if (updateError) {
+                    return handleGeneralError(`Password change failed: ${updateError.message}`, 3);
+                }
+                
+                // 3. Success and Redirect
+                const successMsg = `
+                    ${getL('forgotSuccess', newPass)} 
+                    <div style="margin-top:10px; display:flex; justify-content:center;">
+                        <button onclick="copyPassword('${newPass}')" class="support-button">${getL('forgotPasswordCopy')}</button>
+                    </div>
+                `;
+                addMessage('Agent', successMsg);
+                
+                setTimeout(() => {
+                    window.location.href = "index.html";
+                }, 7000);
+            }
+        }
+        
+        // --- Utility Functions ---
+
+        function handleGeneralError(message, countToAdd) {
+            const now = Date.now();
+            if (now - lastErrorTime < 1000) return; 
+            lastErrorTime = now;
+
+            errorCount += countToAdd;
+            if (errorCount >= MAX_ERRORS) {
+                showSupportOption('errorMaxAttempts');
+            } else {
+                addMessage('Agent', message);
+            }
+        }
+
+        // Adds WTQ ID recovery option
+        function addWTQRecoveryOption() {
+            const recoveryMsg = `
+                <p>${getL('idRecoveryMsg')}</p>
+                <div style="margin-top:10px;">
+                    <button onclick="window.location.href='support.html'" class="support-button">${getL('idRecoveryButton')}</button>
+                </div>
+                <p style="font-size:0.8rem; margin-top:10px;">${getL('idRecoverySupportNote')}</p>
+            `;
+            addMessage('Agent', recoveryMsg);
+        }
+
+        function copyPassword(pass) {
+            navigator.clipboard.writeText(pass)
+                .then(() => alert("Password copied!"))
+                .catch(err => console.error('Could not copy text: ', err));
+        }
+
+        function toggleLanguage() {
+            language = (language === 'Hindi' ? 'English' : 'Hindi');
+            document.getElementById('lang-btn').textContent = getL('langBtnText');
+            startChat(true); 
+        }
+
+        // Back Button Logic
+        function openBackModal() {
+            document.getElementById('back-modal').style.display = 'flex';
+            document.getElementById('modal-text').textContent = getL('backModal');
+            document.getElementById('confirm-cancel').textContent = getL('cancel');
+            document.getElementById('confirm-confirm').textContent = getL('confirm');
+        }
+
+        function closeBackModal() {
+            document.getElementById('back-modal').style.display = 'none';
+        }
+
+        document.getElementById('confirm-cancel').onclick = closeBackModal;
+        document.getElementById('confirm-confirm').onclick = () => {
+            window.location.href = "index.html";
+        };
+
+
+        // --- Initialization ---
+        function startChat(isLanguageSwitch = false) {
+            if (!isLanguageSwitch) {
+                document.getElementById('chat-container').innerHTML = '';
+            }
+            
+            currentStep = 'START';
+            selectedAction = null;
+            errorCount = 0;
+
+            document.getElementById('file-upload-section').style.display = 'none';
+
+            addMessage('Agent', getL('initialMsg', userName));
+            toggleInitialOptions(true);
+        }
+
+        window.onload = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const initialAction = urlParams.get('action');
+            
+            document.getElementById('lang-btn').textContent = getL('langBtnText');
+
+            startChat();
+
+            if (initialAction === 'forgot') {
+                handleActionSelection('FORGOT');
+            }
+        };
+
+        // Event listener for Enter key in chat input
+        document.getElementById('user-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleUserInput();
+            }
+        });
 
     </script>
 </body>
