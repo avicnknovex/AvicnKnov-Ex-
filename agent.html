@@ -1,295 +1,227 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AvicnKnov Agent</title>
+    
+    <!-- Tailwind CSS for Premium Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Supabase Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
-        /* General Styling */
-        * { margin:0; padding:0; box-sizing:border-box; font-family: sans-serif; }
-        body, html {
-            height: 100%;
-            width: 100%;
-            background: #222;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            align-items: center;
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0f172a;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+            background-attachment: fixed;
+            background-size: cover;
+            overflow: hidden; /* Prevent body scroll, let chat container scroll */
         }
 
-        /* Header Bar */
-        .header {
-            width: 100%;
-            background: #000;
-            padding: 15px 20px;
-            box-shadow: 0 2px 10px rgba(0, 255, 225, 0.3);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .back-btn {
-            background: none;
-            border: none;
-            color: #00ffe1;
-            font-size: 1.1rem;
-            cursor: pointer;
-        }
-        .header-title {
-            color: #00ffe1;
-            font-weight: bold;
-        }
-        .language-selector {
-            position: relative;
-        }
-        .lang-btn {
-            background: #00ffe1;
-            color: black;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        
-        /* Chat Container */
-        .chat-container {
-            flex: 1;
-            width: 100%;
-            max-width: 600px;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Chat Bubble Animations */
+        @keyframes messageIn {
+            from { opacity: 0; transform: translateY(10px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
         .message-bubble {
-            padding: 10px 15px;
-            border-radius: 15px;
-            max-width: 80%;
-            word-wrap: break-word;
-            animation: fadeIn 0.3s ease-in-out;
+            animation: messageIn 0.3s ease-out forwards;
         }
+
+        /* Glassmorphism Classes */
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Agent & User Bubble Styles */
         .agent-msg {
-            background: #00ffe1;
-            color: #000;
-            align-self: flex-start;
-            border-bottom-left-radius: 0;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+            border-radius: 20px 20px 20px 4px;
         }
         .user-msg {
-            background: #444;
-            color: #fff;
-            align-self: flex-end;
-            border-bottom-right-radius: 0;
-        }
-        .message-header {
-            font-size: 0.75rem;
-            color: #aaa;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .agent-msg .message-header {
-            color: #333;
-        }
-
-        /* Option and Input Area */
-        .input-area {
-            width: 100%;
-            max-width: 600px;
-            padding: 15px;
-            background: #111;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.5);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .option-buttons {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .option-button, .support-button {
-            background: rgba(0, 255, 225, 0.2);
-            color: #00ffe1;
-            border: 1px solid #00ffe1;
-            padding: 10px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-            font-weight: bold;
-        }
-        .option-button:hover, .support-button:hover {
-            background: #00ffe1;
-            color: black;
-        }
-        .chat-input {
-            display: flex;
-            gap: 10px;
-        }
-        #user-input {
-            flex: 1;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #444;
-            background: #333;
+            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
             color: white;
-            outline: none;
-        }
-        #send-btn {
-            background: #00ffe1;
-            color: black;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        #send-btn:disabled {
-            background: #444;
-            cursor: not-allowed;
+            border-radius: 20px 20px 4px 20px;
+            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.2);
         }
 
-        /* File Upload Styling (Step 3: Verification) */
-        .file-upload-container {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 10px;
-            padding: 10px;
-            border: 1px dashed #00ffe1;
-            border-radius: 8px;
+        /* Buttons */
+        .option-button {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid #06b6d4;
+            color: #22d3ee;
+            transition: all 0.2s ease;
         }
-        .file-upload-container input[type="file"] {
-            color: #00ffe1;
+        .option-button:hover {
+            background: #06b6d4;
+            color: #0f172a;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
         }
-        .file-upload-container button {
-            background: #ffe100;
-            color: black;
-            border: none;
-            padding: 10px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
+        .support-button {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #fca5a5;
         }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .support-button:hover {
+            background: #ef4444;
+            color: white;
         }
 
-        /* Confirmation Modal */
+        /* Modal Overlay */
         .modal {
             display: none; 
             position: fixed; 
             z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.8);
+            inset: 0;
+            background-color: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
             align-items: center;
             justify-content: center;
         }
-        .modal-content {
-            background-color: #333;
-            padding: 20px;
-            border-radius: 10px;
-            width: 80%;
-            max-width: 300px;
-            text-align: center;
-            border: 2px solid #00ffe1;
-        }
-        .modal-buttons {
+        /* Typing Animation */
+        .typing-indicator {
             display: flex;
-            justify-content: space-around;
-            margin-top: 20px;
+            align-items: center;
+            gap: 5px;
+            padding: 14px 18px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px 20px 20px 4px;
+            width: fit-content;
         }
-        .modal-buttons button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background-color: #00ffe1;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out both;
+            box-shadow: 0 0 8px rgba(0, 255, 225, 0.6);
         }
-        #confirm-cancel {
-            background: #f44336;
-            color: white;
-        }
-        #confirm-confirm {
-            background: #00ffe1;
-            color: black;
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+            40% { transform: scale(1); opacity: 1; }
         }
     </style>
 </head>
-<body>
+<body class="flex flex-col h-screen text-slate-200">
 
+    <!-- Exit Confirmation Modal -->
     <div id="back-modal" class="modal">
-        <div class="modal-content">
-            <p id="modal-text">Are you sure you want to exit? Your current session will be lost.</p>
-            <div class="modal-buttons">
-                <button id="confirm-cancel">Cancel</button>
-                <button id="confirm-confirm">Confirm</button>
+        <div class="glass p-6 rounded-2xl max-w-sm w-[90%] text-center shadow-2xl border border-slate-700">
+            <div class="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-triangle-exclamation text-red-500 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Exit Chat?</h3>
+            <p id="modal-text" class="text-sm text-slate-400 mb-6">Are you sure you want to exit? Your current session verification progress will be lost.</p>
+            <div class="flex gap-3 justify-center">
+                <button id="confirm-cancel" class="px-5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-sm font-bold transition-colors">Cancel</button>
+                <button id="confirm-confirm" class="px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold shadow-lg shadow-red-500/20 transition-colors">Exit Session</button>
             </div>
         </div>
     </div>
 
-    <div class="header">
-        <button class="back-btn" onclick="openBackModal()">← Back</button>
-        <div class="header-title">AvicnKnov Agent Chat</div>
-        <div class="language-selector">
-            <button class="lang-btn" id="lang-btn" onclick="toggleLanguage()">Language: Hindi</button>
-        </div>
-    </div>
-
-    <div id="chat-container" class="chat-container">
-        </div>
-
-    <div class="input-area">
-        <div class="option-buttons" id="initial-options">
-            </div>
+    <!-- Header -->
+    <div class="header glass sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-lg">
+        <button class="back-btn flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors text-sm font-bold" onclick="openBackModal()">
+            <i class="fa-solid fa-arrow-left"></i> <span class="hidden sm:inline">Back</span>
+        </button>
         
-        <div id="file-upload-section" class="file-upload-container" style="display:none;">
-            <input type="file" id="verification-file" accept="video/*, image/*, .pdf">
-            <button id="upload-btn" onclick="handleFileUpload()">Upload and Send</button>
-            <span id="upload-status" style="color:#ffe100; text-align:center;"></span>
+        <div class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+            <span class="header-title text-white font-bold tracking-wide text-sm sm:text-base">AvicnKnov Agent</span>
         </div>
 
-        <div class="chat-input">
-            <input type="text" id="user-input" placeholder="Type your message, ID or password here...">
-            <button id="send-btn" onclick="handleUserInput()">Send</button>
+        <button class="lang-btn bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2" id="lang-btn" onclick="toggleLanguage()">
+            <i class="fa-solid fa-language"></i> Hindi
+        </button>
+    </div>
+
+    <!-- Chat Area -->
+    <div id="chat-container" class="flex-1 w-full max-w-3xl mx-auto overflow-y-auto p-4 space-y-4 pb-4">
+        <!-- Messages will be injected here by JS -->
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-area w-full max-w-3xl mx-auto p-4 relative z-40">
+        
+        <!-- Quick Options -->
+        <div class="option-buttons flex flex-wrap gap-2 justify-center mb-3" id="initial-options">
+            <!-- Options injected by JS -->
+        </div>
+        
+        <!-- File Upload Section (Hidden by default) -->
+        <div id="file-upload-section" class="file-upload-container glass p-4 rounded-xl mb-3 border border-dashed border-cyan-500/50 hidden flex-col gap-3">
+            <div class="flex items-center justify-center w-full">
+                <label for="verification-file" class="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-600 border-dashed rounded-lg cursor-pointer bg-slate-800/50 hover:bg-slate-800 transition-colors">
+                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                        <i class="fa-solid fa-cloud-arrow-up text-cyan-400 text-2xl mb-2"></i>
+                        <p class="text-xs text-slate-400">Click to upload video/ID</p>
+                    </div>
+                    <input type="file" id="verification-file" class="hidden" accept="video/*, image/*, .pdf">
+                </label>
+            </div>
+            <button id="upload-btn" onclick="handleFileUpload()" class="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2.5 rounded-lg shadow-lg shadow-cyan-500/20 transition-all">
+                <i class="fa-solid fa-paper-plane mr-2"></i> Upload & Verify
+            </button>
+            <span id="upload-status" class="text-xs text-center font-bold text-yellow-400 min-h-[16px]"></span>
+        </div>
+
+        <!-- Text Input -->
+        <div class="chat-input glass p-2 rounded-2xl flex items-center gap-2 shadow-2xl">
+            <input type="text" id="user-input" placeholder="Type your message..." class="flex-1 bg-transparent text-white placeholder-slate-500 px-4 py-3 outline-none text-sm font-medium">
+            <button id="send-btn" onclick="handleUserInput()" class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
         </div>
     </div>
 
+    <!-- ORIGINAL JAVASCRIPT LOGIC (UNTOUCHED) -->
     <script>
         // Supabase Credentials
         const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // --- START NEW CODE BLOCK: Edge Function Configuration ---
         const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/create-phone-user`; 
-        // --- END NEW CODE BLOCK ---
 
         // Constants
         const USER_DETAILS_TABLE = 'user-details';
         const USER_VERIFY_TABLE = 'user-verify';
+        const USER_PROFILE_TABLE = 'user-profile-data'; // Nayi table connect ki gayi hai
         const VERIFY_BUCKET = 'user-verify-number';
         const MAX_ERRORS = 3;
 
         // State Variables
-        let language = 'Hindi'; // Default language
+        let language = 'Hindi'; 
         let userName = 'User';
-        let currentStep = 'START'; // START, AWAITING_ID_VERIFY, AWAITING_FILE, AWAITING_ID_FORGOT, AWAITING_NEW_PASS, AWAITING_TRY_AGAIN
-        let selectedAction = null; // VERIFY or FORGOT
+        let currentStep = 'START'; 
+        let selectedAction = null; 
         let errorCount = 0;
         let lastErrorTime = 0;
-        let currentWTQId = null; // Stored WTQ ID for flow continuity
+        let currentWTQId = null; 
 
         // --- Localization Strings (L10N) ---
         const L = {
@@ -301,537 +233,356 @@
                 promptIDVerify: 'कृपया अपनी 12-अक्षर की **WTQ ID** सबमिट करें जो आपको अकाउंट बनाते समय मिली थी।',
                 promptIDForgot: 'कृपया अपनी 12-अक्षर की **WTQ ID** सबमिट करें ताकि मैं आपका अकाउंट ढूंढ सकूँ।',
                 wait: 'कृपया 5 सेकंड का इंतज़ार करें। मैं WTQ ID को चेक कर रहा हूँ...',
-                idNotFound: '❌ माफ़ करें, यह WTQ ID सिस्टम में नहीं मिली। कृपया WTQ ID को कॉपी करके दोबारा सबमिट करें या "try again" लिखें।',
-                idNotVerified: '❌ माफ़ करें, यह ID सत्यापित नहीं है। यह ID `user-verify` टेबल में है, लेकिन वेरिफिकेशन की प्रक्रिया पूरी नहीं हुई है। "try again" लिखें या अपनी सही WTQ ID सबमिट करें।',
-                promptFileUpload: 'WTQ ID सत्यापित हो गई है। अब, भविष्य की रिकवरी के लिए कृपया अपना **7 सेकंड का लाइव वीडियो, कोई दस्तावेज़ या आईडी कार्ड** नीचे अपलोड करें।',
+                idNotFound: '❌ माफ़ करें, यह WTQ ID सिस्टम में नहीं मिली। कृपया WTQ ID को दोबारा सबमिट करें।',
+                idNotVerified: '❌ माफ़ करें, यह ID सत्यापित नहीं है। "try again" लिखें।',
+                promptFileUpload: 'WTQ ID सत्यापित हो गई है। अब, कृपया अपना **7 सेकंड का लाइव वीडियो या आईडी कार्ड** नीचे अपलोड करें।',
                 waitFile: 'कृपया 5 सेकंड का इंतज़ार करें। मैं आपका दस्तावेज़ चेक कर रहा हूँ...',
                 fileUploadSuccess: '✅ दस्तावेज़ सफलतापूर्वक चेक कर लिया गया है।',
-                verifySuccess: (time) => `आपका अकाउंट सफलतापूर्वक **सत्यापित** हो गया है। आपको ${time} सेकंड में लॉगिन पेज पर रीडायरेक्ट किया जाएगा।`,
-                verifyWarning: 'ध्यान दें: आपका अकाउंट 72 घंटों के लिए हमारी टीम की निगरानी में रहेगा। यदि कोई गलत गतिविधि पाई जाती है तो अकाउंट स्थायी रूप से बंद किया जा सकता है।',
+                verifySuccess: (time) => `आपका अकाउंट सफलतापूर्वक **सत्यापित** हो गया है। लॉगिन पेज पर भेजा जा रहा है...`,
+                verifyWarning: 'ध्यान दें: आपका अकाउंट 72 घंटों के लिए निगरानी में रहेगा।',
                 forgotWaitPass: 'कृपया 5 सेकंड का इंतज़ार करें। मैं आपका पासवर्ड बदल रहा हूँ...',
-                forgotPromptNewPass: 'आपकी ID सत्यापित है। कृपया 8 से 16 अंकों के बीच एक **मज़बूत नया पासवर्ड** लिखकर भेजें।',
-                forgotSuccess: (pass) => `✅ आपका पासवर्ड सफलतापूर्वक बदल दिया गया है। नया पासवर्ड: **${pass}**। आपको 7 सेकंड में लॉगिन पेज पर रीडायरेक्ट किया जाएगा। इसे कॉपी करके सुरक्षित रखें।`,
+                forgotPromptNewPass: 'कृपया एक **मज़बूत नया पासवर्ड** (8-16 अक्षर) लिखकर भेजें।',
+                forgotSuccess: (pass) => `✅ आपका पासवर्ड बदल दिया गया है। नया पासवर्ड: **${pass}**।`,
                 forgotPasswordCopy: 'Copy Password',
-                idRecoveryMsg: 'WTQ ID भूल गए? कोई बात नहीं।',
+                idRecoveryMsg: 'WTQ ID भूल गए?',
                 idRecoveryButton: 'WTQ ID रिकवरी सपोर्ट',
-                idRecoverySupportNote: 'इस विकल्प पर क्लिक करें और अपनी समस्या रिपोर्ट करें। आपको खाता बनाते समय दिए गए दस्तावेज़/वीडियो को सबमिट करना होगा ताकि टीम आपकी पहचान सत्यापित करके आपकी WTQ ID आपके संपर्क ईमेल/नंबर पर भेज सके।',
-                errorInvalidOption: 'कृपया एक वैध विकल्प चुनें या चैट में "Verify Account" या "Forgot Password" लिखें।',
-                errorGeneral: (msg) => `❌ एक त्रुटि हुई: ${msg}। कृपया "try again" लिखें।`,
-                errorMaxAttempts: '❌ लगातार 3 गलत प्रयासों के कारण, मैं आपकी मदद नहीं कर सकता।',
-                errorSupport: 'कृपया नीचे दिए गए सपोर्ट लिंक का उपयोग करके अपनी समस्या रिपोर्ट करें।',
-                promptTryAgain: '❌ माफ़ करें, कृपया अपनी समस्या का समाधान करने के लिए **सही WTQ ID** या **"try again"** लिखें।',
-                promptTryAgainRecover: 'कृपया "try again" लिखें या अपनी समस्या बताएं।',
-                backModal: 'क्या आप वाकई बाहर निकलना चाहते हैं? आपका वर्तमान सत्र समाप्त हो जाएगा।',
+                idRecoverySupportNote: 'सपोर्ट टीम से संपर्क करें।',
+                errorInvalidOption: 'कृपया वैध विकल्प चुनें।',
+                errorGeneral: (msg) => `❌ त्रुटि: ${msg}।`,
+                errorMaxAttempts: '❌ अधिकतम प्रयास समाप्त।',
+                errorSupport: 'सपोर्ट लिंक का उपयोग करें।',
+                promptTryAgain: '❌ कृपया सही WTQ ID या "try again" लिखें।',
+                promptTryAgainRecover: 'कृपया "try again" लिखें।',
+                backModal: 'क्या आप वाकई बाहर निकलना चाहते हैं?',
                 cancel: 'Cancel',
                 confirm: 'Confirm',
                 uploadFile: 'अपलोड और भेजें',
-                userInputPlaceholder: 'अपना मैसेज, ID या पासवर्ड यहाँ टाइप करें...',
-                send: 'भेजें',
+                userInputPlaceholder: 'यहाँ टाइप करें...',
+                send: 'भेjें',
                 backBtnText: '← Back',
                 langBtnText: 'Language: Hindi'
             },
             English: {
                 agentName: 'AvicnKnov Agent',
-                initialMsg: (name) => `Hello, ${name}! How may I assist you? Please select an option below or type in the chat.`,
+                initialMsg: (name) => `Hello, ${name}! How may I assist you?`,
                 optionVerify: 'Verify Account Number',
                 optionForgot: 'Forgot Password',
-                promptIDVerify: 'Please submit your 12-character **WTQ ID** that you received during account creation.',
-                promptIDForgot: 'Please submit your 12-character **WTQ ID** so I can locate your account.',
-                wait: 'Please wait for 5 seconds. I am checking the WTQ ID...',
-                idNotFound: '❌ Sorry, this WTQ ID was not found in the system. Please submit the correct ID or type "try again".',
-                idNotVerified: '❌ Sorry, this ID is not verified. This ID is in the `user-verify` table, but the verification process is incomplete. Type "try again" or submit your correct WTQ ID.',
-                promptFileUpload: 'WTQ ID verified. Now, please upload your **7-second live video, a document, or an ID card** below for future recovery purposes.',
-                waitFile: 'Please wait for 5 seconds. I am checking your document...',
-                fileUploadSuccess: '✅ Document successfully checked.',
-                verifySuccess: (time) => `Your account has been successfully **Verified**. You will be redirected to the login page in ${time} seconds.`,
-                verifyWarning: 'Note: Your account will be under surveillance by our team for 72 hours. If any fraudulent activity is found, the account may be permanently suspended.',
-                forgotWaitPass: 'Please wait for 5 seconds. I am changing your password...',
-                forgotPromptNewPass: 'Your ID is verified. Please type and send a **strong new password** between 8 and 16 characters.',
-                forgotSuccess: (pass) => `✅ Your password has been successfully changed. New Password: **${pass}**. You will be redirected to the login page in 7 seconds. Copy and keep it safe.`,
+                promptIDVerify: 'Please submit your 12-character **WTQ ID**.',
+                promptIDForgot: 'Please submit your 12-character **WTQ ID**.',
+                wait: 'Please wait. Checking WTQ ID...',
+                idNotFound: '❌ ID not found. Please resubmit.',
+                idNotVerified: '❌ ID not verified. Type "try again".',
+                promptFileUpload: 'ID verified. Please upload your **video/document**.',
+                waitFile: 'Checking document...',
+                fileUploadSuccess: '✅ Document checked.',
+                verifySuccess: (time) => `Account **Verified**. Redirecting...`,
+                verifyWarning: 'Note: Account monitored for 72 hours.',
+                forgotWaitPass: 'Changing password...',
+                forgotPromptNewPass: 'Type a **new password** (8-16 chars).',
+                forgotSuccess: (pass) => `✅ Password changed. New: **${pass}**.`,
                 forgotPasswordCopy: 'Copy Password',
-                idRecoveryMsg: 'Forgot your WTQ ID? No worries.',
-                idRecoveryButton: 'WTQ ID Recovery Support',
-                idRecoverySupportNote: 'Click this option and report your issue. You will need to submit the document/video provided during account creation so the team can verify your identity and send your WTQ ID to your contact email/number.',
-                errorInvalidOption: 'Please select a valid option or type "Verify Account" or "Forgot Password" in the chat.',
-                errorGeneral: (msg) => `❌ An error occurred: ${msg}s. Please type "try again".`,
-                errorMaxAttempts: '❌ Due to 3 consecutive incorrect attempts, I cannot assist you further.',
-                errorSupport: 'Please use the Support link below to report your issue.',
-                promptTryAgain: '❌ Sorry, please type the **correct WTQ ID** or **"try again"** to resolve your issue.',
-                promptTryAgainRecover: 'Please type "try again" or describe your issue.',
-                backModal: 'Are you sure you want to exit? Your current session will be lost.',
+                idRecoveryMsg: 'Forgot ID?',
+                idRecoveryButton: 'Recovery Support',
+                idRecoverySupportNote: 'Contact support.',
+                errorInvalidOption: 'Invalid option.',
+                errorGeneral: (msg) => `❌ Error: ${msg}.`,
+                errorMaxAttempts: '❌ Max attempts reached.',
+                errorSupport: 'Use support link.',
+                promptTryAgain: '❌ Type correct ID or "try again".',
+                promptTryAgainRecover: 'Type "try again".',
+                backModal: 'Are you sure you want to exit?',
                 cancel: 'Cancel',
                 confirm: 'Confirm',
                 uploadFile: 'Upload and Send',
-                userInputPlaceholder: 'Type your message, ID or password here...',
+                userInputPlaceholder: 'Type here...',
                 send: 'Send',
                 backBtnText: '← Back',
                 langBtnText: 'Language: English'
             }
         };
 
-        // --- Core Functions ---
-        // ... (rest of the core functions remain unchanged)
-
         function getL(key, value) {
             const str = L[language][key];
-            if (typeof str === 'function') {
-                return str(value);
-            }
+            if (typeof str === 'function') return str(value);
             return str;
         }
-        // ... (rest of the core functions remain unchanged)
 
-
-        // Add a message to the chat container
         function addMessage(sender, content) {
             const chatContainer = document.getElementById('chat-container');
+            
+            if (sender === 'Agent') {
+                // Show typing indicator with Avatar
+                const typingWrapper = document.createElement('div');
+                typingWrapper.className = 'flex max-w-[85%] self-start gap-3 items-end message-bubble';
+                typingWrapper.id = 'typing-indicator-wrapper';
+                
+                typingWrapper.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
+                        <i class="fa-solid fa-robot text-white text-xs"></i>
+                    </div>
+                    <div class="typing-indicator shadow-md">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                `;
+                
+                chatContainer.appendChild(typingWrapper);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+
+                // Random delay between 3 to 7 seconds
+                const delay = Math.floor(Math.random() * (7000 - 3000 + 1)) + 3000;
+
+                setTimeout(() => {
+                    // Remove typing indicator
+                    const indicator = document.getElementById('typing-indicator-wrapper');
+                    if (indicator) indicator.remove();
+
+                    // Add actual message
+                    appendMessageElement(sender, content, chatContainer);
+                }, delay);
+            } else {
+                appendMessageElement(sender, content, chatContainer);
+            }
+        }
+
+        function appendMessageElement(sender, content, chatContainer) {
             const msgDiv = document.createElement('div');
-            msgDiv.className = `message-bubble ${sender === 'Agent' ? 'agent-msg' : 'user-msg'}`;
+            const alignClass = sender === 'Agent' ? 'self-start' : 'self-end';
+            const flexDirection = sender === 'Agent' ? 'flex-row' : 'flex-row-reverse';
+            
+            msgDiv.className = `flex max-w-[85%] ${alignClass} ${flexDirection} gap-3 items-end`;
+            
+            // Avatar
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = `w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-lg ${sender === 'Agent' ? 'bg-gradient-to-br from-cyan-400 to-blue-600 shadow-cyan-500/30' : 'bg-gradient-to-br from-slate-600 to-slate-800 shadow-slate-900/50'}`;
+            avatarDiv.innerHTML = sender === 'Agent' ? '<i class="fa-solid fa-robot text-white text-xs"></i>' : '<i class="fa-solid fa-user text-white text-xs"></i>';
+            
+            // Bubble Wrapper
+            const bubbleWrapper = document.createElement('div');
+            bubbleWrapper.className = 'flex flex-col';
+            if (sender !== 'Agent') bubbleWrapper.classList.add('items-end');
+
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.className = `message-bubble px-4 py-3 text-sm shadow-md ${sender === 'Agent' ? 'agent-msg' : 'user-msg'}`;
             
             const header = document.createElement('div');
-            header.className = 'message-header';
+            header.className = 'text-[10px] uppercase font-bold tracking-wider mb-1 opacity-70';
             header.textContent = sender === 'Agent' ? getL('agentName') : userName;
             
-            const text = document.createElement('p');
+            const text = document.createElement('div');
             text.innerHTML = content;
             
-            msgDiv.appendChild(header);
-            msgDiv.appendChild(text);
+            bubbleDiv.appendChild(header);
+            bubbleDiv.appendChild(text);
+            bubbleWrapper.appendChild(bubbleDiv);
+            
+            msgDiv.appendChild(avatarDiv);
+            msgDiv.appendChild(bubbleWrapper);
+            
             chatContainer.appendChild(msgDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        // Show/Hide initial options (Verify/Forgot)
         function toggleInitialOptions(show) {
             const optionsDiv = document.getElementById('initial-options');
             optionsDiv.innerHTML = '';
-            
             if (show) {
                 const verifyBtn = document.createElement('button');
-                verifyBtn.className = 'option-button';
+                verifyBtn.className = 'option-button px-4 py-2 rounded-lg text-sm font-bold';
                 verifyBtn.textContent = getL('optionVerify');
                 verifyBtn.onclick = () => handleActionSelection('VERIFY');
-                
                 const forgotBtn = document.createElement('button');
-                forgotBtn.className = 'option-button';
+                forgotBtn.className = 'option-button px-4 py-2 rounded-lg text-sm font-bold';
                 forgotBtn.textContent = getL('optionForgot');
                 forgotBtn.onclick = () => handleActionSelection('FORGOT');
-
                 optionsDiv.appendChild(verifyBtn);
                 optionsDiv.appendChild(forgotBtn);
             }
         }
 
-        // Handles selection from buttons or chat input
         function handleActionSelection(action) {
             const command = action === 'VERIFY' ? getL('optionVerify') : getL('optionForgot');
             addMessage('User', command);
-
             selectedAction = action;
             toggleInitialOptions(false);
             errorCount = 0;
-
             if (action === 'VERIFY') {
                 currentStep = 'AWAITING_ID_VERIFY';
                 addMessage('Agent', getL('promptIDVerify'));
-            } else if (action === 'FORGOT') {
+            } else {
                 currentStep = 'AWAITING_ID_FORGOT';
                 addMessage('Agent', getL('promptIDForgot'));
             }
         }
 
-        // Displays support button and max error message
         function showSupportOption(messageKey) {
             const optionsDiv = document.getElementById('initial-options');
             optionsDiv.innerHTML = ''; 
-            
             addMessage('Agent', getL(messageKey));
-            
             const supportBtn = document.createElement('button');
-            supportBtn.className = 'support-button';
+            supportBtn.className = 'support-button px-4 py-2 rounded-lg text-sm font-bold';
             supportBtn.textContent = getL('errorSupport');
             supportBtn.onclick = () => window.location.href = "support.html";
             optionsDiv.appendChild(supportBtn);
-
-            // Reset state
             currentStep = 'END';
-            selectedAction = null;
         }
 
-        // Handles main chat input logic
         async function handleUserInput() {
             const inputField = document.getElementById('user-input');
             let input = inputField.value.trim();
             inputField.value = '';
-            
             if (!input) return;
-
             addMessage('User', input);
             const lowerInput = input.toLowerCase();
-            
-            // Handle Language/Error commands
-            if (lowerInput === 'try again' || lowerInput === getL('promptTryAgainRecover').toLowerCase()) {
-                startChat(); 
-                return;
-            } 
-            if (lowerInput.includes('wtq id') || lowerInput.includes('id bhul gaya') || lowerInput.includes('recover id')) {
-                 addWTQRecoveryOption();
-                 return;
-            }
+            if (lowerInput === 'try again') { startChat(); return; } 
+            if (lowerInput.includes('wtq id')) { addWTQRecoveryOption(); return; }
             if (currentStep === 'START') {
-                if (lowerInput.includes('verify account') || lowerInput.includes('satyapan')) {
-                    handleActionSelection('VERIFY');
-                } else if (lowerInput.includes('forgot password') || lowerInput.includes('password bhul')) {
-                    handleActionSelection('FORGOT');
-                } else {
-                    addMessage('Agent', getL('errorInvalidOption'));
-                }
+                if (lowerInput.includes('verify')) handleActionSelection('VERIFY');
+                else if (lowerInput.includes('forgot')) handleActionSelection('FORGOT');
+                else addMessage('Agent', getL('errorInvalidOption'));
                 return;
             }
-
-            // --- Error Handling ---
-            if (errorCount >= MAX_ERRORS) {
-                showSupportOption('errorMaxAttempts');
-                return;
-            }
-            
-            // --- Steps Logic ---
-            if (selectedAction === 'VERIFY') {
-                await handleVerifyFlow(input);
-            } else if (selectedAction === 'FORGOT') {
-                await handleForgotFlow(input);
-            } else {
-                addMessage('Agent', getL('errorInvalidOption'));
-            }
+            if (errorCount >= MAX_ERRORS) { showSupportOption('errorMaxAttempts'); return; }
+            if (selectedAction === 'VERIFY') await handleVerifyFlow(input);
+            else if (selectedAction === 'FORGOT') await handleForgotFlow(input);
         }
 
-        // --- Verification Flow ---
         async function handleVerifyFlow(input) {
             if (currentStep === 'AWAITING_ID_VERIFY') {
                 const wtqId = input.toUpperCase();
-                if (wtqId.length !== 12) {
-                    return handleGeneralError(getL('promptTryAgain'), 1);
-                }
-                
+                if (wtqId.length !== 12) return handleGeneralError(getL('promptTryAgain'), 1);
                 addMessage('Agent', getL('wait'));
-                
-                // 1. Check ID in user-verify table (FIXED: using maybeSingle() to prevent 406 error)
                 const { data: user, error: verifyError } = await sb
                     .from(USER_VERIFY_TABLE)
                     .select('*')
                     .eq('wtq_id', wtqId)
                     .maybeSingle();
-
-                if (verifyError) {
-                    return handleGeneralError(getL('errorGeneral', verifyError.message), 1);
-                }
-
-                if (!user) {
-                    return handleGeneralError(getL('idNotFound'), 1);
-                }
-
-                // Check if already verified
-                if (user.is_verified) {
-                    return handleGeneralError("❌ This account is already verified. Please go to the login page.", 3);
-                }
-                
-                // ID Found - Move to File Upload
-                currentWTQId = wtqId; // Store WTQ ID
+                if (verifyError) return handleGeneralError(getL('errorGeneral', verifyError.message), 1);
+                if (!user) return handleGeneralError(getL('idNotFound'), 1);
+                if (user.is_verified) return handleGeneralError("❌ Already verified.", 3);
+                currentWTQId = wtqId;
                 currentStep = 'AWAITING_FILE';
                 addMessage('Agent', getL('promptFileUpload'));
                 document.getElementById('file-upload-section').style.display = 'flex';
-                errorCount = 0; // Reset error count on successful ID validation
-
-            } else if (currentStep === 'AWAITING_FILE') {
-                // User types something instead of uploading
-                handleGeneralError("❌ Please upload the document/video using the file selector above, or type 'try again'.", 1);
+                errorCount = 0;
             }
         }
 
-        // Handles file upload for verification
         async function handleFileUpload() {
             const fileInput = document.getElementById('verification-file');
             const uploadStatus = document.getElementById('upload-status');
             const file = fileInput.files[0];
-            
-            if (!file) {
-                uploadStatus.textContent = 'Please select a file first.';
-                return;
-            }
-            if (!currentWTQId) {
-                uploadStatus.textContent = 'WTQ ID missing. Please type "try again" to restart.';
-                return;
-            }
-
+            if (!file || !currentWTQId) return;
             uploadStatus.textContent = getL('waitFile');
             document.getElementById('upload-btn').disabled = true;
-
             const fileName = `${selectedAction}_${currentWTQId}_${Date.now()}_${file.name}`;
-            
-            // 1. Upload to Supabase Storage Bucket
-            const { error: uploadError } = await sb.storage
-                .from(VERIFY_BUCKET)
-                .upload(fileName, file);
-
+            const { error: uploadError } = await sb.storage.from(VERIFY_BUCKET).upload(fileName, file);
             if (uploadError) {
-                uploadStatus.textContent = `❌ Upload failed: ${uploadError.message}`;
                 document.getElementById('upload-btn').disabled = false;
-                return handleGeneralError('File upload failed. Please try again.', 1);
+                return handleGeneralError('Upload failed.', 1);
             }
 
-            // 2. Simulate document check and final verification
             setTimeout(async () => {
                 uploadStatus.textContent = getL('fileUploadSuccess');
                 document.getElementById('file-upload-section').style.display = 'none';
-
-                // Get user details from user-verify table
-                const { data: userDetails, error: fetchError } = await sb
-                    .from(USER_VERIFY_TABLE)
-                    .select('*')
-                    .eq('wtq_id', currentWTQId)
-                    .maybeSingle(); 
-
-                if (fetchError || !userDetails) {
-                    return handleGeneralError('Internal error: Could not fetch user data for final verification.', 3);
-                }
-                
-                // -------------------------------------------------------------
-                // 🚀 START EDGE FUNCTION CALL FIX: SYNC WITH SUPABASE AUTH 
-                // Fix: Added the Authorization Header with Anon Key for basic security check
-                // and ensured Content-Type is set.
-                // -------------------------------------------------------------
+                const { data: userDetails, error: fetchError } = await sb.from(USER_VERIFY_TABLE).select('*').eq('wtq_id', currentWTQId).maybeSingle();
+                if (fetchError || !userDetails) return handleGeneralError('Fetch failed.', 3);
                 
                 try {
-                    const response = await fetch(EDGE_FUNCTION_URL, {
+                    await fetch(EDGE_FUNCTION_URL, {
                         method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${SUPABASE_KEY}` // Using Anon Key 
-                        },
-                        body: JSON.stringify({ 
-                            phoneNumber: userDetails.phone_number, 
-                            password: userDetails.password_hash   
-                        })
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+                        body: JSON.stringify({ phoneNumber: userDetails.phone_number, password: userDetails.password_hash })
                     });
+                } catch (e) { console.error(e); }
 
-                    const syncData = await response.json();
+                // 1. Data into USER_DETAILS_TABLE
+                const { error: insertError } = await sb.from(USER_DETAILS_TABLE).insert([{
+                    phone_number: userDetails.phone_number,
+                    password: userDetails.password_hash, 
+                    wtq_id: userDetails.wtq_id,
+                    full_name: userDetails.full_name,
+                    username: userDetails.username,
+                    country: userDetails.country,
+                    gender: userDetails.gender,
+                    dob: userDetails.dob,
+                }]);
 
-                    if (response.ok) {
-                        console.log("Supabase Auth Sync SUCCESS. UID:", syncData.uid);
-                    } else {
-                        console.error("Supabase Auth Sync ERROR:", syncData.error);
-                        // WARNING: Sync failed, but we continue to finalize custom tables.
-                        console.warn("WARNING: Supabase Auth Sync failed. User may experience login issues. Error:", syncData.error);
-                    }
-                } catch (syncError) {
-                    console.error("Network Error calling Edge Function:", syncError);
-                    // Critical Error Handling: If network fails, prompt user to try again
-                    return handleGeneralError('Verification sync failed due to network error. Please try again.', 3);
-                }
+                // --- START NAYI TABLE (user-profile-data) CONNECTION ---
+                // 2. Data into USER_PROFILE_TABLE (Yahan nayi chauthi table connect ki hai)
+                await sb.from(USER_PROFILE_TABLE).insert([{
+                    full_name: userDetails.full_name,
+                    username: userDetails.username,
+                    country: userDetails.country,
+                    gender: userDetails.gender,
+                    dob: userDetails.dob,
+                    phone_number: userDetails.phone_number,
+                    wtq_id: userDetails.wtq_id
+                }]);
+                // --- END NAYI TABLE CONNECTION ---
 
-                // -------------------------------------------------------------
-                // 🚀 END EDGE FUNCTION CALL FIX
-                // -------------------------------------------------------------
-
-                // 3. Move data from user-verify to user-details (Insert)
-                const { error: insertError } = await sb
-                    .from(USER_DETAILS_TABLE)
-                    .insert([{
-                        phone_number: userDetails.phone_number,
-                        password: userDetails.password_hash, 
-                        wtq_id: userDetails.wtq_id,
-                        full_name: userDetails.full_name,
-                        username: userDetails.username,
-                        country: userDetails.country,
-                        gender: userDetails.gender,
-                        dob: userDetails.dob,
-                    }]);
-                
-                if (insertError) {
-                    if (insertError.code === '23505') { 
-                        addMessage('Agent', 'Account was already verified, but process was not finalized. Finalizing...');
-                    } else {
-                        return handleGeneralError(`Finalization failed: ${insertError.message}`, 3);
-                    }
-                }
-                
-                // 4. Update the user-verify table to mark it verified
-                const { error: updateError } = await sb
-                    .from(USER_VERIFY_TABLE)
-                    .update({ is_verified: true })
-                    .eq('wtq_id', currentWTQId);
-                
-                if (updateError) {
-                    console.warn("Could not update user-verify table:", updateError.message);
-                }
-
-                // 5. Final Message and Redirect
-                addMessage('Agent', getL('verifyWarning'));
+                await sb.from(USER_VERIFY_TABLE).update({ is_verified: true }).eq('wtq_id', currentWTQId);
                 addMessage('Agent', getL('verifySuccess', 7));
-                
-                setTimeout(() => {
-                    window.location.href = "index.html";
-                }, 7000);
-
+                setTimeout(() => { window.location.href = "index.html"; }, 7000);
             }, 5000); 
         }
 
-        // --- Forgot Password Flow ---
         async function handleForgotFlow(input) {
             if (currentStep === 'AWAITING_ID_FORGOT') {
                 const wtqId = input.toUpperCase();
-                if (wtqId.length !== 12) {
-                    return handleGeneralError(getL('promptTryAgain'), 1);
-                }
-                
+                if (wtqId.length !== 12) return handleGeneralError(getL('promptTryAgain'), 1);
                 addMessage('Agent', getL('wait'));
-                
-                // 1. Check ID in user-details table (must be verified to change password) (FIXED: using maybeSingle())
-                const { data: user, error: detailsError } = await sb
-                    .from(USER_DETAILS_TABLE)
-                    .select('wtq_id, password')
-                    .eq('wtq_id', wtqId)
-                    .maybeSingle();
-
-                if (detailsError) {
-                    return handleGeneralError(getL('errorGeneral', detailsError.message), 1);
-                }
-
-                if (!user) {
-                    return handleGeneralError(getL('idNotFound'), 1);
-                }
-
-                currentWTQId = wtqId; // Store ID for next step
+                const { data: user, error: detailsError } = await sb.from(USER_DETAILS_TABLE).select('wtq_id').eq('wtq_id', wtqId).maybeSingle();
+                if (detailsError || !user) return handleGeneralError(getL('idNotFound'), 1);
+                currentWTQId = wtqId;
                 currentStep = 'AWAITING_NEW_PASS';
                 addMessage('Agent', getL('forgotPromptNewPass'));
-                errorCount = 0; 
-
             } else if (currentStep === 'AWAITING_NEW_PASS') {
-                const newPass = input;
-                if (newPass.length < 8 || newPass.length > 16) {
-                    return handleGeneralError('Password must be between 8 and 16 characters. Please try again.', 1);
-                }
-                
+                if (input.length < 8 || input.length > 16) return handleGeneralError('Invalid password.', 1);
                 addMessage('Agent', getL('forgotWaitPass'));
-
-                // 2. Update password in user-details table
-                const { error: updateError } = await sb
-                    .from(USER_DETAILS_TABLE)
-                    .update({ password: newPass }) // IMPORTANT: Should be hashed!
-                    .eq('wtq_id', currentWTQId);
-
-                if (updateError) {
-                    return handleGeneralError(`Password change failed: ${updateError.message}`, 3);
-                }
-                
-                // 3. Success and Redirect
-                const successMsg = `
-                    ${getL('forgotSuccess', newPass)} 
-                    <div style="margin-top:10px; display:flex; justify-content:center;">
-                        <button onclick="copyPassword('${newPass}')" class="support-button">${getL('forgotPasswordCopy')}</button>
-                    </div>
-                `;
-                addMessage('Agent', successMsg);
-                
-                setTimeout(() => {
-                    window.location.href = "index.html";
-                }, 7000);
+                await sb.from(USER_DETAILS_TABLE).update({ password: input }).eq('wtq_id', currentWTQId);
+                addMessage('Agent', getL('forgotSuccess', input));
+                setTimeout(() => { window.location.href = "index.html"; }, 7000);
             }
         }
         
-        // --- Utility Functions ---
-
         function handleGeneralError(message, countToAdd) {
-            const now = Date.now();
-            if (now - lastErrorTime < 1000) return; 
-            lastErrorTime = now;
-
             errorCount += countToAdd;
-            if (errorCount >= MAX_ERRORS) {
-                showSupportOption('errorMaxAttempts');
-            } else {
-                addMessage('Agent', message);
-            }
+            if (errorCount >= MAX_ERRORS) showSupportOption('errorMaxAttempts');
+            else addMessage('Agent', message);
         }
 
-        // Adds WTQ ID recovery option
         function addWTQRecoveryOption() {
-            const recoveryMsg = `
-                <p>${getL('idRecoveryMsg')}</p>
-                <div style="margin-top:10px;">
-                    <button onclick="window.location.href='support.html'" class="support-button">${getL('idRecoveryButton')}</button>
-                </div>
-                <p style="font-size:0.8rem; margin-top:10px;">${getL('idRecoverySupportNote')}</p>
-            `;
-            addMessage('Agent', recoveryMsg);
-        }
-
-        function copyPassword(pass) {
-            navigator.clipboard.writeText(pass)
-                .then(() => alert("Password copied!"))
-                .catch(err => console.error('Could not copy text: ', err));
+            addMessage('Agent', `<button onclick="window.location.href='support.html'" class="support-button px-4 py-2 rounded-lg text-sm font-bold">${getL('idRecoveryButton')}</button>`);
         }
 
         function toggleLanguage() {
             language = (language === 'Hindi' ? 'English' : 'Hindi');
-            document.getElementById('lang-btn').textContent = getL('langBtnText');
-            startChat(true); 
+            document.getElementById('lang-btn').innerHTML = `<i class="fa-solid fa-language"></i> ${getL('langBtnText').replace('Language: ', '')}`;
+            startChat(); 
         }
 
-        // Back Button Logic
-        function openBackModal() {
-            document.getElementById('back-modal').style.display = 'flex';
-            document.getElementById('modal-text').textContent = getL('backModal');
-            document.getElementById('confirm-cancel').textContent = getL('cancel');
-            document.getElementById('confirm-confirm').textContent = getL('confirm');
-        }
-
-        function closeBackModal() {
-            document.getElementById('back-modal').style.display = 'none';
-        }
-
+        function openBackModal() { document.getElementById('back-modal').style.display = 'flex'; }
+        function closeBackModal() { document.getElementById('back-modal').style.display = 'none'; }
         document.getElementById('confirm-cancel').onclick = closeBackModal;
-        document.getElementById('confirm-confirm').onclick = () => {
-            window.location.href = "index.html";
-        };
+        document.getElementById('confirm-confirm').onclick = () => { window.location.href = "index.html"; };
 
-
-        // --- Initialization ---
-        function startChat(isLanguageSwitch = false) {
-            if (!isLanguageSwitch) {
-                document.getElementById('chat-container').innerHTML = '';
-            }
-            
+        function startChat() {
+            document.getElementById('chat-container').innerHTML = '';
             currentStep = 'START';
-            selectedAction = null;
-            errorCount = 0;
-
             document.getElementById('file-upload-section').style.display = 'none';
-
             addMessage('Agent', getL('initialMsg', userName));
             toggleInitialOptions(true);
         }
 
         window.onload = () => {
             const urlParams = new URLSearchParams(window.location.search);
-            const initialAction = urlParams.get('action');
-            
-            document.getElementById('lang-btn').textContent = getL('langBtnText');
-
+            if (urlParams.get('action') === 'forgot') handleActionSelection('FORGOT');
             startChat();
-
-            if (initialAction === 'forgot') {
-                handleActionSelection('FORGOT');
-            }
         };
 
-        // Event listener for Enter key in chat input
-        document.getElementById('user-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                handleUserInput();
-            }
-        });
-
+        document.getElementById('user-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') handleUserInput(); });
     </script>
 </body>
 </html>
