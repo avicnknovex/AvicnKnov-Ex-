@@ -619,8 +619,8 @@
     <script>
         // Supabase Configuration
         // NOTE: Please ensure this KEY and URL are correct and RLS is ON for the table/bucket in Supabase.
-        const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+        var SUPA_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+    var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
         
         // Supabase Client Creation
         function createClient(url, key) {
@@ -636,7 +636,7 @@
                 return null;
             }
         }
-        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+        var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
 
         // --- DOM Elements ---
