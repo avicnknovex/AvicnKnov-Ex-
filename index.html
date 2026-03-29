@@ -765,28 +765,70 @@
 
       // Helper function to create wallet data
       async function createWalletForUser(userId, fullName, username) {
-          const { data: existingWallet } = await sb.from('wallet_user_profile').select('id').eq('uid', userId).maybeSingle();
-          if (!existingWallet) {
-              const walletId = generateWalletID();
-              const recoveryId = generateRecoveryID();
-              const walletAddr = generateWalletAddress();
+          try {
+              // Check if wallet already exists
+              const { data: existingWallet, error: checkError } = await sb.from('wallet_user_profile').select('id').eq('uid', userId).maybeSingle();
               
-              await sb.from('wallet_user_profile').insert([{
-                  uid: userId,
-                  full_name: fullName,
-                  username: username,
-                  wallet_name: `${username}`, // Wallet Name
-                  wallet_id: walletId,
-                  recovery_id: recoveryId,
-                  lock_code: '000000', // Default lock code
-                  status: 'active'
-              }]);
-              
-              await sb.from('user_wallet_balance').insert([{
-                  uid: userId,
-                  wallet_address: walletAddr,
-                  balance: 0.00
-              }]);
+              if (checkError) {
+                  console.error("Error checking existing wallet:", checkError);
+                  return;
+              }
+
+              if (!existingWallet) {
+                  const walletId = generateWalletID();
+                  const recoveryId = generateRecoveryID();
+                  const walletAddr = generateWalletAddress();
+                  
+                  // Insert into wallet_user_profile
+                  const { error: profileError } = await sb.from('wallet_user_profile').insert([{
+                      uid: userId,
+                      full_name: fullName,
+                      username: username,
+                      wallet_name: `${username}`, // Wallet Name
+                      wallet_id: walletId,
+                      recovery_id: recoveryId,
+                      lock_code: '000000', // Default lock code
+                      status: 'active'
+                  }]);
+
+                  if (profileError) {
+                      console.error("Error creating wallet profile:", profileError);
+                      // Fallback: try with user_id if uid fails (common schema mismatch)
+                      if (profileError.message.includes('uid')) {
+                           await sb.from('wallet_user_profile').insert([{
+                              user_id: userId,
+                              full_name: fullName,
+                              username: username,
+                              wallet_name: `${username}`,
+                              wallet_id: walletId,
+                              recovery_id: recoveryId,
+                              lock_code: '000000',
+                              status: 'active'
+                          }]);
+                      }
+                  }
+                  
+                  // Insert into user_wallet_balance
+                  const { error: balanceError } = await sb.from('user_wallet_balance').insert([{
+                      uid: userId,
+                      wallet_address: walletAddr,
+                      balance: 0.00
+                  }]);
+
+                  if (balanceError) {
+                      console.error("Error creating wallet balance:", balanceError);
+                      // Fallback: try with user_id if uid fails
+                      if (balanceError.message.includes('uid')) {
+                           await sb.from('user_wallet_balance').insert([{
+                              user_id: userId,
+                              wallet_address: walletAddr,
+                              balance: 0.00
+                          }]);
+                      }
+                  }
+              }
+          } catch (err) {
+              console.error("Unexpected error in createWalletForUser:", err);
           }
       }
 
@@ -794,62 +836,73 @@
       sb.auth.onAuthStateChange(async (event, session) => {
           if (event === 'SIGNED_IN' && session?.user) {
               const userEmail = session.user.email;
+              const userId = session.user.id;
               
-              // --- GMAIL USER SYNC ---
-              if (userEmail && !userEmail.endsWith(PHONE_LOGIN_DOMAIN)) {
-                  const { data: tempUser } = await sb.from('user-verify-gmail').select('*').eq('email', userEmail).maybeSingle();
-                  if (tempUser) {
-                      await sb.from('user-profile-data').insert([{ full_name: tempUser.full_name, username: tempUser.username, country: tempUser.country, gender: tempUser.gender, dob: tempUser.dob, email: tempUser.email, phone_number: tempUser.phone_number, created_at: new Date() }]);
-                      await sb.from('user-details').insert([{ full_name: tempUser.full_name, username: tempUser.username, country: tempUser.country, gender: tempUser.gender, dob: tempUser.dob, email: tempUser.email, password: tempUser.password, created_at: new Date() }]);
-                      await sb.from('qineq_users').insert([{ user_id: session.user.id, username: tempUser.username, full_name: tempUser.full_name, country: tempUser.country, gender: tempUser.gender, followers_count: 0, following_count: 0, post_count: 0, verify_tick: null }]);
+              try {
+                  // --- GMAIL USER SYNC ---
+                  if (userEmail && !userEmail.endsWith(PHONE_LOGIN_DOMAIN)) {
+                      const { data: tempUser } = await sb.from('user-verify-gmail').select('*').eq('email', userEmail).maybeSingle();
                       
-                      // Auto-Create Wallet
-                      await createWalletForUser(session.user.id, tempUser.full_name, tempUser.username);
-
-                      await sb.from('user-verify-gmail').delete().eq('email', userEmail);
-                      window.location.href = "main.html";
-                  } else {
-                      // Already verified but logging in again? Check if wallet exists just in case
-                      // (Optional, but good for safety if sync happened but wallet failed)
-                      const { data: pData } = await sb.from('user-profile-data').select('full_name, username').eq('email', userEmail).maybeSingle();
-                      if (pData) {
-                          await createWalletForUser(session.user.id, pData.full_name, pData.username);
-                      }
-                      window.location.href = "main.html";
-                  }
-              } 
-              
-              // --- PHONE USER SYNC (NEW) ---
-              else if (userEmail && userEmail.endsWith(PHONE_LOGIN_DOMAIN)) {
-                  const cleanPhone = userEmail.replace(PHONE_LOGIN_DOMAIN, '');
-                  // Check if user already exists in qineq_users to avoid duplicate entries
-                  const { data: existingQineq } = await sb.from('qineq_users').select('user_id').eq('user_id', session.user.id).maybeSingle();
-                  
-                  if (!existingQineq) {
-                      const { data: profileData } = await sb.from('user-profile-data').select('*').eq('phone_number', cleanPhone).maybeSingle();
-                      if (profileData) {
-                          await sb.from('qineq_users').insert([{
-                              user_id: session.user.id,
-                              username: profileData.username,
-                              full_name: profileData.full_name,
-                              country: profileData.country,
-                              gender: profileData.gender,
-                              followers_count: 0,
-                              following_count: 0,
-                              post_count: 0,
-                              verify_tick: null
-                          }]);
+                      if (tempUser) {
+                          // 1. Move data to permanent tables
+                          await sb.from('user-profile-data').insert([{ full_name: tempUser.full_name, username: tempUser.username, country: tempUser.country, gender: tempUser.gender, dob: tempUser.dob, email: tempUser.email, phone_number: tempUser.phone_number, created_at: new Date() }]);
+                          await sb.from('user-details').insert([{ full_name: tempUser.full_name, username: tempUser.username, country: tempUser.country, gender: tempUser.gender, dob: tempUser.dob, email: tempUser.email, password: tempUser.password, created_at: new Date() }]);
+                          await sb.from('qineq_users').insert([{ user_id: userId, username: tempUser.username, full_name: tempUser.full_name, country: tempUser.country, gender: tempUser.gender, followers_count: 0, following_count: 0, post_count: 0, verify_tick: null }]);
                           
-                          // Auto-Create Wallet
-                          await createWalletForUser(session.user.id, profileData.full_name, profileData.username);
+                          // 2. Auto-Create Wallet (CRITICAL FIX)
+                          await createWalletForUser(userId, tempUser.full_name, tempUser.username);
+
+                          // 3. Cleanup temp table
+                          await sb.from('user-verify-gmail').delete().eq('email', userEmail);
+                          
+                          window.location.href = "main.html";
+                      } else {
+                          // Already verified but logging in again? Check if wallet exists just in case
+                          const { data: pData } = await sb.from('user-profile-data').select('full_name, username').eq('email', userEmail).maybeSingle();
+                          if (pData) {
+                              await createWalletForUser(userId, pData.full_name, pData.username);
+                          }
+                          window.location.href = "main.html";
                       }
-                  } else {
-                      // Existing user logging in
-                      const { data: pData } = await sb.from('user-profile-data').select('full_name, username').eq('phone_number', cleanPhone).maybeSingle();
-                      if (pData) {
-                          await createWalletForUser(session.user.id, pData.full_name, pData.username);
+                  } 
+                  
+                  // --- PHONE USER SYNC (NEW) ---
+                  else if (userEmail && userEmail.endsWith(PHONE_LOGIN_DOMAIN)) {
+                      const cleanPhone = userEmail.replace(PHONE_LOGIN_DOMAIN, '');
+                      
+                      // Check if user already exists in qineq_users to avoid duplicate entries
+                      const { data: existingQineq } = await sb.from('qineq_users').select('user_id').eq('user_id', userId).maybeSingle();
+                      
+                      if (!existingQineq) {
+                          const { data: profileData } = await sb.from('user-profile-data').select('*').eq('phone_number', cleanPhone).maybeSingle();
+                          if (profileData) {
+                              await sb.from('qineq_users').insert([{
+                                  user_id: userId,
+                                  username: profileData.username,
+                                  full_name: profileData.full_name,
+                                  country: profileData.country,
+                                  gender: profileData.gender,
+                                  followers_count: 0,
+                                  following_count: 0,
+                                  post_count: 0,
+                                  verify_tick: null
+                              }]);
+                              
+                              // Auto-Create Wallet (CRITICAL FIX)
+                              await createWalletForUser(userId, profileData.full_name, profileData.username);
+                          }
+                      } else {
+                          // Existing user logging in
+                          const { data: pData } = await sb.from('user-profile-data').select('full_name, username').eq('phone_number', cleanPhone).maybeSingle();
+                          if (pData) {
+                              await createWalletForUser(userId, pData.full_name, pData.username);
+                          }
                       }
+                      window.location.href = "main.html";
                   }
+              } catch (error) {
+                  console.error("Error during auth sync:", error);
+                  // Still redirect to main.html even if sync fails, so user isn't stuck
                   window.location.href = "main.html";
               }
           }
