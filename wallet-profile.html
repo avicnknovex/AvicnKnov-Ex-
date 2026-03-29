@@ -222,13 +222,13 @@
     <script>
         // CONFIG
         const CONFIG = {
-            var SUPA_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
-    var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
-            BUCKET: 'user-wallet-image',
-            TABLE: 'wallet_user_profile'
-        };
+        SUPA_URL: 'https://hwrvqyipozrsxyjdpqag.supabase.co',
+        SUPA_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM',
+        BUCKET: 'user-wallet-image',
+        TABLE: 'wallet_user_profile'
+    };
 
-        var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+    const supa = supabase.createClient(CONFIG.SUPA_URL, CONFIG.SUPA_KEY);
 
         const app = {
             user: null,
