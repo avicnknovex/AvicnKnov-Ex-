@@ -1,937 +1,880 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>AvicnKnov Ex – Login</title>
+    <!-- Tailwind CSS for Premium UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Supabase Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
-        /* Modern Premium Reset & Base */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+      body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-color: #000000;
+        background-image: 
+          radial-gradient(at 0% 0%, rgba(128, 0, 128, 0.4) 0, transparent 50%), 
+          radial-gradient(at 50% 0%, rgba(255, 255, 255, 0.1) 0, transparent 50%), 
+          radial-gradient(at 100% 0%, rgba(128, 0, 128, 0.4) 0, transparent 50%);
+        background-attachment: fixed;
+        background-size: cover;
+        overflow-x: hidden;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+      }
+      
+      h1, h2, h3, .brand-font {
+        font-family: 'Outfit', sans-serif;
+      }
 
-        body, html {
-            height: 100%;
-            width: 100%;
-            /* Black & Purple Theme Background Animated */
-            background: radial-gradient(circle at center, #1a0b2e 0%, #000000 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow-x: hidden;
-            position: relative;
-        }
+      /* Premium Glass Effect */
+      .glass-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(128, 0, 128, 0.2);
+        width: 100%;
+        max-width: 420px;
+        padding: 2rem;
+        border-radius: 1.5rem;
+        position: relative;
+      }
 
-        /* Abstract Premium Glowing Orbs for Background effect */
-        body::before, body::after {
-            content: '';
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            z-index: 0;
-            opacity: 0.5;
-            animation: pulseOrb 8s infinite alternate ease-in-out;
-        }
-        body::before {
-            width: 300px; height: 300px;
-            background: rgba(147, 51, 234, 0.3);
-            top: 10%; left: 15%;
-        }
-        body::after {
-            width: 250px; height: 250px;
-            background: rgba(255, 255, 255, 0.1);
-            bottom: 15%; right: 15%;
-            animation-delay: 2s;
-        }
+      /* Input Styling */
+      .input-premium {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: white;
+        transition: all 0.3s ease;
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border-radius: 0.75rem;
+        outline: none;
+        font-size: 0.875rem;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+      }
+      .input-premium:focus {
+        border-color: #00ffe1;
+        box-shadow: 0 0 0 2px rgba(0, 255, 225, 0.1);
+        background: rgba(15, 23, 42, 0.8);
+      }
+      .input-premium option {
+        background: #0f172a;
+        color: white;
+      }
+      
+      /* Smooth Transitions for Forms */
+      .form {
+        display: none;
+        flex-direction: column;
+        gap: 1rem;
+        animation: fadeIn 0.4s ease-out forwards;
+      }
+      .form.active {
+        display: flex;
+      }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
 
-        @keyframes pulseOrb {
-            0% { transform: scale(1) translate(0, 0); opacity: 0.4;}
-            100% { transform: scale(1.3) translate(20px, 30px); opacity: 0.7;}
-        }
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-        .container {
-            background: rgba(15, 10, 25, 0.85);
-            backdrop-filter: blur(15px);
-            padding: 35px 30px;
-            border-radius: 20px;
-            border: 1px solid rgba(168, 85, 247, 0.3);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(168, 85, 247, 0.2);
-            max-width: 420px;
-            width: 90%;
-            text-align: center;
-            color: white;
-            z-index: 10;
-            animation: formEntrance 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-        }
+      /* Neon Text */
+      .neon-text {
+        color: #00ffe1;
+        text-shadow: 0 0 10px rgba(0, 255, 225, 0.3);
+      }
 
-        @keyframes formEntrance {
-            0% { opacity: 0; transform: translateY(30px) scale(0.95); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
+      /* Premium Toast Notifications */
+      #toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+      }
+      .premium-toast {
+        background: rgba(15, 23, 42, 0.9);
+        backdrop-filter: blur(10px);
+        border-left: 4px solid #00ffe1;
+        border-radius: 8px;
+        padding: 16px 20px;
+        color: white;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 14px;
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transform: translateX(120%);
+        opacity: 0;
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      }
+      .premium-toast.show {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      .premium-toast.success { border-left-color: #10b981; }
+      .premium-toast.error { border-left-color: #ef4444; }
+      .premium-toast i { font-size: 18px; }
+      .premium-toast.success i { color: #10b981; }
+      .premium-toast.error i { color: #ef4444; }
+      .premium-toast.info i { color: #00ffe1; }
 
-        /* Exchange Logo Animations */
-        .exchange-logo {
-            width: 85px;
-            height: auto;
-            margin: -60px auto 15px; /* Adjusting up visually */
-            display: block;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1), transparent);
-            animation: 
-                dropFromTop 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
-                levitateAndGlow 5s infinite ease-in-out alternate;
-        }
+      /* Logo Animation */
+      .animated-logo {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1rem auto;
+        background-image: url('https://hwrvqyipozrsxyjdpqag.supabase.co/storage/v1/object/public/AvicnKnov%20Ex%20Image/1774528165689%20(2).png');
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        animation: logoEntrance 2s cubic-bezier(0.25, 1, 0.5, 1) forwards, logoGlow 6s infinite alternate 2s;
+      }
 
-        @keyframes dropFromTop {
-            0% { transform: translateY(-100px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes levitateAndGlow {
-            0% {
-                transform: translateY(0);
-                filter: drop-shadow(0 0 5px rgba(168, 85, 247, 0.5));
-            }
-            100% {
-                transform: translateY(-8px);
-                filter: drop-shadow(0 0 25px rgba(168, 85, 247, 1)) drop-shadow(0 0 10px #ffffff);
-            }
-        }
+      @keyframes logoEntrance {
+        0% { transform: translateY(-50px) scale(0.8); opacity: 0; }
+        50% { transform: translateY(10px) scale(1.05); opacity: 1; }
+        100% { transform: translateY(0) scale(1); opacity: 1; }
+      }
 
-        .title {
-            font-size: 1.8rem;
-            margin-bottom: 25px;
-            font-weight: 700;
-            background: linear-gradient(90deg, #fff, #a855f7, #fff);
-            background-size: 200% auto;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: gradientText 4s linear infinite;
-        }
-        @keyframes gradientText {
-            0% { background-position: 0% center; }
-            100% { background-position: 200% center; }
-        }
+      @keyframes logoGlow {
+        0% { filter: drop-shadow(0 0 10px rgba(128, 0, 128, 0.6)); transform: translateY(0px); }
+        100% { filter: drop-shadow(0 0 25px rgba(0, 255, 225, 0.9)) drop-shadow(0 0 15px rgba(128, 0, 128, 0.8)); transform: translateY(-5px); }
+      }
 
-        .menu {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            gap: 12px;
-            background: rgba(0,0,0,0.4);
-            padding: 5px;
-            border-radius: 12px;
-            border: 1px solid rgba(168, 85, 247, 0.1);
-        }
+      /* Menu Buttons (Tabs) */
+      .menu {
+        display: flex;
+        padding: 4px;
+        background: rgba(30, 41, 59, 0.5);
+        border-radius: 0.75rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      .menu button {
+        flex: 1;
+        padding: 0.625rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        border-radius: 0.5rem;
+        color: #94a3b8;
+        background: transparent;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+      }
+      .menu button.active {
+        background: white;
+        color: #0f172a;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      }
 
-        .menu button {
-            flex: 1;
-            background: transparent;
-            border: none;
-            padding: 10px;
-            color: #ccc;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
+      /* Auth Type Selector (Email/Phone) */
+      .auth-type-selector {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+      .auth-type-selector button {
+        flex: 1;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        border: 1px solid #334155;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #94a3b8;
+        background: transparent;
+        transition: all 0.3s ease;
+        cursor: pointer;
+      }
+      .auth-type-selector button.active {
+        background: rgba(0, 255, 225, 0.1);
+        color: #00ffe1;
+        border-color: rgba(0, 255, 225, 0.5);
+      }
 
-        .menu button.active {
-            background: #a855f7;
-            color: white;
-            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
-        }
+      /* Primary Buttons */
+      .btn-primary {
+        width: 100%;
+        background: linear-gradient(to right, #06b6d4, #2563eb);
+        color: white;
+        font-weight: bold;
+        padding: 0.875rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 15px -3px rgba(6, 182, 212, 0.3);
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        margin-top: 0.5rem;
+      }
+      .btn-primary:hover {
+        background: linear-gradient(to right, #22d3ee, #3b82f6);
+        transform: translateY(-1px);
+      }
+      .btn-primary:active {
+        transform: scale(0.98);
+      }
+      
+      .btn-register {
+        background: linear-gradient(to right, #10b981, #0d9488);
+        box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+      }
+      .btn-register:hover {
+        background: linear-gradient(to right, #34d399, #14b8a6);
+      }
 
-        .form {
-            display: none;
-            flex-direction: column;
-            gap: 15px;
-            opacity: 0;
-            transform: translateY(10px);
-        }
+      /* Support Button */
+      .support-link {
+        position: fixed;
+        bottom: 1.5rem;
+        right: 1.5rem;
+        width: 3.5rem;
+        height: 3.5rem;
+        background: linear-gradient(to right, #9333ea, #06b6d4);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 20px rgba(0, 255, 225, 0.5);
+        transition: all 0.3s ease;
+        text-decoration: none;
+        z-index: 50;
+      }
+      .support-link:hover {
+        transform: scale(1.1) rotate(12deg);
+        box-shadow: 0 0 30px rgba(147, 51, 234, 0.8);
+      }
+      .support-icon {
+        color: white;
+        font-size: 1.5rem;
+      }
 
-        .form.active {
-            display: flex;
-            animation: fadeUp 0.4s forwards;
-        }
-
-        @keyframes fadeUp {
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .form input:not([type="checkbox"]), .form select {
-            padding: 14px 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            width: 100%;
-            outline: none;
-            background: rgba(255,255,255,0.05);
-            color: white;
-            font-size: 0.95rem;
-            transition: border-color 0.3s, box-shadow 0.3s;
-        }
-
-        .form input:not([type="checkbox"]):focus, .form select:focus {
-            border-color: #a855f7;
-            box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
-            background: rgba(255,255,255,0.08);
-        }
-
-        .form select option {
-            color: white;
-            background: #1a0b2e;
-        }
-
-        /* Password Wrapper for Eye Icon */
-        .password-container {
-            position: relative;
-            width: 100%;
-        }
-        
-        .password-container input {
-            padding-right: 45px !important;
-        }
-
-        .eye-btn {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: #888;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 5px;
-        }
-
-        .eye-btn:hover {
-            color: #a855f7;
-        }
-        
-        .eye-btn svg {
-            width: 20px;
-            height: 20px;
-            transition: all 0.3s;
-        }
-
-        .form > button:not(.btn-link) {
-            padding: 14px;
-            border: none;
-            border-radius: 8px;
-            width: 100%;
-            background: linear-gradient(135deg, #a855f7, #7e22ce);
-            color: white;
-            font-weight: bold;
-            font-size: 1rem;
-            cursor: pointer;
-            letter-spacing: 0.5px;
-            box-shadow: 0 4px 15px rgba(126, 34, 206, 0.4);
-            margin-top: 5px;
-        }
-
-        .form > button:not(.btn-link):hover {
-            box-shadow: 0 6px 20px rgba(126, 34, 206, 0.6);
-            transform: translateY(-2px);
-            background: linear-gradient(135deg, #b065f7, #8e30dd);
-        }
-        
-        .form > button:not(.btn-link):active {
-            transform: translateY(0);
-        }
-
-        .btn-link {
-            background: transparent !important;
-            color: #a855f7 !important;
-            font-weight: normal !important;
-            border: 1px solid rgba(168,85,247, 0.3) !important;
-            margin-top: 5px;
-            box-shadow: none !important;
-        }
-        .btn-link:hover {
-            border-color: #a855f7 !important;
-            background: rgba(168,85,247, 0.1) !important;
-            transform: none !important;
-        }
-
-        /* Auth Type Selector */
-        .auth-type-selector {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 5px;
-        }
-        .auth-type-selector button {
-            flex: 1;
-            background: rgba(255,255,255,0.05);
-            color: #bbb;
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            cursor: pointer;
-        }
-        .auth-type-selector button.active {
-            background: rgba(168, 85, 247, 0.15);
-            color: #fff;
-            border: 1px solid #a855f7;
-            font-weight: bold;
-        }
-
-        /* Policy & Tems Checkbox */
-        .policy-container {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            margin-top: 8px;
-            text-align: left;
-            font-size: 0.8rem;
-            color: #aaa;
-        }
-        .policy-container input[type="checkbox"] {
-            margin-top: 2px;
-            min-width: 16px;
-            height: 16px;
-            cursor: pointer;
-            accent-color: #a855f7;
-        }
-        .policy-container a {
-            color: #fff;
-            text-decoration: underline;
-            text-decoration-color: #a855f7;
-            font-weight: bold;
-        }
-        .policy-container a:hover {
-            color: #a855f7;
-        }
-
-        /* Support Button (Replaced Emoji) */
-        .support-link {
-            position: fixed;
-            bottom: 25px;
-            right: 25px;
-            width: 55px;
-            height: 55px;
-            background: linear-gradient(135deg, #1e1e1e, #333);
-            border: 2px solid #a855f7;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 5px 15px rgba(168, 85, 247, 0.4);
-            text-decoration: none;
-            z-index: 100;
-            overflow: hidden;
-            animation: bounceFloat 3s infinite ease-in-out;
-        }
-        .support-link:before {
-            content:'';
-            position: absolute;
-            top: 0; left:-100%;
-            width:50%; height:100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transform: skewX(-20deg);
-            transition: left 0.7s;
-        }
-        .support-link:hover:before {
-            left: 150%;
-        }
-        .support-link svg {
-            color: #fff;
-            width: 26px;
-            height: 26px;
-        }
-        @keyframes bounceFloat {
-            0%, 100% { transform: translateY(0); box-shadow: 0 5px 15px rgba(168, 85, 247, 0.4); }
-            50% { transform: translateY(-8px); box-shadow: 0 10px 25px rgba(168, 85, 247, 0.7); }
-        }
-
-        /* WTQ Block styling updated */
-        #wtq-display-section {
-            background: rgba(168, 85, 247, 0.1);
-            border: 1px solid rgba(168, 85, 247, 0.3);
-            box-shadow: inset 0 0 15px rgba(168, 85, 247, 0.05);
-            padding: 20px;
-            border-radius: 12px;
-            margin-top: 10px;
-            animation: fadeInWTQ 0.5s ease;
-        }
-        @keyframes fadeInWTQ { from{opacity:0; transform: scale(0.9);} to{opacity:1; transform:scale(1);} }
-        .wtq-inner {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            background: #000;
-            border: 1px solid #333;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        /* Custom Notification Toast (Premium Design Replacing native alerts) */
-        #custom-toast-container {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            align-items: center;
-            pointer-events: none;
-        }
-
-        .custom-toast {
-            min-width: 300px;
-            padding: 14px 20px;
-            background: rgba(15, 10, 25, 0.95);
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
-            color: #fff;
-            font-size: 0.95rem;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-            border-left: 4px solid #fff;
-            pointer-events: all;
-            animation: toastEnter 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-        .custom-toast.success { border-left-color: #22c55e; box-shadow: 0 10px 30px rgba(34, 197, 94, 0.2); }
-        .custom-toast.error { border-left-color: #ef4444; box-shadow: 0 10px 30px rgba(239, 68, 68, 0.2); }
-        .custom-toast.info { border-left-color: #a855f7; box-shadow: 0 10px 30px rgba(168, 85, 247, 0.2); }
-
-        .custom-toast svg { width: 22px; height: 22px; flex-shrink: 0; }
-        .toast-msg { flex: 1; text-align: left; line-height: 1.4; }
-        
-        @keyframes toastEnter {
-            0% { transform: translateY(-40px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes toastExit {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(0.9); opacity: 0; }
-        }
+      /* Checkbox & Links */
+      .policy-container {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        margin-top: 0.25rem;
+      }
+      .policy-container input[type="checkbox"] {
+        margin-top: 0.25rem;
+        width: 1rem;
+        height: 1rem;
+        accent-color: #00ffe1;
+        cursor: pointer;
+        border-radius: 0.25rem;
+      }
+      .policy-container label {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        line-height: 1.5;
+      }
+      .policy-container a {
+        color: #00ffe1;
+        text-decoration: none;
+      }
+      .policy-container a:hover {
+        text-decoration: underline;
+      }
     </style>
-</head>
-<body onclick="closeAllForms(event)">
+  </head>
+  <body onclick="closeAllForms(event)">
+    
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
 
-    <!-- Custom Notification Container -->
-    <div id="custom-toast-container"></div>
+    <!-- Background Elements -->
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-purple-600/20 rounded-full blur-[100px]"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-cyan-600/20 rounded-full blur-[100px]"></div>
+    </div>
 
-    <div class="container" onclick="event.stopPropagation()">
-        <!-- Added Logo here -->
-        <img src="https://hwrvqyipozrsxyjdpqag.supabase.co/storage/v1/object/public/AvicnKnov%20Ex%20Image/1774528165689%20(2).png" alt="Exchange Logo" class="exchange-logo">
+    <!-- Main Container -->
+    <div class="glass-card" onclick="event.stopPropagation()">
+      
+      <!-- Logo & Title -->
+      <div class="text-center mb-6">
+        <div class="animated-logo"></div>
+        <h1 class="text-3xl font-bold text-white brand-font tracking-tight">AvicnKnov <span class="neon-text">Ex</span></h1>
+        <p class="text-slate-400 text-sm mt-1">Gateway to the Future of Crypto</p>
+      </div>
+
+      <!-- Menu Tabs -->
+      <div class="menu">
+        <button id="btn-login" class="active" onclick="showForm('login')">Login</button>
+        <button id="btn-register" onclick="showForm('register')">Create Account</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <div id="login" class="form active">
+        <div class="relative group">
+            <i class="fa-regular fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-cyan-400 transition-colors"></i>
+            <input type="text" id="login-identifier" placeholder="Gmail or Phone Number" class="input-premium pl-11">
+        </div>
         
-        <div class="title">AvicnKnov Ex</div>
-        <div class="menu">
-            <button id="btn-login" onclick="showForm('login')">Login</button>
-            <button id="btn-register" onclick="showForm('register')">Create Account</button>
+        <div class="relative group">
+            <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-cyan-400 transition-colors"></i>
+            <input type="password" id="login-pass" placeholder="Password" class="input-premium pl-11 pr-11">
+            <i class="fa-solid fa-eye absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 cursor-pointer transition-colors" onclick="togglePassword('login-pass', this)"></i>
         </div>
 
-        <div id="login" class="form">
-            <input type="text" id="login-identifier" placeholder="Gmail or Phone Number">
-            
-            <div class="password-container">
-                <input type="password" id="login-pass" placeholder="Password">
-                <button type="button" class="eye-btn" onclick="togglePassVisibility('login-pass', this)" title="Show/Hide Password">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                </button>
-            </div>
+        <button onclick="login()" class="btn-primary">
+            Secure Login <i class="fa-solid fa-arrow-right ml-2"></i>
+        </button>
+        
+        <button onclick="showForm('forgot')" class="text-sm text-slate-400 hover:text-cyan-400 transition-colors text-center w-full mt-1 bg-transparent border-none cursor-pointer">
+            Forgot Password?
+        </button>
+      </div>
 
-            <button onclick="login()">Login Account</button>
-            <button onclick="showForm('forgot')" class="btn-link">Forgot Password?</button>
+      <!-- REGISTER FORM -->
+      <div id="register" class="form">
+        <div class="auth-type-selector">
+            <button id="reg-type-email" class="active" onclick="setRegType('email')">
+                <i class="fa-solid fa-envelope mr-1"></i> Use Gmail
+            </button>
+            <button id="reg-type-phone" onclick="setRegType('phone')">
+                <i class="fa-solid fa-phone mr-1"></i> Use Phone
+            </button>
         </div>
-
-        <div id="register" class="form">
-            <div class="auth-type-selector">
-                <button id="reg-type-email" class="active" onclick="setRegType('email')">Use Gmail</button>
-                <button id="reg-type-phone" onclick="setRegType('phone')">Use Phone Number</button>
-            </div>
-            
-            <input type="text" id="reg-name" placeholder="Full Name">
-            <input type="text" id="reg-username" placeholder="Username">
-            <select id="reg-country"></select>
-            <select id="reg-gender"> 
+        
+        <div class="grid grid-cols-2 gap-3">
+            <input type="text" id="reg-name" placeholder="Full Name" class="input-premium">
+            <input type="text" id="reg-username" placeholder="Username" class="input-premium">
+        </div>
+        
+        <div class="grid grid-cols-2 gap-3">
+            <select id="reg-country" class="input-premium cursor-pointer"></select>
+            <select id="reg-gender" class="input-premium cursor-pointer"> 
                 <option value="" disabled selected>Select Gender</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
                 <option value="Other">Other</option>
             </select>
-            <input type="date" id="reg-dob" title="Date of Birth">
+        </div>
+        
+        <input type="date" id="reg-dob" class="input-premium text-slate-400">
 
-            <input type="email" id="reg-email" placeholder="Gmail Address">
-            <input type="text" id="reg-phone" placeholder="Phone (e.g., +919876543210)" style="display:none;">
-            
-            <div class="password-container">
-                <input type="password" id="reg-pass" placeholder="Password (8-16 chars)">
-                <button type="button" class="eye-btn" onclick="togglePassVisibility('reg-pass', this)" title="Show/Hide Password">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                </button>
-            </div>
-            
-            <div class="policy-container">
-                <input type="checkbox" id="reg-policy-check">
-                <label for="reg-policy-check">
-                    I confirm creation voluntarily & agree to 
-                    <a href="policy.html" target="_blank">Policy</a>, 
-                    <a href="service.html" target="_blank">Terms</a> & 
-                    <a href="community.html" target="_blank">Guidelines</a>.
-                </label>
-            </div>
-            <button id="reg-btn" onclick="register()">Create My Account</button>
+        <div class="relative group">
+            <i class="fa-solid fa-at absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-cyan-400 transition-colors" id="reg-icon-dynamic"></i>
+            <input type="email" id="reg-email" placeholder="Enter Gmail Address" class="input-premium pl-11">
+            <input type="text" id="reg-phone" placeholder="Phone Number (e.g., +91...)" class="input-premium pl-11" style="display:none;">
+        </div>
+        
+        <div class="relative group">
+            <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-cyan-400 transition-colors"></i>
+            <input type="password" id="reg-pass" placeholder="Create Password (8-16 chars)" class="input-premium pl-11 pr-11">
+            <i class="fa-solid fa-eye absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 cursor-pointer transition-colors" onclick="togglePassword('reg-pass', this)"></i>
+        </div>
+        
+        <div class="policy-container">
+            <input type="checkbox" id="reg-policy-check">
+            <label for="reg-policy-check">
+                I confirm I am creating this account voluntarily and agree to the 
+                <a href="policy.html" target="_blank">Policy</a>, 
+                <a href="service.html" target="_blank">Service</a>, and 
+                <a href="community.html" target="_blank">Community Guideline</a>.
+            </label>
+        </div>
+        
+        <button id="reg-btn" onclick="register()" class="btn-primary btn-register">
+            Register
+        </button>
 
-            <div id="wtq-display-section" style="display: none;">
-                <p style="margin-bottom: 8px; color: #a855f7; font-weight: 500;">Secure Your WTQ ID:</p>
-                <div class="wtq-inner">
-                    <strong id="generated-wtq-id" style="font-size: 1.15rem; color: #fff; letter-spacing: 2px;"></strong>
-                    <button onclick="copyWTQID()" style="width: auto; padding: 6px 14px; background: #333; color: white; border: 1px solid rgba(168,85,247,0.5); font-weight: normal; border-radius: 5px;">Copy</button>
-                </div>
-                <button onclick="redirectToAgent('register')">Verify with Agent</button>
-                <p id="wtq-timer" style="margin-top: 10px; font-size: 0.8rem; color: #777;"></p>
+        <!-- WTQ Display Section -->
+        <div id="wtq-display-section" style="display: none;" class="mt-2 p-4 bg-slate-800/80 rounded-xl border border-cyan-500/30 text-center animate-pulse">
+            <p class="text-xs text-cyan-400 font-bold uppercase tracking-wider mb-2">Your Unique WTQ ID</p>
+            <div class="flex items-center justify-between bg-black/40 p-2 rounded-lg border border-white/10 mb-3">
+                <strong id="generated-wtq-id" class="text-lg text-white font-mono tracking-widest pl-2"></strong>
+                <button onclick="copyWTQID()" class="bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-400 px-3 py-1 rounded text-xs font-bold transition-colors border-none cursor-pointer">Copy</button>
             </div>
+            <button onclick="redirectToAgent('register')" class="w-full bg-white text-slate-900 font-bold py-2 rounded-lg hover:bg-slate-200 transition-colors text-xs border-none cursor-pointer">
+                Verify Agent Now
+            </button>
+            <p id="wtq-timer" class="mt-2 text-[10px] text-slate-500"></p>
+        </div>
+      </div>
+
+      <!-- FORGOT PASSWORD FORM -->
+      <div id="forgot" class="form">
+        <div class="text-center mb-1">
+            <h3 class="text-white font-bold text-lg">Reset Password</h3>
+            <p class="text-slate-400 text-xs">Select method to recover account</p>
         </div>
 
-        <div id="forgot" class="form">
-            <div class="auth-type-selector">
-                <button id="forgot-type-email" class="active" onclick="setForgotType('email')">Use Gmail</button>
-                <button id="forgot-type-phone" onclick="setForgotType('phone')">Use Phone Number</button>
-            </div>
-            <input type="email" id="forgot-email" placeholder="Registered Gmail">
-            <input type="text" id="forgot-phone" placeholder="Registered Phone Number" style="display:none;">
-
-            <button onclick="resetPassword()">Send Reset Link</button>
+        <div class="auth-type-selector">
+            <button id="forgot-type-email" class="active" onclick="setForgotType('email')">Use Gmail</button>
+            <button id="forgot-type-phone" onclick="setForgotType('phone')">Use Phone</button>
         </div>
+        
+        <div class="relative group">
+            <input type="email" id="forgot-email" placeholder="Registered Gmail" class="input-premium">
+            <input type="text" id="forgot-phone" placeholder="Registered Phone Number" class="input-premium" style="display:none;">
+        </div>
+
+        <button onclick="resetPassword()" class="btn-primary" style="background: linear-gradient(to right, #475569, #334155); box-shadow: none;">
+            Send Reset Link
+        </button>
+        
+        <button onclick="showForm('login')" class="text-xs text-slate-500 hover:text-white transition-colors text-center w-full bg-transparent border-none cursor-pointer mt-1">
+            Back to Login
+        </button>
+      </div>
+
     </div>
     
-    <!-- Premium Support Link Icon replaced Emoji with SVG -->
-    <a href="support.html" class="support-link" title="Help & Support">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14h2v2h-2zm1-3.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 7.5 12 7.5s2.5 1.12 2.5 2.5-1.04 2.21-1.63 2.72c-.52.46-.87 1.05-.87 1.78v.5h-2v-.5c0-1.28.69-2.22 1.34-2.82.47-.43.83-.94.83-1.68 0-1.1-.9-2-2-2s-2 .9-2 2H8.5c0-1.93 1.57-3.5 3.5-3.5s3.5 1.57 3.5 3.5c0 1.25-.8 2.27-1.46 2.89-.5.47-.86 1.07-.86 1.61H12v-.5z"></path>
-        </svg>
+    <!-- Support Button -->
+    <a href="support.html" class="support-link group">
+        <i class="fa-solid fa-headset support-icon"></i>
     </a>
 
+    <!-- ORIGINAL JAVASCRIPT LOGIC (UNTOUCHED) -->
     <script>
-        // Supabase Credentials - Strict adherence: Kept Original values unedited
-        const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
-        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      // --- PREMIUM TOAST NOTIFICATION OVERRIDE ---
+      window.originalAlert = window.alert;
+      window.alert = function(message) {
+          const container = document.getElementById('toast-container');
+          if (!container) return window.originalAlert(message);
 
-        const PHONE_LOGIN_DOMAIN = '@crypto-temp.com';
-        let registrationType = 'email'; 
-        let forgotType = 'email'; 
+          const toast = document.createElement('div');
+          toast.className = 'premium-toast';
+          
+          let iconClass = 'fa-circle-info';
+          let typeClass = 'info';
+          
+          if (message.includes('✅') || message.toLowerCase().includes('success') || message.toLowerCase().includes('registered') || message.toLowerCase().includes('initiated')) {
+              iconClass = 'fa-circle-check';
+              typeClass = 'success';
+              message = message.replace('✅', '').trim();
+          } else if (message.includes('❌') || message.toLowerCase().includes('fail') || message.toLowerCase().includes('error') || message.toLowerCase().includes('not found')) {
+              iconClass = 'fa-circle-xmark';
+              typeClass = 'error';
+              message = message.replace('❌', '').trim();
+          }
 
-        // ==========================================
-        // UI Enhancements (Notifications & Passwords)
-        // ==========================================
+          toast.classList.add(typeClass);
+          toast.innerHTML = `<i class="fa-solid ${iconClass}"></i> <span>${message}</span>`;
+          
+          container.appendChild(toast);
+          
+          setTimeout(() => toast.classList.add('show'), 10);
+          
+          setTimeout(() => {
+              toast.classList.remove('show');
+              setTimeout(() => toast.remove(), 400);
+          }, 4000);
+      };
+
+      // Supabase Credentials
+      const SUPABASE_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+      const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      const PHONE_LOGIN_DOMAIN = '@crypto-temp.com';
+
+      let registrationType = 'email'; 
+      let forgotType = 'email'; 
+
+      // --- UTILITY FUNCTIONS ---
+
+      function togglePassword(inputId, icon) {
+          const input = document.getElementById(inputId);
+          if (input.type === 'password') {
+              input.type = 'text';
+              icon.classList.remove('fa-eye');
+              icon.classList.add('fa-eye-slash', 'text-cyan-400');
+          } else {
+              input.type = 'password';
+              icon.classList.remove('fa-eye-slash', 'text-cyan-400');
+              icon.classList.add('fa-eye');
+          }
+      }
+
+      function generateWTQID() {
+          const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+          let result = '';
+          for (let i = 0; i < 12; i++) {
+              result += characters.charAt(Math.floor(Math.random() * characters.length));
+          }
+          return result;
+      }
+      
+      // New functions for Wallet Creation
+      function generateWalletID() {
+          const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+          let result = '';
+          for (let i = 0; i < 12; i++) {
+              result += characters.charAt(Math.floor(Math.random() * characters.length));
+          }
+          return result;
+      }
+
+      function generateRecoveryID() {
+          const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+          let result = '';
+          for (let i = 0; i < 24; i++) {
+              result += characters.charAt(Math.floor(Math.random() * characters.length));
+          }
+          return result;
+      }
+
+      function generateWalletAddress() {
+          const hex = '0123456789abcdef';
+          let result = '0x';
+          for (let i = 0; i < 40; i++) {
+              result += hex.charAt(Math.floor(Math.random() * 16));
+          }
+          return result;
+      }
+
+      function redirectToAgent(action) {
+          const wtqId = document.getElementById('generated-wtq-id').textContent;
+          if (action === 'register' && wtqId) {
+              window.location.href = `agent.html?action=verify&id=${wtqId}`;
+          } else {
+              window.location.href = `agent.html?action=${action}`;
+          }
+      }
+
+      function copyWTQID() {
+          const wtqId = document.getElementById('generated-wtq-id').textContent;
+          navigator.clipboard.writeText(wtqId).then(() => {
+              alert("✅ WTQ ID copied to clipboard!");
+          }, () => {
+              alert("❌ Failed to copy WTQ ID. Please copy manually.");
+          });
+      }
+
+      // --- UI CONTROL FUNCTIONS ---
+      
+      function showForm(formId) {
+        const forms = document.querySelectorAll('.form');
+        const buttons = document.querySelectorAll('.menu button');
         
-        // Custom Alert Logic Override: Makes backend logic still run exactly 
-        // as you wanted without changing all logic strings of code!
-        window.alert = function(msg) {
-            const container = document.getElementById('custom-toast-container');
-            const toast = document.createElement('div');
-            toast.className = 'custom-toast';
-            
-            let svgIcon = `<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg>`; // default info
-            
-            if(msg.includes('❌') || msg.toLowerCase().includes('fail') || msg.toLowerCase().includes('error')) {
-                toast.classList.add('error');
-                svgIcon = `<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
-            } else if (msg.includes('✅') || msg.toLowerCase().includes('success') || msg.includes('initiated')) {
-                toast.classList.add('success');
-                svgIcon = `<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-            } else {
-                toast.classList.add('info');
-            }
-
-            msg = msg.replace('❌', '').replace('✅', '').replace('🔗', '').trim();
-
-            toast.innerHTML = `${svgIcon}<div class="toast-msg">${msg}</div>`;
-            container.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.animation = "toastExit 0.3s forwards";
-                setTimeout(() => { toast.remove(); }, 300);
-            }, 3500);
-        };
-
-        // Smooth toggle for passwords function
-        function togglePassVisibility(inputId, btn) {
-            const input = document.getElementById(inputId);
-            const isPassword = input.type === 'password';
-            input.type = isPassword ? 'text' : 'password';
-            
-            // Switch Premium SVG Paths
-            if(isPassword) {
-                // Eye Off (Crossed)
-                btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
-                btn.style.color = '#a855f7';
-            } else {
-                // Eye Normal
-                btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
-                btn.style.color = '#888';
-            }
-        }
-
-
-        // ==========================================
-        // Exact Original Functional & Supabase Backend Logic (Untouched execution flow)
-        // ==========================================
-
-        function generateWTQID() {
-            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let result = '';
-            for (let i = 0; i < 12; i++) {
-                result += characters.charAt(Math.floor(Math.random() * characters.length));
-            }
-            return result;
+        forms.forEach(f => f.classList.remove('active'));
+        buttons.forEach(b => b.classList.remove('active'));
+        
+        document.getElementById(formId).classList.add('active');
+        
+        const menuButton = document.getElementById(`btn-${formId}`);
+        if (menuButton) {
+            menuButton.classList.add('active');
+        } else if (formId === 'forgot') {
+            document.getElementById('btn-login').classList.add('active');
         }
         
-        function generateWalletID() {
-            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let result = '';
-            for (let i = 0; i < 12; i++) {
-                result += characters.charAt(Math.floor(Math.random() * characters.length));
+        document.getElementById('wtq-display-section').style.display = 'none';
+      }
+
+      // Naya Function: Jab bahar click ho toh band ho jaye
+      function closeAllForms(event) {
+          const forms = document.querySelectorAll('.form');
+          const buttons = document.querySelectorAll('.menu button');
+          forms.forEach(f => f.classList.remove('active'));
+          buttons.forEach(b => b.classList.remove('active'));
+      }
+
+      function setRegType(type) {
+          registrationType = type;
+          const emailInput = document.getElementById('reg-email');
+          const phoneInput = document.getElementById('reg-phone');
+          const btnEmail = document.getElementById('reg-type-email');
+          const btnPhone = document.getElementById('reg-type-phone');
+          const regButton = document.getElementById('reg-btn');
+          const iconDynamic = document.getElementById('reg-icon-dynamic');
+          
+          document.getElementById('wtq-display-section').style.display = 'none'; 
+
+          if (type === 'email') {
+              emailInput.style.display = 'block';
+              phoneInput.style.display = 'none';
+              btnEmail.classList.add('active');
+              btnPhone.classList.remove('active');
+              regButton.textContent = 'Register';
+              iconDynamic.classList.remove('fa-phone');
+              iconDynamic.classList.add('fa-at');
+          } else { 
+              emailInput.style.display = 'none';
+              phoneInput.style.display = 'block';
+              btnPhone.classList.add('active');
+              btnEmail.classList.remove('active');
+              regButton.textContent = 'Create Account & Get ID';
+              iconDynamic.classList.remove('fa-at');
+              iconDynamic.classList.add('fa-phone');
+          }
+      }
+
+      function setForgotType(type) {
+          forgotType = type;
+          const emailInput = document.getElementById('forgot-email');
+          const phoneInput = document.getElementById('forgot-phone');
+          const btnEmail = document.getElementById('forgot-type-email');
+          const btnPhone = document.getElementById('forgot-type-phone');
+          const resetBtn = document.querySelector('#forgot button');
+
+          if (type === 'email') {
+              emailInput.style.display = 'block';
+              phoneInput.style.display = 'none';
+              btnEmail.classList.add('active');
+              btnPhone.classList.remove('active');
+              resetBtn.textContent = 'Send Reset Link';
+          } else { 
+              emailInput.style.display = 'none';
+              phoneInput.style.display = 'block';
+              btnPhone.classList.add('active');
+              btnEmail.classList.remove('active');
+              resetBtn.textContent = 'Forgot Agent'; 
+          }
+      }
+
+      // --- MAIN AUTH LOGIC ---
+
+      async function login() {
+        const identifier = document.getElementById('login-identifier').value.trim(); 
+        const pass = document.getElementById('login-pass').value;
+
+        if (!identifier || !pass) return alert("❌ Fill all fields");
+
+        const isEmail = identifier.includes('@'); 
+        
+        if (isEmail) {
+            let { data, error } = await sb.auth.signInWithPassword({ email: identifier, password: pass });
+            if (error) {
+                if (error.message.includes('Email not confirmed')) {
+                    alert("❌ Login Failed: Email not verified. Check your Gmail.");
+                } else {
+                    alert("❌ Login Failed (Gmail): " + error.message);
+                }
+            } else if (data.session) {
+                window.location.href = "main.html";
             }
-            return result;
-        }
+        } else {
+            const cleanNumber = identifier.replace(/[^0-9+]/g, ''); 
+            const dummyEmail = cleanNumber + PHONE_LOGIN_DOMAIN;
+            let { data, error } = await sb.auth.signInWithPassword({ email: dummyEmail, password: pass });
 
-        function generateRecoveryID() {
-            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let result = '';
-            for (let i = 0; i < 24; i++) {
-                result += characters.charAt(Math.floor(Math.random() * characters.length));
-            }
-            return result;
-        }
-
-        function generateWalletAddress() {
-            const hex = '0123456789abcdef';
-            let result = '0x';
-            for (let i = 0; i < 40; i++) {
-                result += hex.charAt(Math.floor(Math.random() * 16));
-            }
-            return result;
-        }
-
-        function redirectToAgent(action) {
-            const wtqId = document.getElementById('generated-wtq-id').textContent;
-            if (action === 'register' && wtqId) {
-                window.location.href = `agent.html?action=verify&id=${wtqId}`;
-            } else {
-                window.location.href = `agent.html?action=${action}`;
+            if (error) {
+                const { data: unverifiedData } = await sb.from('user-verify').select('wtq_id, is_verified').eq('phone_number', cleanNumber).maybeSingle();
+                if (unverifiedData && unverifiedData.is_verified === false) {
+                    alert("❌ Account not verified. Please use the 'Verify Agent' button on the registration page to complete verification.");
+                } else {
+                    alert("❌ Login Failed: Account not found or credentials incorrect.");
+                }
+            } else if (data.session) {
+                window.location.href = "main.html";
             }
         }
+      }
 
-        function copyWTQID() {
-            const wtqId = document.getElementById('generated-wtq-id').textContent;
-            navigator.clipboard.writeText(wtqId).then(() => {
-                alert("✅ WTQ ID copied securely!");
-            }, () => {
-                alert("❌ Failed to copy WTQ ID. Please copy manually.");
-            });
+      async function register() {
+        const name = document.getElementById('reg-name').value;
+        const username = document.getElementById('reg-username').value;
+        const country = document.getElementById('reg-country').value;
+        const gender = document.getElementById('reg-gender').value; 
+        const dob = document.getElementById('reg-dob').value;
+        const pass = document.getElementById('reg-pass').value;
+        const email = document.getElementById('reg-email').value;
+        const phone = document.getElementById('reg-phone').value;
+        const policyChecked = document.getElementById('reg-policy-check').checked; 
+
+        const identifier = registrationType === 'email' ? email : phone;
+
+        if (!name || !username || !country || !gender || !dob || !identifier || !pass || !policyChecked) {
+            return alert("❌ Fill all fields and agree to the policy.");
         }
+        
+        if (pass.length < 8 || pass.length > 16) {
+            return alert("❌ Password must be between 8 and 16 characters.");
+        }
+        
+        const age = new Date().getFullYear() - new Date(dob).getFullYear();
+        if (age < 17 || age > 110) return alert("❌ Age must be between 17 and 110");
+        
+        const regButton = document.getElementById('reg-btn');
+        regButton.disabled = true;
+        regButton.textContent = 'Processing...';
 
-        function showForm(formId) {
-            const forms = document.querySelectorAll('.form');
-            const buttons = document.querySelectorAll('.menu button');
-            
-            forms.forEach(f => f.classList.remove('active'));
-            buttons.forEach(b => b.classList.remove('active'));
-            
-            document.getElementById(formId).classList.add('active');
-            
-            const menuButton = document.getElementById(`btn-${formId}`);
-            if (menuButton) {
-                menuButton.classList.add('active');
-            } else if (formId === 'forgot') {
-                document.getElementById('btn-login').classList.add('active');
+        if (registrationType === 'email') {
+            const { error: verifyInsertError } = await sb.from('user-verify-gmail').insert([{ email, password: pass, full_name: name, username, country, gender, dob, phone_number: phone }]);
+            if (verifyInsertError) {
+                regButton.disabled = false;
+                regButton.textContent = 'Register';
+                return alert("❌ Registration Failed: " + verifyInsertError.message);
             }
             
-            document.getElementById('wtq-display-section').style.display = 'none';
-        }
-
-        function closeAllForms(event) {
-            const forms = document.querySelectorAll('.form');
-            const buttons = document.querySelectorAll('.menu button');
-            forms.forEach(f => f.classList.remove('active'));
-            buttons.forEach(b => b.classList.remove('active'));
-        }
-
-        function setRegType(type) {
-            registrationType = type;
-            const emailInput = document.getElementById('reg-email');
-            const phoneInput = document.getElementById('reg-phone');
-            const btnEmail = document.getElementById('reg-type-email');
-            const btnPhone = document.getElementById('reg-type-phone');
-            const regButton = document.getElementById('reg-btn');
-            
-            document.getElementById('wtq-display-section').style.display = 'none'; 
-
-            if (type === 'email') {
-                emailInput.style.display = 'block';
-                phoneInput.style.display = 'none';
-                btnEmail.classList.add('active');
-                btnPhone.classList.remove('active');
-                regButton.textContent = 'Create My Account';
-            } else { 
-                emailInput.style.display = 'none';
-                phoneInput.style.display = 'block';
-                btnPhone.classList.add('active');
-                btnEmail.classList.remove('active');
+            let { error: authError } = await sb.auth.signUp({ email, password: pass, options: { emailRedirectTo: 'https://avicnknovex.github.io/AvicnKnov-Ex-/success.html' } });
+            regButton.disabled = false;
+            regButton.textContent = 'Register';
+            if (authError) return alert("❌ Registration Failed (Auth): " + authError.message);
+            alert("✅ Registered! Check your Gmail to verify.");
+        } else {
+            const phoneNumber = phone.trim();
+            const { data: verifiedUser } = await sb.from('user-details').select('wtq_id').eq('phone_number', phoneNumber).maybeSingle();
+            if (verifiedUser) {
+                regButton.disabled = false;
                 regButton.textContent = 'Create Account & Get ID';
+                return alert("❌ This number is already registered.");
             }
+            const newWTQID = generateWTQID();
+            const { error: insertError } = await sb.from('user-verify').insert({ phone_number: phoneNumber, password_hash: pass, wtq_id: newWTQID, full_name: name, username, country, gender, dob });
+            regButton.disabled = false;
+            regButton.textContent = 'Create Account & Get ID';
+            if (insertError) return alert("❌ Registration failed: " + insertError.message);
+            document.getElementById('generated-wtq-id').textContent = newWTQID;
+            document.getElementById('wtq-display-section').style.display = 'block';
+            alert("✅ Account creation initiated! Copy WTQ ID.");
         }
+      }
 
-        function setForgotType(type) {
-            forgotType = type;
-            const emailInput = document.getElementById('forgot-email');
-            const phoneInput = document.getElementById('forgot-phone');
-            const btnEmail = document.getElementById('forgot-type-email');
-            const btnPhone = document.getElementById('forgot-type-phone');
-            const resetBtn = document.querySelector('#forgot button');
-
-            if (type === 'email') {
-                emailInput.style.display = 'block';
-                phoneInput.style.display = 'none';
-                btnEmail.classList.add('active');
-                btnPhone.classList.remove('active');
-                resetBtn.textContent = 'Send Reset Link';
-            } else { 
-                emailInput.style.display = 'none';
-                phoneInput.style.display = 'block';
-                btnPhone.classList.add('active');
-                btnEmail.classList.remove('active');
-                resetBtn.textContent = 'Forgot Agent'; 
-            }
+      async function resetPassword() {
+        const email = document.getElementById('forgot-email').value;
+        const phone = document.getElementById('forgot-phone').value;
+        if (forgotType === 'email') {
+            if (!email) return alert("❌ Enter Gmail");
+            let { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: 'https://avicnknovex.github.io/AvicnKnov-Ex-/reset-password.html' });
+            if (error) alert("❌ Failed: " + error.message);
+            else alert("✅ Link sent to " + email);
+        } else {
+            const { data } = await sb.from('user-details').select('wtq_id').eq('phone_number', phone).maybeSingle();
+            if (!data) return alert("❌ Account not found.");
+            window.location.href = `agent.html?action=forgot&id=${data.wtq_id}`;
         }
+      }
 
-        async function login() {
-            const identifier = document.getElementById('login-identifier').value.trim(); 
-            const pass = document.getElementById('login-pass').value;
+      // Helper function to create wallet data
+      async function createWalletForUser(userId, fullName, username) {
+          const { data: existingWallet } = await sb.from('wallet_user_profile').select('id').eq('uid', userId).maybeSingle();
+          if (!existingWallet) {
+              const walletId = generateWalletID();
+              const recoveryId = generateRecoveryID();
+              const walletAddr = generateWalletAddress();
+              
+              await sb.from('wallet_user_profile').insert([{
+                  uid: userId,
+                  full_name: fullName,
+                  username: username,
+                  wallet_name: `${username}`, // Wallet Name
+                  wallet_id: walletId,
+                  recovery_id: recoveryId,
+                  lock_code: '000000', // Default lock code
+                  status: 'active'
+              }]);
+              
+              await sb.from('user_wallet_balance').insert([{
+                  uid: userId,
+                  wallet_address: walletAddr,
+                  balance: 0.00
+              }]);
+          }
+      }
 
-            if (!identifier || !pass) return alert("❌ Please fill all login fields correctly.");
+      // Gmail and Phone verification sync logic
+      sb.auth.onAuthStateChange(async (event, session) => {
+          if (event === 'SIGNED_IN' && session?.user) {
+              const userEmail = session.user.email;
+              
+              // --- GMAIL USER SYNC ---
+              if (userEmail && !userEmail.endsWith(PHONE_LOGIN_DOMAIN)) {
+                  const { data: tempUser } = await sb.from('user-verify-gmail').select('*').eq('email', userEmail).maybeSingle();
+                  if (tempUser) {
+                      await sb.from('user-profile-data').insert([{ full_name: tempUser.full_name, username: tempUser.username, country: tempUser.country, gender: tempUser.gender, dob: tempUser.dob, email: tempUser.email, phone_number: tempUser.phone_number, created_at: new Date() }]);
+                      await sb.from('user-details').insert([{ full_name: tempUser.full_name, username: tempUser.username, country: tempUser.country, gender: tempUser.gender, dob: tempUser.dob, email: tempUser.email, password: tempUser.password, created_at: new Date() }]);
+                      await sb.from('qineq_users').insert([{ user_id: session.user.id, username: tempUser.username, full_name: tempUser.full_name, country: tempUser.country, gender: tempUser.gender, followers_count: 0, following_count: 0, post_count: 0, verify_tick: null }]);
+                      
+                      // Auto-Create Wallet
+                      await createWalletForUser(session.user.id, tempUser.full_name, tempUser.username);
 
-            const isEmail = identifier.includes('@'); 
-            
-            if (isEmail) {
-                let { data, error } = await sb.auth.signInWithPassword({ email: identifier, password: pass });
-                if (error) {
-                    if (error.message.includes('Email not confirmed')) {
-                        alert("❌ Login Failed: Email not verified. Please check your Gmail.");
-                    } else {
-                        alert("❌ Login Failed (Gmail): " + error.message);
-                    }
-                } else if (data.session) {
-                    window.location.href = "main.html";
-                }
-            } else {
-                const cleanNumber = identifier.replace(/[^0-9+]/g, ''); 
-                const dummyEmail = cleanNumber + PHONE_LOGIN_DOMAIN;
-                let { data, error } = await sb.auth.signInWithPassword({ email: dummyEmail, password: pass });
+                      await sb.from('user-verify-gmail').delete().eq('email', userEmail);
+                      window.location.href = "main.html";
+                  } else {
+                      // Already verified but logging in again? Check if wallet exists just in case
+                      // (Optional, but good for safety if sync happened but wallet failed)
+                      const { data: pData } = await sb.from('user-profile-data').select('full_name, username').eq('email', userEmail).maybeSingle();
+                      if (pData) {
+                          await createWalletForUser(session.user.id, pData.full_name, pData.username);
+                      }
+                      window.location.href = "main.html";
+                  }
+              } 
+              
+              // --- PHONE USER SYNC (NEW) ---
+              else if (userEmail && userEmail.endsWith(PHONE_LOGIN_DOMAIN)) {
+                  const cleanPhone = userEmail.replace(PHONE_LOGIN_DOMAIN, '');
+                  // Check if user already exists in qineq_users to avoid duplicate entries
+                  const { data: existingQineq } = await sb.from('qineq_users').select('user_id').eq('user_id', session.user.id).maybeSingle();
+                  
+                  if (!existingQineq) {
+                      const { data: profileData } = await sb.from('user-profile-data').select('*').eq('phone_number', cleanPhone).maybeSingle();
+                      if (profileData) {
+                          await sb.from('qineq_users').insert([{
+                              user_id: session.user.id,
+                              username: profileData.username,
+                              full_name: profileData.full_name,
+                              country: profileData.country,
+                              gender: profileData.gender,
+                              followers_count: 0,
+                              following_count: 0,
+                              post_count: 0,
+                              verify_tick: null
+                          }]);
+                          
+                          // Auto-Create Wallet
+                          await createWalletForUser(session.user.id, profileData.full_name, profileData.username);
+                      }
+                  } else {
+                      // Existing user logging in
+                      const { data: pData } = await sb.from('user-profile-data').select('full_name, username').eq('phone_number', cleanPhone).maybeSingle();
+                      if (pData) {
+                          await createWalletForUser(session.user.id, pData.full_name, pData.username);
+                      }
+                  }
+                  window.location.href = "main.html";
+              }
+          }
+      });
 
-                if (error) {
-                    const { data: unverifiedData } = await sb.from('user-verify').select('wtq_id, is_verified').eq('phone_number', cleanNumber).maybeSingle();
-                    if (unverifiedData && unverifiedData.is_verified === false) {
-                        alert("❌ Account not verified. Use the 'Verify Agent' securely to complete process.");
-                    } else {
-                        alert("❌ Login Failed: Credentials incorrect or User not found.");
-                    }
-                } else if (data.session) {
-                    window.location.href = "main.html";
-                }
-            }
-        }
+      const countries = ["Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo (Brazzaville)", "Congo (Kinshasa)", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czechia", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", "Palestine State", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"];
+      function populateCountries() {
+          const select = document.getElementById('reg-country');
+          const defaultOption = document.createElement('option');
+          defaultOption.value = ""; defaultOption.textContent = "Select Country"; defaultOption.disabled = true; defaultOption.selected = true;
+          select.appendChild(defaultOption);
+          countries.forEach(country => {
+              const option = document.createElement('option');
+              option.value = country; option.textContent = country;
+              select.appendChild(option);
+          });
+      }
 
-        async function register() {
-            const name = document.getElementById('reg-name').value;
-            const username = document.getElementById('reg-username').value;
-            const country = document.getElementById('reg-country').value;
-            const gender = document.getElementById('reg-gender').value; 
-            const dob = document.getElementById('reg-dob').value;
-            const pass = document.getElementById('reg-pass').value;
-            const email = document.getElementById('reg-email').value;
-            const phone = document.getElementById('reg-phone').value;
-            const policyChecked = document.getElementById('reg-policy-check').checked; 
-
-            const identifier = registrationType === 'email' ? email : phone;
-
-            if (!name || !username || !country || !gender || !dob || !identifier || !pass || !policyChecked) {
-                return alert("❌ Please fill all details and accept the required policy.");
-            }
-            
-            if (pass.length < 8 || pass.length > 16) {
-                return alert("❌ Password strict range must be between 8 to 16 characters.");
-            }
-            
-            const age = new Date().getFullYear() - new Date(dob).getFullYear();
-            if (age < 17 || age > 110) return alert("❌ Age limit violation. You must be 17+ to enter.");
-            
-            const regButton = document.getElementById('reg-btn');
-            regButton.disabled = true;
-            const originalTxt = regButton.textContent;
-            regButton.textContent = 'Processing securely...';
-
-            if (registrationType === 'email') {
-                const { error: verifyInsertError } = await sb.from('user-verify-gmail').insert([{ email, password: pass, full_name: name, username, country, gender, dob, phone_number: phone }]);
-                if (verifyInsertError) {
-                    regButton.disabled = false;
-                    regButton.textContent = originalTxt;
-                    return alert("❌ Registration Blocked: " + verifyInsertError.message);
-                }
-                
-                let { error: authError } = await sb.auth.signUp({ email, password: pass, options: { emailRedirectTo: 'https://avicnknovex.github.io/AvicnKnov-Ex-/success.html' } });
-                regButton.disabled = false;
-                regButton.textContent = originalTxt;
-                if (authError) return alert("❌ Server Auth Failed: " + authError.message);
-                alert("✅ Registered successfully! Check your Gmail mailbox quickly to verify.");
-            } else {
-                const phoneNumber = phone.trim();
-                const { data: verifiedUser } = await sb.from('user-details').select('wtq_id').eq('phone_number', phoneNumber).maybeSingle();
-                if (verifiedUser) {
-                    regButton.disabled = false;
-                    regButton.textContent = originalTxt;
-                    return alert("❌ Registration Error: Mobile Number is already in our verified database.");
-                }
-                const newWTQID = generateWTQID();
-                const { error: insertError } = await sb.from('user-verify').insert({ phone_number: phoneNumber, password_hash: pass, wtq_id: newWTQID, full_name: name, username, country, gender, dob });
-                regButton.disabled = false;
-                regButton.textContent = originalTxt;
-                if (insertError) return alert("❌ Security DB failed: " + insertError.message);
-                
-                document.getElementById('generated-wtq-id').textContent = newWTQID;
-                document.getElementById('wtq-display-section').style.display = 'block';
-                alert("✅ Creation securely initiated! Important: Copy the WTQ ID displayed below.");
-            }
-        }
-
-        async function resetPassword() {
-            const email = document.getElementById('forgot-email').value;
-            const phone = document.getElementById('forgot-phone').value;
-            if (forgotType === 'email') {
-                if (!email) return alert("❌ Required Error: Type valid email address.");
-                let { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: 'https://avicnknovex.github.io/AvicnKnov-Ex-/reset-password.html' });
-                if (error) alert("❌ Gateway Error Failed: " + error.message);
-                else alert("✅ Link properly pushed and dispatched to " + email);
-            } else {
-                const { data } = await sb.from('user-details').select('wtq_id').eq('phone_number', phone).maybeSingle();
-                if (!data) return alert("❌ Server: Match not found within existing network tables.");
-                window.location.href = `agent.html?action=forgot&id=${data.wtq_id}`;
-            }
-        }
-
-        async function createWalletForUser(userId, fullName, username) {
-            const { data: existingWallet } = await sb.from('wallet_user_profile').select('id').eq('uid', userId).maybeSingle();
-            if (!existingWallet) {
-                const walletId = generateWalletID();
-                const recoveryId = generateRecoveryID();
-                const walletAddr = generateWalletAddress();
-                
-                await sb.from('wallet_user_profile').insert([{
-                    uid: userId,
-                    full_name: fullName,
-                    username: username,
-                    wallet_name: `${username}`,
-                    wallet_id: walletId,
-                    recovery_id: recoveryId,
-                    lock_code: '000000',
-                    status: 'active'
-                }]);
-                
-                await sb.from('user_wallet_balance').insert([{
-                    uid: userId,
-                    wallet_address: walletAddr,
-                    balance: 0.00
-                }]);
-            }
-        }
-
-        sb.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'SIGNED_IN' && session?.user) {
-                const userEmail = session.user.email;
-                
-                if (userEmail && !userEmail.endsWith(PHONE_LOGIN_DOMAIN)) {
-                    const { data: tempUser } = await sb.from('user-verify-gmail').select('*').eq('email', userEmail).maybeSingle();
-                    if (tempUser) {
-                        await sb.from('user-profile-data').insert([{ full_name: tempUser.full_name, username: tempUser.username, country: tempUser.country, gender: tempUser.gender, dob: tempUser.dob, email: tempUser.email, phone_number: tempUser.phone_number, created_at: new Date() }]);
-                        await sb.from('user-details').insert([{ full_name: tempUser.full_name, username: tempUser.username, country: tempUser.country, gender: tempUser.gender, dob: tempUser.dob, email: tempUser.email, password: tempUser.password, created_at: new Date() }]);
-                        await sb.from('qineq_users').insert([{ user_id: session.user.id, username: tempUser.username, full_name: tempUser.full_name, country: tempUser.country, gender: tempUser.gender, followers_count: 0, following_count: 0, post_count: 0, verify_tick: null }]);
-                        
-                        await createWalletForUser(session.user.id, tempUser.full_name, tempUser.username);
-
-                        await sb.from('user-verify-gmail').delete().eq('email', userEmail);
-                        window.location.href = "main.html";
-                    } else {
-                        const { data: pData } = await sb.from('user-profile-data').select('full_name, username').eq('email', userEmail).maybeSingle();
-                        if (pData) {
-                            await createWalletForUser(session.user.id, pData.full_name, pData.username);
-                        }
-                        window.location.href = "main.html";
-                    }
-                } 
-                else if (userEmail && userEmail.endsWith(PHONE_LOGIN_DOMAIN)) {
-                    const cleanPhone = userEmail.replace(PHONE_LOGIN_DOMAIN, '');
-                    const { data: existingQineq } = await sb.from('qineq_users').select('user_id').eq('user_id', session.user.id).maybeSingle();
-                    
-                    if (!existingQineq) {
-                        const { data: profileData } = await sb.from('user-profile-data').select('*').eq('phone_number', cleanPhone).maybeSingle();
-                        if (profileData) {
-                            await sb.from('qineq_users').insert([{
-                                user_id: session.user.id,
-                                username: profileData.username,
-                                full_name: profileData.full_name,
-                                country: profileData.country,
-                                gender: profileData.gender,
-                                followers_count: 0,
-                                following_count: 0,
-                                post_count: 0,
-                                verify_tick: null
-                            }]);
-                            
-                            await createWalletForUser(session.user.id, profileData.full_name, profileData.username);
-                        }
-                    } else {
-                        const { data: pData } = await sb.from('user-profile-data').select('full_name, username').eq('phone_number', cleanPhone).maybeSingle();
-                        if (pData) {
-                            await createWalletForUser(session.user.id, pData.full_name, pData.username);
-                        }
-                    }
-                    window.location.href = "main.html";
-                }
-            }
-        });
-
-        const countries =["Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo (Brazzaville)", "Congo (Kinshasa)", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czechia", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", "Palestine State", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"];
-        function populateCountries() {
-            const select = document.getElementById('reg-country');
-            const defaultOption = document.createElement('option');
-            defaultOption.value = ""; defaultOption.textContent = "Select Premium Origin"; defaultOption.disabled = true; defaultOption.selected = true;
-            select.appendChild(defaultOption);
-            countries.forEach(country => {
-                const option = document.createElement('option');
-                option.value = country; option.textContent = country;
-                select.appendChild(option);
-            });
-        }
-
-        window.onload = () => {
-            populateCountries(); 
-            setRegType('email'); 
-            setForgotType('email'); 
-        };
+      window.onload = () => {
+        populateCountries(); 
+        // Default: Sab close rahega
+        setRegType('email'); 
+        setForgotType('email'); 
+        showForm('login');
+      };
     </script>
-</body>
+  </body>
 </html>
