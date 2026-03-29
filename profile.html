@@ -2,143 +2,100 @@
 <html lang="en">  
 <head>  
   <meta charset="UTF-8" />  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>  
-  <title>Profile - AvicnKnov Ex</title>  
-  
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>  
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>  
+  <title>Profile</title>  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>  
   <style>  
-    /* Premium Font Styling */
-    body {
-      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-      background-color: #f8f9fc;
-      color: #1e293b;
-      -webkit-font-smoothing: antialiased;
+    .profile-box {  
+      background: #f8f9fa;  
+      border-radius: 12px;  
+      padding: 20px;  
+      margin-bottom: 20px;  
+    }  
+    .copy-btn, .toggle-email {  
+      cursor: pointer;  
+      border: none;  
+      background: none;  
+    }  
+    .logout-btn {  
+      width: 100%;  
+      background-color: #f1f1f1;  
+      border: none;  
+      padding: 10px;  
+      border-radius: 6px;  
+    }  
+    .icon-back {  
+      font-size: 24px;  
+      cursor: pointer;  
+      margin-right: 10px;  
+    }  
+    /* Profile Image Container and Style */
+    .profile-img-container {
+      position: relative;
+      display: inline-block;
+      cursor: pointer; /* To indicate it's clickable */
     }
-
-    /* Custom Animations */
-    .fade-in { animation: fadeIn 0.5s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-    /* Profile Image Ring Animation */
-    .profile-ring {
-      background: linear-gradient(45deg, #3b82f6, #8b5cf6);
-      padding: 3px;
-      border-radius: 50%;
-      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
-      transition: transform 0.3s ease;
-    }
-    .profile-ring:active { transform: scale(0.95); }
-
-    .input-premium {
-      background-color: #f1f5f9;
-      border: 1px solid transparent;
-      transition: all 0.3s ease;
-    }
-    .input-premium:focus-within {
-      background-color: #fff;
-      border-color: #bfdbfe;
-      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    .profile-img {  
+      width: 80px;  
+      height: 80px;  
+      border-radius: 50%;  
+      object-fit: cover;  
+      border: 2px solid #0d6efd; /* Distinct border for set image */
+      transition: border 0.3s;
+    }  
+    .upload-status {
+      margin-top: 5px;
+      font-size: 0.8rem;
+      color: #dc3545; /* Error color */
     }
   </style>  
 </head>  
-<body class="bg-[#f8f9fc] min-h-screen pb-10">
+<body class="bg-white">
   
   <input type="file" id="profile-file-input" style="display: none;" accept="image/*">
 
-  <div class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 py-4 flex items-center shadow-sm">
-    <button onclick="window.location.href='dashboard.html'" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors">
-      <i class="fas fa-arrow-left"></i>
-    </button>
-    <h1 class="text-lg font-bold text-slate-800 ml-3 tracking-tight">Account Center</h1>
-  </div>
+  <div class="d-flex align-items-center p-3">  
+    <span class="icon-back" onclick="window.location.href='dashboard.html'">🔙</span>  
+    <h4 class="mb-0">Account Center</h4>  
+  </div>    
   
-  <div class="max-w-md mx-auto px-4 mt-6 fade-in">  
-    
-    <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 p-6 text-center border border-slate-100 relative overflow-hidden">
-      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 bg-blue-100/50 rounded-full blur-3xl -mt-16 pointer-events-none"></div>
-
-      <div class="relative inline-block cursor-pointer group" onclick="document.getElementById('profile-file-input').click()">
-        <div class="profile-ring">
-          <img id="profile-image" class="w-24 h-24 rounded-full object-cover border-4 border-white" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Profile">
-        </div>
-        <div class="absolute bottom-1 right-1 bg-white p-1.5 rounded-full shadow-md border border-slate-100 text-blue-500 text-xs">
-          <i class="fas fa-camera"></i>
-        </div>
-      </div>
+  <div class="container mt-3">  
+    <div class="profile-box text-center">  
       
-      <p id="upload-status" class="text-xs font-medium mt-3 min-h-[1rem] text-rose-500"></p>
-
-      <h2 id="user-display-name" class="text-xl font-black text-slate-800 mt-2 tracking-tight">Loading...</h2>
-      
-      <div class="mt-6 space-y-4 text-left">
-        
-        <div>
-          <label class="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">User ID</label>
-          <div class="input-premium flex items-center justify-between rounded-xl px-4 py-3 mt-1 group">
-            <input type="text" id="user-id" class="bg-transparent border-none outline-none text-sm font-semibold text-slate-600 w-full" value="Fetching ID..." readonly>
-            <button class="text-slate-400 hover:text-blue-600 transition-colors" onclick="copyToClipboard('user-id')">
-              <i class="far fa-copy"></i>
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <label id="reg-info-label" class="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Registration Info</label>
-          <div class="input-premium flex items-center justify-between rounded-xl px-4 py-3 mt-1 group">
-            <input type="password" id="user-identifier" class="bg-transparent border-none outline-none text-sm font-semibold text-slate-600 w-full" readonly>
-            <button class="text-slate-400 hover:text-blue-600 transition-colors" onclick="toggleIdentifier()">
-              <i class="far fa-eye"></i>
-            </button>
-          </div>
-        </div>
-
+      <div class="profile-img-container" onclick="document.getElementById('profile-file-input').click()">
+        <img id="profile-image" class="profile-img mb-2" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Profile">  
       </div>
+      <p id="upload-status" class="upload-status"></p>
+
+      <h5 class="mt-2" id="user-display-name"><strong>Loading...</strong></h5>  
+
+      <div class="d-flex align-items-center justify-content-between mt-3">  
+        <label>ID</label>  
+        <div class="input-group">  
+          <input type="text" id="user-id" class="form-control" value="Loading..." readonly>  
+          <button class="btn btn-outline-secondary copy-btn" onclick="copyToClipboard('user-id')">📋</button>  
+        </div>  
+      </div>  
+
+      <div class="d-flex align-items-center justify-content-between mt-3">  
+        <label id="reg-info-label">Registration Info</label>  
+        <div class="input-group">  
+          <input type="password" id="user-identifier" class="form-control" readonly>  
+          <button class="btn btn-outline-secondary toggle-email" onclick="toggleIdentifier()">👁️</button>  
+        </div>  
+      </div>  
+
     </div>  
 
-    <div class="mt-6 space-y-3">
-      
-      <div onclick="location.href='edit-profile.html'" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between cursor-pointer active:scale-95 transition-transform">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
-            <i class="fas fa-user-pen"></i>
-          </div>
-          <span class="font-semibold text-slate-700 text-sm">Edit Profile</span>
-        </div>
-        <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
-      </div>
+    <ul class="list-group">  
+      <li class="list-group-item" onclick="location.href='edit-profile.html'">🧑 Edit Profile</li>  
+      <li class="list-group-item" onclick="location.href='kyc.html'">🪪 KYC Verification</li>  
+      <li class="list-group-item" onclick="location.href='security.html'">🛡️ Security</li>  
+    </ul>  
 
-      <div onclick="location.href='kyc.html'" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between cursor-pointer active:scale-95 transition-transform">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500">
-            <i class="fas fa-id-card"></i>
-          </div>
-          <span class="font-semibold text-slate-700 text-sm">KYC Verification</span>
-        </div>
-        <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
-      </div>
-
-      <div onclick="location.href='security.html'" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between cursor-pointer active:scale-95 transition-transform">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-500">
-            <i class="fas fa-shield-halved"></i>
-          </div>
-          <span class="font-semibold text-slate-700 text-sm">Security</span>
-        </div>
-        <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
-      </div>
-
-    </div>
-
-    <div class="mt-8 mb-8">  
-      <button onclick="handleLogout()" class="w-full bg-slate-200/50 hover:bg-rose-50 text-slate-500 hover:text-rose-500 font-bold py-3.5 rounded-2xl transition-all duration-300 flex items-center justify-center gap-2">
-        <i class="fas fa-arrow-right-from-bracket"></i>
-        Log Out
-      </button>  
+    <div style="margin-top: 100px;" class="mb-4">  
+      <button class="logout-btn" onclick="handleLogout()">Log Out</button>  
     </div>
 
   </div>    
@@ -150,11 +107,11 @@
     
     // Constants
     const PHONE_LOGIN_DOMAIN = '@crypto-temp.com';
-    const PROFILE_BUCKET = 'profile-image'; 
+    const PROFILE_BUCKET = 'profile-image'; // New Bucket Name
     const COOL_DOWN_HOURS = 24;
     
-    let currentAuthId = null;
-    let initialIdentifierValue = ''; 
+    let currentUserId = null;
+    let initialIdentifierValue = ''; // To store the unmasked email/phone
 
     // --- Profile Load Functions ---
 
@@ -162,12 +119,13 @@
       const { data: { user }, error: authError } = await sb.auth.getUser();  
       
       if (authError || !user) {
+        // Handle unauthenticated user gracefully
         document.getElementById('user-display-name').textContent = 'Guest';
         document.getElementById('user-id').value = 'N/A';
         document.getElementById('user-identifier').value = 'N/A';
         return;
       }
-      currentAuthId = user.id;
+      currentUserId = user.id;
 
       // 1. Determine Account Type and Identifier Formatting
       const rawEmail = user.email;
@@ -175,35 +133,22 @@
       let isPhone = rawEmail.endsWith(PHONE_LOGIN_DOMAIN);
 
       if (isPhone) {
+        // Phone number account: Remove the dummy domain
         displayIdentifier = rawEmail.replace(PHONE_LOGIN_DOMAIN, '');
         document.getElementById('reg-info-label').textContent = 'Phone Number';
       } else {
+        // Gmail account: Show the full email
         displayIdentifier = rawEmail;
-        document.getElementById('reg-info-label').textContent = 'Email Address';
+        document.getElementById('reg-info-label').textContent = 'Gmail';
       }
 
-      initialIdentifierValue = displayIdentifier;
+      // Set the values
+      initialIdentifierValue = displayIdentifier; // Store for toggling
       document.getElementById('user-identifier').value = displayIdentifier;
+      document.getElementById('user-id').value = user.id; // UID is user.id from Auth
 
-      // 2. Fetch CUSTOM UID from table 'uid' (as requested)
-      try {
-        const { data: uidTableData, error: uidError } = await sb
-          .from('uid') // Table Name
-          .select('uid') // Column Name
-          .eq('user_id', user.id) // Matching auth user id with table's user_id column
-          .maybeSingle();
-
-        if (uidTableData && uidTableData.uid) {
-          document.getElementById('user-id').value = uidTableData.uid;
-        } else {
-          document.getElementById('user-id').value = "Pending...";
-        }
-      } catch (err) {
-        console.error("UID Fetch Error:", err);
-        document.getElementById('user-id').value = "Error";
-      }
-
-      // 3. Load Username/Name for Display
+      // 2. Load Username/Name for Display
+      // Assuming you want to display Full Name or Username if available in user-details
       const { data: profile, error: profileError } = await sb
           .from('user-details')
           .select('full_name, username')
@@ -211,12 +156,12 @@
           .maybeSingle();
 
       if (profile) {
-          document.getElementById('user-display-name').innerHTML = `${profile.full_name || profile.username || 'User'}`;
+          document.getElementById('user-display-name').innerHTML = `<strong>${profile.full_name || profile.username || 'User'}</strong>`;
       } else {
-          document.getElementById('user-display-name').innerHTML = `${user.email.split('@')[0] || 'User'}`;
+          document.getElementById('user-display-name').innerHTML = `<strong>${user.email.split('@')[0] || 'User'}</strong>`;
       }
 
-      // 4. Load Profile Image
+      // 3. Load Profile Image
       loadProfileImage(user.id);
     }
     
@@ -225,42 +170,48 @@
     async function loadProfileImage(userId) {
         const profileImg = document.getElementById('profile-image');
         
+        // Construct the public URL for the avatar
         const { data } = sb.storage.from(PROFILE_BUCKET).getPublicUrl(`${userId}/avatar.jpg`);
         const imageUrl = data.publicUrl;
         
+        // Attempt to load the image; if it fails (404), use the default icon.
         const tempImg = new Image();
         tempImg.onload = function() {
             profileImg.src = imageUrl;
+            profileImg.style.borderColor = '#0d6efd'; // Highlight if image is set
         };
         tempImg.onerror = function() {
             profileImg.src = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+            profileImg.style.borderColor = '#ccc'; // Default color
         };
+        // By setting the source here, the browser attempts the load and triggers onload/onerror
         tempImg.src = imageUrl;
     }
 
     async function handleImageUpload(event) {
         const file = event.target.files[0];
         const statusEl = document.getElementById('upload-status');
-        const userId = currentAuthId;
+        const userId = currentUserId;
 
         if (!file || !userId) {
             statusEl.textContent = 'Please select a file or login again.';
             return;
         }
 
+        // 1. Check Cool Down Time (24 Hours)
         const lastUploadTime = localStorage.getItem(`lastUpload_${userId}`);
         const now = Date.now();
         const twentyFourHours = COOL_DOWN_HOURS * 60 * 60 * 1000;
 
         if (lastUploadTime && (now - lastUploadTime < twentyFourHours)) {
             const timeLeftHours = Math.ceil((twentyFourHours - (now - lastUploadTime)) / (60 * 60 * 1000));
-            statusEl.textContent = `❌ Update available in ${timeLeftHours} hours.`;
+            statusEl.textContent = `❌ You can change the image only once every ${COOL_DOWN_HOURS} hours. Time left: approx ${timeLeftHours} hours.`;
             return;
         }
         
-        statusEl.textContent = 'Uploading...';
-        statusEl.className = 'text-xs font-bold mt-3 min-h-[1rem] text-blue-500 animate-pulse';
+        statusEl.textContent = 'Uploading... Please wait.';
 
+        // 2. Upload to Storage (Upsert ensures overwrite)
         const { error: uploadError } = await sb.storage
             .from(PROFILE_BUCKET)
             .upload(`${userId}/avatar.jpg`, file, {
@@ -269,16 +220,18 @@
             });
 
         if (uploadError) {
-            statusEl.className = 'text-xs font-bold mt-3 min-h-[1rem] text-rose-500';
-            statusEl.textContent = `❌ Failed: ${uploadError.message}`;
+            statusEl.textContent = `❌ Upload failed: ${uploadError.message}`;
             return;
         }
         
+        // 3. Update UI and Cool Down Time
         localStorage.setItem(`lastUpload_${userId}`, now);
-        statusEl.className = 'text-xs font-bold mt-3 min-h-[1rem] text-emerald-500';
-        statusEl.textContent = '✅ Updated successfully!';
+        statusEl.textContent = '✅ Profile image updated successfully! (Next change in 24 hours)';
         
+        // Reload the image to update the display
         loadProfileImage(userId);
+        
+        // Clear file input to allow re-uploading the same file if needed
         event.target.value = null; 
     }
 
@@ -287,26 +240,14 @@
 
     function copyToClipboard(id) {  
       const text = document.getElementById(id).value;  
-      navigator.clipboard.writeText(text).then(() => {}); 
-      
-      const btn = document.querySelector(`button[onclick="copyToClipboard('${id}')"] i`);
-      if(btn) {
-          btn.className = "fas fa-check text-emerald-500";
-          setTimeout(() => btn.className = "far fa-copy", 1500);
-      }
+      navigator.clipboard.writeText(text).then(() => {  
+        alert("ID copied to clipboard");  
+      });  
     }  
   
     function toggleIdentifier() {  
       const input = document.getElementById('user-identifier');  
-      const btnIcon = document.querySelector('button[onclick="toggleIdentifier()"] i');
-      
-      if (input.type === "password") {
-          input.type = "text";
-          if(btnIcon) btnIcon.className = "far fa-eye-slash";
-      } else {
-          input.type = "password";
-          if(btnIcon) btnIcon.className = "far fa-eye";
-      }
+      input.type = input.type === "password" ? "text" : "password";  
     }  
   
     async function handleLogout() {  
@@ -314,6 +255,7 @@
       if (error) {  
         alert("Logout failed: " + error.message);  
       } else {  
+        // Logout and restart the whole system (go to index.html)
         window.location.replace("index.html");  
       }  
     }  
@@ -321,9 +263,11 @@
     // --- Initialization ---
     document.addEventListener('DOMContentLoaded', () => {
         loadUserInfo();
+        // Event listener for file input change
         document.getElementById('profile-file-input').addEventListener('change', handleImageUpload);
     });
 
   </script>    
+  <script type="module" src="uid.js"></script>  
 </body>  
 </html>
