@@ -4,9 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>AvicnKnov Ex – Login</title>
+    <!-- Tailwind CSS for Premium UI -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Supabase Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
@@ -298,26 +302,32 @@
   </head>
   <body onclick="closeAllForms(event)">
     
+    <!-- Toast Container -->
     <div id="toast-container"></div>
 
+    <!-- Background Elements -->
     <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
         <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-purple-600/20 rounded-full blur-[100px]"></div>
         <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-cyan-600/20 rounded-full blur-[100px]"></div>
     </div>
 
+    <!-- Main Container -->
     <div class="glass-card" onclick="event.stopPropagation()">
       
+      <!-- Logo & Title -->
       <div class="text-center mb-6">
         <div class="animated-logo"></div>
         <h1 class="text-3xl font-bold text-white brand-font tracking-tight">AvicnKnov <span class="neon-text">Ex</span></h1>
         <p class="text-slate-400 text-sm mt-1">Gateway to the Future of Crypto</p>
       </div>
 
+      <!-- Menu Tabs -->
       <div class="menu">
         <button id="btn-login" class="active" onclick="showForm('login')">Login</button>
         <button id="btn-register" onclick="showForm('register')">Create Account</button>
       </div>
 
+      <!-- LOGIN FORM -->
       <div id="login" class="form active">
         <div class="relative group">
             <i class="fa-regular fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-cyan-400 transition-colors"></i>
@@ -339,6 +349,7 @@
         </button>
       </div>
 
+      <!-- REGISTER FORM -->
       <div id="register" class="form">
         <div class="auth-type-selector">
             <button id="reg-type-email" class="active" onclick="setRegType('email')">
@@ -392,6 +403,7 @@
             Register
         </button>
 
+        <!-- WTQ Display Section -->
         <div id="wtq-display-section" style="display: none;" class="mt-2 p-4 bg-slate-800/80 rounded-xl border border-cyan-500/30 text-center animate-pulse">
             <p class="text-xs text-cyan-400 font-bold uppercase tracking-wider mb-2">Your Unique WTQ ID</p>
             <div class="flex items-center justify-between bg-black/40 p-2 rounded-lg border border-white/10 mb-3">
@@ -405,6 +417,7 @@
         </div>
       </div>
 
+      <!-- FORGOT PASSWORD FORM -->
       <div id="forgot" class="form">
         <div class="text-center mb-1">
             <h3 class="text-white font-bold text-lg">Reset Password</h3>
@@ -432,10 +445,12 @@
 
     </div>
     
+    <!-- Support Button -->
     <a href="support.html" class="support-link group">
         <i class="fa-solid fa-headset support-icon"></i>
     </a>
 
+    <!-- ORIGINAL JAVASCRIPT LOGIC (UNTOUCHED) -->
     <script>
       // --- PREMIUM TOAST NOTIFICATION OVERRIDE ---
       window.originalAlert = window.alert;
@@ -750,10 +765,6 @@
 
       // Helper function to create wallet data
       async function createWalletForUser(userId, fullName, username) {
-          // --- ADDED FAILSAFE TO PREVENT EMPTY DATA ---
-          if (!fullName) fullName = "User";
-          if (!username) username = "user_" + String(userId).substring(0, 6);
-          // --------------------------------------------
           const { data: existingWallet } = await sb.from('wallet_user_profile').select('id').eq('uid', userId).maybeSingle();
           if (!existingWallet) {
               const walletId = generateWalletID();
@@ -796,8 +807,6 @@
                       await createWalletForUser(session.user.id, tempUser.full_name, tempUser.username);
 
                       await sb.from('user-verify-gmail').delete().eq('email', userEmail);
-                      // --- ADDED DELAY TO FIX SYNC ISSUE ---
-                      await new Promise(resolve => setTimeout(resolve, 1500));
                       window.location.href = "main.html";
                   } else {
                       // Already verified but logging in again? Check if wallet exists just in case
@@ -805,12 +814,7 @@
                       const { data: pData } = await sb.from('user-profile-data').select('full_name, username').eq('email', userEmail).maybeSingle();
                       if (pData) {
                           await createWalletForUser(session.user.id, pData.full_name, pData.username);
-                      } else {
-                          // --- ADDED CRITICAL FALLBACK ---
-                          await createWalletForUser(session.user.id, "User", "user_" + session.user.id.substring(0, 5));
                       }
-                      // --- ADDED DELAY TO FIX SYNC ISSUE ---
-                      await new Promise(resolve => setTimeout(resolve, 1500));
                       window.location.href = "main.html";
                   }
               } 
@@ -838,22 +842,14 @@
                           
                           // Auto-Create Wallet
                           await createWalletForUser(session.user.id, profileData.full_name, profileData.username);
-                      } else {
-                          // --- ADDED CRITICAL FALLBACK ---
-                          await createWalletForUser(session.user.id, "User", "user_" + session.user.id.substring(0, 5));
                       }
                   } else {
                       // Existing user logging in
                       const { data: pData } = await sb.from('user-profile-data').select('full_name, username').eq('phone_number', cleanPhone).maybeSingle();
                       if (pData) {
                           await createWalletForUser(session.user.id, pData.full_name, pData.username);
-                      } else {
-                          // --- ADDED CRITICAL FALLBACK ---
-                          await createWalletForUser(session.user.id, "User", "user_" + session.user.id.substring(0, 5));
                       }
                   }
-                  // --- ADDED DELAY TO FIX SYNC ISSUE ---
-                  await new Promise(resolve => setTimeout(resolve, 1500));
                   window.location.href = "main.html";
               }
           }
