@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -711,6 +710,26 @@
             } else if (currentStep === 'AWAITING_NEW_PASS') {
                 if (input.length < 8 || input.length > 16) return handleGeneralError('Invalid password.', 1);
                 addMessage('Agent', getL('forgotWaitPass'));
+
+                // --- NEW FIX CODE ADDED HERE FOR AUTH LOGIN PROBLEM (NO EXISTING CODE REMOVED) ---
+                try {
+                    const { data: userData } = await sb.from(USER_DETAILS_TABLE).select('phone_number, password').eq('wtq_id', currentWTQId).maybeSingle();
+                    if (userData && userData.phone_number) {
+                        const dummyEmail = userData.phone_number + "@crypto-temp.com";
+                        const { data: authData } = await sb.auth.signInWithPassword({
+                            email: dummyEmail,
+                            password: userData.password
+                        });
+                        if (authData && authData.user) {
+                            await sb.auth.updateUser({ password: input });
+                            await sb.auth.signOut();
+                        }
+                    }
+                } catch (err) {
+                    console.error("Auth Update Error: ", err);
+                }
+                // --- END OF NEW FIX CODE ---
+
                 await sb.from(USER_DETAILS_TABLE).update({ password: input }).eq('wtq_id', currentWTQId);
                 addMessage('Agent', getL('forgotSuccess', input));
                 setTimeout(() => { window.location.href = "index.html"; }, 7000);
