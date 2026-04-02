@@ -351,7 +351,6 @@
         let errorCount = 0;
         let lastErrorTime = 0;
         let currentWTQId = null; 
-        let userPhoneNumber = null; // To store phone during forgot flow
 
         // --- Helper Functions for Wallet Generation ---
         function generateWalletID() {
@@ -703,35 +702,15 @@
                 const wtqId = input.toUpperCase();
                 if (wtqId.length !== 12) return handleGeneralError(getL('promptTryAgain'), 1);
                 addMessage('Agent', getL('wait'));
-                // Fetching phone_number along with wtq_id to use in sync later
-                const { data: user, error: detailsError } = await sb.from(USER_DETAILS_TABLE).select('wtq_id, phone_number').eq('wtq_id', wtqId).maybeSingle();
+                const { data: user, error: detailsError } = await sb.from(USER_DETAILS_TABLE).select('wtq_id').eq('wtq_id', wtqId).maybeSingle();
                 if (detailsError || !user) return handleGeneralError(getL('idNotFound'), 1);
                 currentWTQId = wtqId;
-                userPhoneNumber = user.phone_number; // Store phone number for auth update
                 currentStep = 'AWAITING_NEW_PASS';
                 addMessage('Agent', getL('forgotPromptNewPass'));
             } else if (currentStep === 'AWAITING_NEW_PASS') {
                 if (input.length < 8 || input.length > 16) return handleGeneralError('Invalid password.', 1);
                 addMessage('Agent', getL('forgotWaitPass'));
-                
-                // 1. Update the table password (your original line)
                 await sb.from(USER_DETAILS_TABLE).update({ password: input }).eq('wtq_id', currentWTQId);
-                
-                // 2. Main Fix: Sync with Supabase Auth using the Edge Function logic
-                try {
-                    await fetch(EDGE_FUNCTION_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
-                        body: JSON.stringify({ 
-                            phoneNumber: userPhoneNumber, 
-                            password: input,
-                            action: 'update' // Telling edge function to update existing user
-                        })
-                    });
-                } catch (e) {
-                    console.error("Auth Sync Error: ", e);
-                }
-
                 addMessage('Agent', getL('forgotSuccess', input));
                 setTimeout(() => { window.location.href = "index.html"; }, 7000);
             }
