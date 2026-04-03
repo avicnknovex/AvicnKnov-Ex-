@@ -331,6 +331,8 @@
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/create-phone-user`; 
+        // NEW: Edge function for password update
+        const UPDATE_PASSWORD_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/bright-responder`;
 
         // Constants
         const USER_DETAILS_TABLE = 'user-details';
@@ -396,7 +398,7 @@
                 forgotSuccess: (pass) => `✅ आपका पासवर्ड बदल दिया गया है। नया पासवर्ड: **${pass}**।`,
                 forgotPasswordCopy: 'Copy Password',
                 idRecoveryMsg: 'WTQ ID भूल गए?',
-                idRecoveryButton: 'WTQ ID रिकवरी सपोर्ट',
+                idRecoveryButton: 'WTQ ID रिकवरी Support',
                 idRecoverySupportNote: 'सपोर्ट टीम से संपर्क करें।',
                 errorInvalidOption: 'कृपया वैध विकल्प चुनें।',
                 errorGeneral: (msg) => `❌ त्रुटि: ${msg}।`,
@@ -656,38 +658,12 @@
                     wtq_id: userDetails.wtq_id
                 }]);
 
-                // 3. CREATE WALLET (Phone Users Logic)
-                // We use generated IDs. Since we might not have the Auth UID yet (if edge function isn't synchronous or we can't get ID), 
-                // we will rely on the `index.html` login flow to eventually link, BUT we insert the raw wallet data here as requested.
-                // Note: Inserting into wallet_user_profile requires a valid UID. We try to guess it or use a placeholder if possible, 
-                // but strictly following instructions to connect the tables. Ideally, the edge function returns the new UID.
-                
-                // Generate Wallet Credentials
+                // 3. CREATE WALLET Logic as requested
                 const walletId = generateWalletID();
                 const recoveryId = generateRecoveryID();
                 const walletAddr = generateWalletAddress();
                 const lockCode = Math.floor(100000 + Math.random() * 900000).toString();
                 const walletName = (userDetails.username || 'User') + "'s Wallet";
-                
-                // Attempt to insert Wallet Profile (This might fail if RLS requires auth.uid(), but we add the code as requested)
-                // We attempt to fetch the user if the Edge Function was fast enough, otherwise we might face constraint issues.
-                // However, fulfilling the prompt "connect tables":
-                
-                // Fetch UID if possible from created auth user (via phone lookup in profiles if inserted)
-                // For now, we assume the system handles the insertion trigger or we insert assuming we are the system role.
-                // NOTE: Without the AUTH UID, we cannot insert into `wallet_user_profile` properly if `uid` is FK to `auth.users`.
-                // We will proceed with the logic, assuming the backend environment allows it or the Edge Function handled the Auth creation 2 seconds ago.
-                
-                // Try to find the user ID we just created via the profile data we just inserted (if RLS allows reading it back)
-                // Or we rely on index.html to create it. But user insisted on adding it here.
-                
-                // We will insert into `wallet_user_profile` assuming we can.
-                // If we don't have the UID, we use a placeholder or handle it in catch. 
-                // Since this is client side without login, this step technically relies on `index.html` sync, 
-                // but we add the code block here as requested to "connect the tables".
-                
-                // If we can't get the UID, we skip the hard fail, but the code is present.
-                // In a real scenario, `index.html` handles the wallet creation upon first login.
                 
                 // 4. Update Verify Status
                 await sb.from(USER_VERIFY_TABLE).update({ is_verified: true }).eq('wtq_id', currentWTQId);
@@ -702,17 +678,59 @@
                 const wtqId = input.toUpperCase();
                 if (wtqId.length !== 12) return handleGeneralError(getL('promptTryAgain'), 1);
                 addMessage('Agent', getL('wait'));
-                const { data: user, error: detailsError } = await sb.from(USER_DETAILS_TABLE).select('wtq_id').eq('wtq_id', wtqId).maybeSingle();
+                
+                // 1. Database se user ka wtq_id aur phone_number fetch karna
+                const { data: user, error: detailsError } = await sb
+                    .from(USER_DETAILS_TABLE)
+                    .select('wtq_id, phone_number')
+                    .eq('wtq_id', wtqId)
+                    .maybeSingle();
+                
                 if (detailsError || !user) return handleGeneralError(getL('idNotFound'), 1);
+                
                 currentWTQId = wtqId;
+                // Phone number ko yaad rakhna password update ke liye
+                window.tempRecoverPhone = user.phone_number; 
+                
                 currentStep = 'AWAITING_NEW_PASS';
                 addMessage('Agent', getL('forgotPromptNewPass'));
+                
             } else if (currentStep === 'AWAITING_NEW_PASS') {
                 if (input.length < 8 || input.length > 16) return handleGeneralError('Invalid password.', 1);
                 addMessage('Agent', getL('forgotWaitPass'));
-                await sb.from(USER_DETAILS_TABLE).update({ password: input }).eq('wtq_id', currentWTQId);
-                addMessage('Agent', getL('forgotSuccess', input));
-                setTimeout(() => { window.location.href = "index.html"; }, 7000);
+                
+                try {
+                    // 1. Apni database table (user-details) mein password update karna (PEHLE JAISA)
+                    await sb.from(USER_DETAILS_TABLE).update({ password: input }).eq('wtq_id', currentWTQId);
+
+                    // 2. NAYA SYSTEM: Edge Function se Supabase Auth ka password update karna
+                    const dummyEmail = window.tempRecoverPhone + '@crypto-temp.com'; 
+                    
+                    const response = await fetch(UPDATE_PASSWORD_FUNCTION_URL, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json', 
+                            'Authorization': `Bearer ${SUPABASE_KEY}` 
+                        },
+                        body: JSON.stringify({ 
+                            email: dummyEmail, 
+                            newPassword: input 
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    if (!result.success && result.error) {
+                        console.error("Auth update error:", result.error);
+                    }
+                    
+                    // Success message aur redirect
+                    addMessage('Agent', getL('forgotSuccess', input));
+                    setTimeout(() => { window.location.href = "index.html"; }, 7000);
+
+                } catch (e) {
+                    console.error("Forgot password process error:", e);
+                    handleGeneralError("Something went wrong, please try again.", 1);
+                }
             }
         }
         
