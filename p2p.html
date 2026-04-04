@@ -1099,7 +1099,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                         .update({
                             qty: newQty,
                             action: 'buy',
-                            price_at_transacti: parsedPrice,
+                            price_at_transaction: parsedPrice,
                             total_amount: totalAmount,
                             blockchain_used: blockchainUsed,
                             status: 'active'
@@ -1114,7 +1114,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                             symbol: symbol,
                             action: 'buy',
                             qty: parsedQty,
-                            price_at_transacti: parsedPrice,
+                            price_at_transaction: parsedPrice,
                             total_amount: totalAmount,
                             blockchain_used: blockchainUsed,
                             status: 'active',
@@ -1149,7 +1149,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                         .update({
                             qty: newQty,
                             action: 'sell',
-                            price_at_transacti: parsedPrice,
+                            price_at_transaction: parsedPrice,
                             total_amount: totalAmount,
                             blockchain_used: blockchainUsed,
                             status: 'active'
