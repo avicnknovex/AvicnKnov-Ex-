@@ -1083,44 +1083,55 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                 const totalAmount = parsedQty * parsedPrice;
                 const blockchainUsed = blockchain || 'ERC20';
 
-                // Check if row already exists for this user+symbol
-                const { data: existing } = await supabase
-                    .from('crypto_token_histry')
-                    .select('id, qty')
-                    .eq('user_id', userId)
-                    .eq('symbol', symbol)
-                    .maybeSingle();
+                // 1. Pehle check karein ki kya user ke paas ye token pehle se hai
+const { data: existing, error: fetchError } = await supabase
+    .from('crypto_token_histry')
+    .select('id, qty')
+    .eq('user_id', userId)
+    .eq('symbol', symbol)
+    .maybeSingle();
 
-                if (existing) {
-                    // Row exists — add qty to existing balance
-                    const newQty = parseFloat(existing.qty || 0) + parsedQty;
-                    await supabase
-                        .from('crypto_token_histry')
-                        .update({
-                            qty: newQty,
-                            action: 'buy',
-                            price_at_transaction: parsedPrice,
-                            total_amount: totalAmount,
-                            blockchain_used: blockchainUsed,
-                            status: 'active'
-                        })
-                        .eq('id', existing.id);
-                } else {
-                    // No row exists — insert new row
-                    await supabase
-                        .from('crypto_token_histry')
-                        .insert([{
-                            user_id: userId,
-                            symbol: symbol,
-                            action: 'buy',
-                            qty: parsedQty,
-                            price_at_transaction: parsedPrice,
-                            total_amount: totalAmount,
-                            blockchain_used: blockchainUsed,
-                            status: 'active',
-                            created_at: new Date().toISOString()
-                        }]);
-                }
+if (fetchError) throw fetchError;
+
+// 2. Logic: Agar pehle se hai toh Update, nahi toh Insert
+if (existing) {
+    // Agar 'action' sell hai toh minus hoga, buy hai toh plus
+    const currentQty = parseFloat(existing.qty || 0);
+    const newQty = (action === 'buy') ? (currentQty + parsedQty) : (currentQty - parsedQty);
+
+    const { error: updateError } = await supabase
+        .from('crypto_token_histry')
+        .update({
+            qty: newQty,
+            action: action, // 'buy' ya 'sell' jo bhi request mein hai
+            price_at_transacti: parsedPrice, // Spelling corrected as per your DB
+            total_amount: totalAmount,
+            blockchain_used: blockchainUsed,
+            status: 'active',
+            created_at: new Date().toISOString() // Last transaction time update
+        })
+        .eq('id', existing.id);
+
+    if (updateError) throw updateError;
+} else {
+    // Agar pehle se koi row nahi hai (Naya Token Purchase)
+    // Note: Sell ke case mein ye tabhi chalega jab user pehli baar sell kar raha ho (rare case)
+    const { error: insertError } = await supabase
+        .from('crypto_token_histry')
+        .insert([{
+            user_id: userId,
+            symbol: symbol,
+            action: action,
+            qty: parsedQty,
+            price_at_transacti: parsedPrice, // Spelling corrected
+            total_amount: totalAmount,
+            blockchain_used: blockchainUsed,
+            status: 'active',
+            created_at: new Date().toISOString()
+        }]);
+
+    if (insertError) throw insertError;
+}
             } catch (e) {
                 console.error('addTokenBalanceForUser error:', e);
             }
