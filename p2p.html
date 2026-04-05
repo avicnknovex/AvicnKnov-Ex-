@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>P2P Trading - AvicnKnov</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -14,39 +12,11 @@
             box-sizing: border-box;
         }
 
-        :root {
-            --bg-primary: #08080e;
-            --bg-card: #111119;
-            --bg-elevated: #1a1a26;
-            --bg-input: #0d0d15;
-            --border-color: rgba(255,255,255,0.06);
-            --border-focus: #9b7dff;
-            --text-primary: #eeeef2;
-            --text-secondary: #6e6e82;
-            --text-muted: #44445a;
-            --accent: #9b7dff;
-            --accent-hover: #b49aff;
-            --buy-color: #00dc82;
-            --buy-bg: rgba(0,220,130,0.08);
-            --buy-border: rgba(0,220,130,0.2);
-            --sell-color: #ff4757;
-            --sell-bg: rgba(255,71,87,0.08);
-            --sell-border: rgba(255,71,87,0.2);
-            --chat-color: #4fa3ff;
-            --warning-color: #ffb800;
-            --release-color: #b57dff;
-            --reject-color: #8b6555;
-            --report-color: #c4a800;
-            --cancel-color: #ff9100;
-            --success-toast: #00dc82;
-            --error-toast: #ff4757;
-        }
-
         body {
-            font-family: 'Plus Jakarta Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--bg-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a0533 0%, #0f0020 50%, #000000 100%);
             min-height: 100vh;
-            color: var(--text-primary);
+            color: #333;
         }
 
         .container {
@@ -59,76 +29,59 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(17,17,25,0.85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            background: rgba(124, 58, 237, 0.15);
+            backdrop-filter: blur(10px);
             padding: 15px 20px;
             border-radius: 15px;
             margin-bottom: 20px;
-            border: 1px solid var(--border-color);
+            border: 1px solid rgba(124, 58, 237, 0.3);
         }
 
         .back-btn, .add-order-btn {
-            background: var(--accent);
-            color: #fff;
+            background: #7c3aed;
+            color: white;
             border: none;
-            padding: 10px 18px;
+            padding: 10px 15px;
             border-radius: 10px;
             cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
+            font-size: 16px;
             transition: all 0.3s;
-            font-family: inherit;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
         }
 
         .back-btn:hover, .add-order-btn:hover {
-            background: var(--accent-hover);
+            background: #6d28d9;
             transform: scale(1.05);
         }
 
         .tabs {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             margin-bottom: 20px;
             justify-content: center;
-            flex-wrap: wrap;
         }
 
         .tab {
             padding: 12px 25px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
             border-radius: 10px;
-            color: var(--text-secondary);
+            color: white;
             cursor: pointer;
             font-weight: 600;
-            font-family: inherit;
-            font-size: 14px;
             transition: all 0.3s;
         }
 
-        .tab:hover {
-            background: rgba(255, 255, 255, 0.07);
-            color: var(--text-primary);
-        }
-
         .tab.active {
-            background: var(--accent);
-            color: #fff;
-            border-color: var(--accent);
-            box-shadow: 0 4px 20px rgba(155, 125, 255, 0.25);
+            background: #7c3aed;
+            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
         }
 
         .tab-content {
             display: none;
-            background: var(--bg-card);
+            background: rgba(255, 255, 255, 0.97);
             border-radius: 15px;
             padding: 20px;
             min-height: 400px;
-            border: 1px solid var(--border-color);
         }
 
         .tab-content.active {
@@ -136,26 +89,18 @@
         }
 
         .order-card {
-            background: var(--bg-elevated);
+            background: white;
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 15px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-            border-left: 4px solid var(--buy-color);
-            border-top: 1px solid var(--border-color);
-            border-right: 1px solid var(--border-color);
-            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #7c3aed;
             transition: all 0.3s;
         }
 
         .order-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
-            border-top-color: rgba(255,255,255,0.1);
-        }
-
-        .order-card.sell-card {
-            border-left-color: var(--sell-color);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
         }
 
         .order-header {
@@ -171,52 +116,27 @@
             gap: 10px;
         }
 
-        .token-icon-wrap {
-            width: 32px;
-            height: 32px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            background: rgba(155,125,255,0.1);
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--accent);
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-
-        .token-icon-wrap img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 50%;
-        }
-
         .token-symbol {
             font-size: 18px;
             font-weight: bold;
-            color: var(--text-primary);
+            color: #7c3aed;
         }
 
-       .order-type {
+        .order-type {
             padding: 5px 12px;
             border-radius: 20px;
             font-size: 12px;
             font-weight: bold;
-            letter-spacing: 0.5px;
         }
 
         .buy-type {
-            background: var(--buy-bg);
-            color: var(--buy-color);
-            border: 1px solid var(--buy-border);
+            background: #f5f3ff;
+            color: #7c3aed;
         }
 
         .sell-type {
-            background: var(--sell-bg);
-            color: var(--sell-color);
-            border: 1px solid var(--sell-border);
+            background: #ffe8e8;
+            color: #f44336;
         }
 
         .order-details {
@@ -231,22 +151,19 @@
         }
 
         .detail-label {
-            font-size: 11px;
-            color: var(--text-muted);
+            font-size: 12px;
+            color: #666;
             margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
         }
 
         .detail-value {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
         }
 
         .price-display {
-            color: var(--buy-color);
-            font-weight: 700;
+            color: #7c3aed;
         }
 
         .payment-methods {
@@ -257,12 +174,11 @@
         }
 
         .payment-method {
-            padding: 4px 10px;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--border-color);
+            padding: 4px 8px;
+            background: #f0f0f0;
             border-radius: 15px;
             font-size: 12px;
-            color: var(--text-secondary);
+            color: #666;
         }
 
         .order-actions {
@@ -278,61 +194,54 @@
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            font-weight: 600;
-            font-family: inherit;
-            font-size: 13px;
+            font-weight: bold;
             transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
             min-width: 100px;
         }
 
         .buy-btn {
-            background: var(--buy-color);
-            color: #0a0a10;
+            background: #7c3aed;
+            color: white;
         }
 
         .sell-btn {
-            background: var(--sell-color);
+            background: #f44336;
             color: white;
         }
 
         .cancel-btn {
-            background: var(--cancel-color);
+            background: #ff9800;
             color: white;
         }
-        
+
         .report-btn {
-            background: var(--report-color);
-            color: #0a0a10;
+            background: #e7c200;
+            color: white;
         }
 
         .chat-btn {
-            background: var(--chat-color);
+            background: #2196F3;
             color: white;
         }
 
         .release-btn {
-            background: var(--release-color);
+            background: #9c27b0;
             color: white;
         }
 
         .reject-btn {
-            background: var(--reject-color);
+            background: #795548;
             color: white;
         }
-        
+
         .pnp-btn {
-            background: var(--accent);
+            background: #673AB7;
             color: white;
         }
 
         .action-btn:hover {
-            transform: scale(1.04);
-            opacity: 0.92;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transform: scale(1.05);
+            opacity: 0.9;
         }
 
         /* Modal Styles */
@@ -343,9 +252,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.5);
             z-index: 1000;
         }
 
@@ -354,26 +261,13 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: var(--bg-card);
+            background: white;
             border-radius: 15px;
             padding: 30px;
             width: 90%;
             max-width: 500px;
             max-height: 90vh;
             overflow-y: auto;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-        }
-
-        .modal-content::-webkit-scrollbar {
-            width: 6px;
-        }
-        .modal-content::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .modal-content::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.08);
-            border-radius: 3px;
         }
 
         .modal-header {
@@ -384,30 +278,17 @@
         }
 
         .modal-title {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--text-primary);
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
         }
 
         .close-btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--border-color);
-            font-size: 20px;
+            background: none;
+            border: none;
+            font-size: 24px;
             cursor: pointer;
-            color: var(--text-secondary);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-        }
-
-        .close-btn:hover {
-            background: rgba(255,71,87,0.1);
-            color: var(--sell-color);
-            border-color: var(--sell-border);
+            color: #666;
         }
 
         .form-group {
@@ -418,37 +299,21 @@
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: var(--text-secondary);
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            color: #333;
         }
 
         .form-input, .form-select {
             width: 100%;
             padding: 12px;
-            border: 1px solid var(--border-color);
+            border: 2px solid #ddd;
             border-radius: 8px;
-            font-size: 15px;
+            font-size: 16px;
             transition: border-color 0.3s;
-            background: var(--bg-input);
-            color: var(--text-primary);
-            font-family: inherit;
-        }
-
-        .form-input::placeholder {
-            color: var(--text-muted);
         }
 
         .form-input:focus, .form-select:focus {
             outline: none;
-            border-color: var(--border-focus);
-            box-shadow: 0 0 0 3px rgba(155,125,255,0.1);
-        }
-
-        .form-select option {
-            background: var(--bg-card);
-            color: var(--text-primary);
+            border-color: #7c3aed;
         }
 
         .payment-options {
@@ -463,53 +328,44 @@
             align-items: center;
             gap: 8px;
             padding: 10px;
-            border: 1px solid var(--border-color);
+            border: 2px solid #ddd;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s;
-            color: var(--text-secondary);
         }
 
         .payment-option:hover {
-            border-color: rgba(155,125,255,0.3);
-            background: rgba(155,125,255,0.04);
+            border-color: #7c3aed;
+            background: #f5f3ff;
         }
 
         .payment-option.selected {
-            border-color: var(--accent);
-            background: rgba(155,125,255,0.08);
-            color: var(--text-primary);
-        }
-
-        .payment-option input[type="checkbox"] {
-            accent-color: var(--accent);
+            border-color: #7c3aed;
+            background: #ede9fe;
         }
 
         .submit-btn {
             width: 100%;
             padding: 15px;
-            background: var(--accent);
+            background: #7c3aed;
             color: white;
             border: none;
             border-radius: 10px;
-            font-size: 16px;
-            font-weight: 700;
+            font-size: 18px;
+            font-weight: bold;
             cursor: pointer;
             transition: all 0.3s;
-            font-family: inherit;
-            letter-spacing: 0.3px;
         }
 
         .submit-btn:hover {
-            background: var(--accent-hover);
+            background: #6d28d9;
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(155,125,255,0.3);
         }
 
         /* Chat Modal */
         .chat-container {
             height: 400px;
-            border: 1px solid var(--border-color);
+            border: 2px solid #ddd;
             border-radius: 10px;
             overflow: hidden;
             display: flex;
@@ -520,18 +376,7 @@
             flex: 1;
             padding: 15px;
             overflow-y: auto;
-            background: var(--bg-primary);
-        }
-
-        .chat-messages::-webkit-scrollbar {
-            width: 5px;
-        }
-        .chat-messages::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .chat-messages::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.06);
-            border-radius: 3px;
+            background: #f9f9f9;
         }
 
         .chat-message {
@@ -541,34 +386,29 @@
         }
 
         .message-sender {
-            font-size: 11px;
-            font-weight: 600;
+            font-size: 12px;
+            font-weight: bold;
             margin-bottom: 5px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            color: #666;
         }
 
         .ai-sender {
-            color: var(--accent);
+            color: #7c3aed;
         }
 
         .message-content {
-            background: var(--bg-elevated);
+            background: white;
             padding: 10px 15px;
             border-radius: 10px;
-            border-left: 3px solid var(--text-muted);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-            color: var(--text-primary);
-            font-size: 14px;
-            line-height: 1.5;
+            border-left: 4px solid #7c3aed;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         .ai-message .message-content {
-            border-left-color: var(--accent);
-            background: rgba(155,125,255,0.06);
+            border-left-color: #2196F3;
+            background: #e3f2fd;
         }
-        
+
         .chat-image {
             max-width: 200px;
             border-radius: 8px;
@@ -576,30 +416,18 @@
 
         .chat-input-container {
             display: flex;
-            gap: 8px;
-            padding: 12px 15px;
-            background: var(--bg-card);
-            border-top: 1px solid var(--border-color);
+            gap: 10px;
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #ddd;
         }
 
         .chat-input {
             flex: 1;
-            padding: 10px 16px;
-            border: 1px solid var(--border-color);
+            padding: 10px;
+            border: 1px solid #ddd;
             border-radius: 20px;
             outline: none;
-            background: var(--bg-input);
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 14px;
-        }
-
-        .chat-input::placeholder {
-            color: var(--text-muted);
-        }
-
-        .chat-input:focus {
-            border-color: var(--border-focus);
         }
 
         .send-btn, .image-btn {
@@ -607,97 +435,63 @@
             border: none;
             border-radius: 20px;
             cursor: pointer;
-            font-weight: 600;
-            font-family: inherit;
-            font-size: 14px;
-            transition: all 0.2s;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
         }
 
         .send-btn {
-            background: var(--accent);
+            background: #7c3aed;
             color: white;
-        }
-
-        .send-btn:hover {
-            background: var(--accent-hover);
         }
 
         .image-btn {
-            background: var(--chat-color);
+            background: #2196F3;
             color: white;
-        }
-
-        .image-btn:hover {
-            opacity: 0.85;
         }
 
         .timer-display {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: var(--warning-color);
-            color: #0a0a10;
+            background: #ff9800;
+            color: white;
             padding: 10px 20px;
             border-radius: 10px;
             font-weight: bold;
             z-index: 1001;
-            font-family: inherit;
         }
 
         .loading {
             text-align: center;
             padding: 40px;
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        .loading::after {
-            content: '';
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--text-muted);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-left: 10px;
-            vertical-align: middle;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+            color: #666;
         }
 
         .empty-state {
             text-align: center;
             padding: 60px 20px;
-            color: var(--text-muted);
+            color: #666;
         }
 
         .empty-state h3 {
             margin-bottom: 10px;
-            font-size: 20px;
-            color: var(--text-secondary);
-        }
-
-        .empty-state p {
-            font-size: 14px;
+            font-size: 24px;
         }
 
         .toast {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            padding: 14px 24px;
+            padding: 15px 25px;
             border-radius: 10px;
             color: white;
-            font-weight: 600;
+            font-weight: bold;
             z-index: 1002;
-            transform: translateX(calc(100% + 40px));
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            font-family: inherit;
-            font-size: 14px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+            transform: translateX(100%);
+            transition: transform 0.3s;
         }
 
         .toast.show {
@@ -705,83 +499,43 @@
         }
 
         .toast.success {
-            background: var(--success-toast);
-            color: #0a0a10;
+            background: #7c3aed;
         }
 
         .toast.error {
-            background: var(--error-toast);
+            background: #f44336;
         }
 
         .live-price {
-            color: var(--buy-color);
-            font-weight: 700;
+            color: #7c3aed;
+            font-weight: bold;
             font-size: 18px;
         }
 
-        .available-qty-display {
-            color: var(--accent);
-            font-weight: 600;
-            font-size: 16px;
-        }
-        
         #pnp-tab .pnp-container {
             max-width: 800px;
             margin: auto;
             text-align: center;
         }
+
         #pnp-tab .uid-display {
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
+            background: #f0f0f0;
             padding: 15px;
             border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 18px;
+            font-weight: bold;
             margin-bottom: 20px;
             word-wrap: break-word;
-            color: var(--text-primary);
         }
+
         #pnp-tab .role-selector {
             margin-bottom: 30px;
         }
+
         #pnp-tab .stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 20px;
-        }
-        #pnp-tab .stat-box {
-            padding: 25px;
-            border-radius: 12px;
-            color: white;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        .stat-box h4 {
-            font-size: 12px;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            opacity: 0.85;
-        }
-        .stat-box p {
-            font-size: 32px;
-            font-weight: 800;
-        }
-        .green-box { 
-            background: linear-gradient(135deg, #00dc82, #00b368); 
-        }
-        .red-box { 
-            background: linear-gradient(135deg, #ff4757, #cc3a47); 
-        }
-
-        .uid-display {
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            word-wrap: break-word;
-            color: var(--text-primary);
         }
 
         .stats-grid {
@@ -790,72 +544,120 @@
             gap: 20px;
         }
 
-        /* Premium scrollbar */
-        ::-webkit-scrollbar {
+        #pnp-tab .stat-box {
+            padding: 25px;
+            border-radius: 12px;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .stat-box {
+            padding: 25px;
+            border-radius: 12px;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .stat-box h4 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .stat-box p {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .green-box { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+        .red-box { background: linear-gradient(135deg, #f44336, #E57373); }
+
+        /* Token Icon Styles */
+        .token-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -0.5px;
+            flex-shrink: 0;
+            overflow: hidden;
+            border: 2px solid rgba(124, 58, 237, 0.3);
+        }
+
+        .token-icon img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .token-icon-text {
+            font-size: 10px;
+            font-weight: 700;
+            color: white;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .available-qty-box {
+            background: #f5f3ff;
+            border: 1px solid #ddd6fe;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #7c3aed;
+        }
+
+        .uid-display {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            word-wrap: break-word;
+        }
+
+        /* Scrollbar Styling */
+        .chat-messages::-webkit-scrollbar {
             width: 6px;
         }
-        ::-webkit-scrollbar-track {
-            background: transparent;
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
         }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.06);
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #c4b5fd;
             border-radius: 3px;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255,255,255,0.12);
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #7c3aed;
         }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-            .header {
-                flex-direction: column;
-                gap: 12px;
-                text-align: center;
-            }
-            .header h1 {
-                font-size: 18px !important;
-            }
-            .tabs {
-                gap: 6px;
-            }
-            .tab {
-                padding: 10px 16px;
-                font-size: 12px;
-            }
-            .order-details {
-                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-                gap: 10px;
-            }
-            .order-actions {
-                flex-direction: column;
-            }
-            .action-btn {
-                min-width: auto;
-            }
-            .payment-options {
-                grid-template-columns: 1fr;
-            }
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Selection style */
-        ::selection {
-            background: rgba(155,125,255,0.3);
-            color: #fff;
+        /* SVG icon in buttons */
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Back to Trade</button>
-            <h1 style="color: white; font-size: 24px; font-weight: 800; letter-spacing: -0.3px;">P2P Trading Platform</h1>
-            <button class="add-order-btn" onclick="openCreateOrderModal()"><i class="fas fa-plus"></i> Create Order</button>
+            <button class="back-btn" onclick="goBack()">&#8592; Back to Trade</button>
+            <h1 style="color: white; font-size: 24px;">P2P Trading Platform</h1>
+            <button class="add-order-btn" onclick="openCreateOrderModal()">+ Create Order</button>
         </div>
 
         <div class="tabs">
@@ -863,33 +665,33 @@
             <button class="tab" onclick="switchTab('sell')">Sell Orders</button>
             <button class="tab" onclick="switchTab('orderbox')">Order Box</button>
             <button class="tab" onclick="switchTab('history')">History</button>
-            <button class="tab" onclick="switchTab('pnp')">P&P</button>
-            </div>
+            <button class="tab" onclick="switchTab('pnp')">P&amp;P</button>
+        </div>
 
         <div id="buy-tab" class="tab-content active">
             <div id="buy-orders">
-                <div class="loading">Loading buy orders</div>
+                <div class="loading">Loading buy orders...</div>
             </div>
         </div>
 
         <div id="sell-tab" class="tab-content">
             <div id="sell-orders">
-                <div class="loading">Loading sell orders</div>
+                <div class="loading">Loading sell orders...</div>
             </div>
         </div>
 
         <div id="orderbox-tab" class="tab-content">
             <div id="order-box">
-                <div class="loading">Loading your active orders</div>
+                <div class="loading">Loading your active orders...</div>
             </div>
         </div>
 
         <div id="history-tab" class="tab-content">
             <div id="history-orders">
-                <div class="loading">Loading history</div>
+                <div class="loading">Loading history...</div>
             </div>
         </div>
-        
+
         <div id="pnp-tab" class="tab-content">
             <div class="pnp-container">
                 <div class="form-group">
@@ -899,7 +701,7 @@
                 <div class="form-group role-selector">
                     <label class="form-label">Select Your Role</label>
                     <select id="userRole" class="form-select" onchange="updateUserRole()">
-                        <option value="both">Both (Buyer & Seller)</option>
+                        <option value="both">Both (Buyer &amp; Seller)</option>
                         <option value="buyer">Buyer</option>
                         <option value="seller">Seller</option>
                     </select>
@@ -916,15 +718,16 @@
                 </div>
             </div>
         </div>
-        </div>
+    </div>
 
+    <!-- Create Order Modal -->
     <div id="createOrderModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title">Create New Order</h2>
-                <button class="close-btn" onclick="closeCreateOrderModal()"><i class="fas fa-xmark"></i></button>
+                <button class="close-btn" onclick="closeCreateOrderModal()">&times;</button>
             </div>
-            
+
             <form id="createOrderForm">
                 <div class="form-group">
                     <label class="form-label">Order Type</label>
@@ -937,6 +740,7 @@
                 <div class="form-group">
                     <label class="form-label">Select Token</label>
                     <select id="tokenSelect" class="form-select" onchange="updateTokenPrice()">
+                        <option value="">Loading tokens...</option>
                     </select>
                 </div>
 
@@ -947,17 +751,17 @@
 
                 <div id="availableQuantity" class="form-group" style="display: none;">
                     <label class="form-label">Available Quantity</label>
-                    <div id="availableQty" class="available-qty-display">0</div>
+                    <div id="availableQty" class="available-qty-box">0</div>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">Quantity</label>
-                    <input type="number" id="quantity" class="form-input" step="0.00000001" min="0" onchange="calculateAmount()" placeholder="Enter quantity">
+                    <input type="number" id="quantity" class="form-input" step="0.00000001" min="0" onchange="calculateAmount()">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Amount (INR)</label>
-                    <input type="number" id="amount" class="form-input" min="100" max="10000" onchange="calculateQuantity()" placeholder="100 - 10,000">
+                    <label class="form-label">Amount (&#8377;)</label>
+                    <input type="number" id="amount" class="form-input" min="100" max="10000" onchange="calculateQuantity()">
                 </div>
 
                 <div class="form-group">
@@ -984,12 +788,12 @@
 
                 <div id="paymentDetails" style="display: none;">
                     <div class="form-group">
-                        <label class="form-label">Phone Number (for PhonePe/Paytm/Google Pay)</label>
-                        <input type="tel" id="phoneNumber" class="form-input" placeholder="Enter phone number">
+                        <label class="form-label">Phone Number (for PhonePe / Paytm / Google Pay)</label>
+                        <input type="tel" id="phoneNumber" class="form-input">
                     </div>
                     <div class="form-group">
                         <label class="form-label">UPI ID</label>
-                        <input type="text" id="upiId" class="form-input" placeholder="Enter UPI ID">
+                        <input type="text" id="upiId" class="form-input">
                     </div>
                 </div>
 
@@ -998,41 +802,51 @@
         </div>
     </div>
 
+    <!-- Chat Modal -->
     <div id="chatModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title">Trade Chat</h2>
-                <button class="close-btn" onclick="closeChatModal()"><i class="fas fa-xmark"></i></button>
+                <button class="close-btn" onclick="closeChatModal()">&times;</button>
             </div>
-            
+
             <div class="chat-container">
                 <div id="chatMessages" class="chat-messages">
-                    </div>
+                </div>
                 <div class="chat-input-container">
                     <input type="text" id="chatInput" class="chat-input" placeholder="Type your message...">
                     <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="sendImage()">
-                    <button class="image-btn" onclick="document.getElementById('imageInput').click()"><i class="fas fa-camera"></i></button>
-                    <button class="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+                    <button class="image-btn" onclick="document.getElementById('imageInput').click()">
+                        <span class="btn-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                <circle cx="8.5" cy="8.5" r="1.5"/>
+                                <polyline points="21 15 16 10 5 21"/>
+                            </svg>
+                        </span>
+                    </button>
+                    <button class="send-btn" onclick="sendMessage()">Send</button>
                 </div>
             </div>
-            
+
             <div id="tradeActions" style="margin-top: 15px; display: none;">
-                </div>
+            </div>
         </div>
     </div>
-    
+
+    <!-- PnP Modal -->
     <div id="pnpModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">User P&P Profile</h2>
-                <button class="close-btn" onclick="closePnPModal()"><i class="fas fa-xmark"></i></button>
+                <h2 class="modal-title">User P&amp;P Profile</h2>
+                <button class="close-btn" onclick="closePnPModal()">&times;</button>
             </div>
             <div id="pnpModalBody">
-                <div class="loading">Loading user profile</div>
+                <div class="loading">Loading user profile...</div>
             </div>
         </div>
     </div>
-    
+
     <div id="timerDisplay" class="timer-display" style="display: none;">
         <span id="timerText"></span>
     </div>
@@ -1041,12 +855,12 @@
 
     <script>
         // Configuration
-var SUPA_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
-var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
+        var SUPA_URL = 'https://hwrvqyipozrsxyjdpqag.supabase.co';
+        var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3cnZxeWlwb3pyc3h5amRwcWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MDc2NzksImV4cCI6MjA2NjQ4MzY3OX0.s43NjpUGDAJhs9qEmnwIXEY5aOh3gl6XqPdEveodFZM';
 
-// Initialize Supabase
-var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
-        
+        // Initialize Supabase
+        var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
         // Global variables
         let currentUser = null;
         let livePrices = {};
@@ -1054,13 +868,16 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
         let priceInterval = null;
         let timers = {};
         let activeChats = {};
-        let availableTokens = {};
+
+        // ============================================================
+        // NEW: availableTokens loaded from crypto_token_control table
+        // ============================================================
+        let availableTokens = [];
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
             await checkAuth();
-            if (!currentUser) return;
-            await loadTokensFromControl();
+            await loadTokensFromDB();   // Load tokens from crypto_token_control
             await loadAllData();
             startPriceUpdates();
             setupRealtimeSubscriptions();
@@ -1087,10 +904,10 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
         function switchTab(tabName) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             event.target.classList.add('active');
-            
+
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             document.getElementById(tabName + '-tab').classList.add('active');
-            
+
             switch(tabName) {
                 case 'buy':
                     loadBuyOrders();
@@ -1120,190 +937,155 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
             ]);
         }
 
-        // =============================================
-        // NEW: Load tokens from crypto_token_control
-        // =============================================
-        async function loadTokensFromControl() {
+        // ============================================================
+        // TOKEN LOADING — crypto_token_control TABLE
+        // Loads all tokens from DB. Filters out tokens whose
+        // nosupported_js column contains 'p2p.html'.
+        // Populates the token dropdown for order creation.
+        // Provides token name, full_name, icon data, and price info.
+        // ============================================================
+        async function loadTokensFromDB() {
             try {
                 const { data, error } = await supabase
                     .from('crypto_token_control')
-                    .select('*');
+                    .select('*')
+                    .order('name', { ascending: true });
 
                 if (error) throw error;
 
-                availableTokens = {};
+                // Filter: exclude tokens with 'p2p.html' in nosupported_js
+                availableTokens = (data || []).filter(token => {
+                    const ns = (token.nosupported_js || '').toLowerCase();
+                    return !ns.includes('p2p.html');
+                });
 
-                if (data && data.length > 0) {
-                    data.forEach(token => {
-                        const nosupported = token.nosupported_js || '';
-                        if (nosupported.includes('p2p.html')) return;
+                // Initialize prices from DB manual_price
+                availableTokens.forEach(token => {
+                    if (!livePrices[token.symbol]) {
+                        livePrices[token.symbol] = Number(token.manual_price || 0);
+                    }
+                });
 
-                        availableTokens[token.symbol] = {
-                            name: token.name || token.symbol,
-                            full_name: token.full_name || token.name || token.symbol,
-                            icon_type: token.icon_type || 'text',
-                            icon_url: token.icon_url || null,
-                            is_live_api: token.is_live_api || false,
-                            api_url: token.api_url || null,
-                            manual_price: parseFloat(token.manual_price) || 0,
-                            manual_min_price: parseFloat(token.manual_min_price) || 0,
-                            manual_max_price: parseFloat(token.manual_max_price) || 0,
-                            manual_change_p: parseFloat(token.manual_change_p) || 0,
-                            volume: token.volume || '0',
-                            total_supply: token.total_supply || '0',
-                            holders: token.holders || '0',
-                            description: token.description || '',
-                            blockchains: token.blockchains || ['ERC20'],
-                            social_links: token.social_links || {}
-                        };
-                    });
-                }
-
-                populateTokenSelect();
+                // Populate the dropdown
+                populateTokenDropdown();
 
             } catch (error) {
-                console.error('Load tokens from control error:', error);
+                console.error('Error loading tokens from crypto_token_control:', error);
+                availableTokens = [];
             }
         }
 
-        // =============================================
-        // NEW: Token icon renderer
-        // =============================================
-        function getTokenIcon(tokenData, size) {
-            const s = size || 32;
-            if (!tokenData) {
-                return '<span class="token-icon-wrap" style="width:' + s + 'px;height:' + s + 'px;"><i class="fas fa-coins" style="font-size:' + (s * 0.45) + 'px;"></i></span>';
-            }
-
-            if (tokenData.icon_type === 'image' && tokenData.icon_url) {
-                return '<span class="token-icon-wrap" style="width:' + s + 'px;height:' + s + 'px;"><img src="' + tokenData.icon_url + '" alt="' + (tokenData.name || '') + '"></span>';
-            }
-
-            if (tokenData.icon_type === 'emoji' && tokenData.icon_url) {
-                return '<span class="token-icon-wrap" style="width:' + s + 'px;height:' + s + 'px;font-size:' + (s * 0.55) + 'px;">' + tokenData.icon_url + '</span>';
-            }
-
-            if (tokenData.icon_type === 'text' && tokenData.icon_url) {
-                return '<span class="token-icon-wrap" style="width:' + s + 'px;height:' + s + 'px;font-size:' + (s * 0.35) + 'px;">' + tokenData.icon_url + '</span>';
-            }
-
-            var initial = (tokenData.name || '?').charAt(0).toUpperCase();
-            return '<span class="token-icon-wrap" style="width:' + s + 'px;height:' + s + 'px;font-size:' + (s * 0.42) + 'px;">' + initial + '</span>';
-        }
-
-        // =============================================
-        // NEW: Populate token select dropdown
-        // =============================================
-        function populateTokenSelect() {
-            var tokenSelect = document.getElementById('tokenSelect');
+        // Populate the token <select> dropdown
+        function populateTokenDropdown() {
+            const tokenSelect = document.getElementById('tokenSelect');
             if (!tokenSelect) return;
 
-            tokenSelect.innerHTML = '';
-
-            var symbols = Object.keys(availableTokens);
-            if (symbols.length === 0) {
-                var opt = document.createElement('option');
-                opt.value = '';
-                opt.textContent = 'No tokens available';
-                tokenSelect.appendChild(opt);
+            if (availableTokens.length === 0) {
+                tokenSelect.innerHTML = '<option value="">No tokens available</option>';
                 return;
             }
 
-            symbols.forEach(function(symbol) {
-                var token = availableTokens[symbol];
-                var opt = document.createElement('option');
-                opt.value = symbol;
-                opt.textContent = token.full_name + ' (' + symbol + ')';
-                tokenSelect.appendChild(opt);
-            });
+            tokenSelect.innerHTML = availableTokens.map(token => {
+                const displayName = token.full_name
+                    ? `${token.full_name} (${token.symbol})`
+                    : `${token.name || token.symbol} (${token.symbol})`;
+                return `<option value="${token.symbol}">${displayName}</option>`;
+            }).join('');
 
+            // Trigger price update for the first token
             updateTokenPrice();
         }
 
-        // =============================================
-        // NEW: Fetch price from API URL
-        // =============================================
-        async function fetchPriceFromApi(apiUrl, symbol) {
-            try {
-                var response = await fetch(apiUrl);
-                var data = await response.json();
+        // Find token data by symbol
+        function getTokenData(symbol) {
+            return availableTokens.find(t => t.symbol === symbol) || null;
+        }
 
-                for (var key in data) {
-                    if (data[key] && typeof data[key] === 'object') {
-                        if (data[key].inr !== undefined) return data[key].inr;
-                        if (data[key].usd !== undefined) return data[key].usd;
-                        if (data[key].price !== undefined) return data[key].price;
-                    }
-                }
-
-                if (data.price !== undefined) return data.price;
-                if (data.inr !== undefined) return data.inr;
-                if (data.usd !== undefined) return data.usd;
-
-                for (var k in data) {
-                    if (typeof data[k] === 'number') return data[k];
-                }
-
-                return null;
-            } catch (error) {
-                console.error('Price API error for ' + symbol + ':', error);
-                return null;
+        // Render token icon based on icon_type from crypto_token_control
+        // icon_type: 'emoji' | 'image' | 'text' | null
+        function renderTokenIcon(token) {
+            if (!token) {
+                return `<div class="token-icon"><span class="token-icon-text">?</span></div>`;
+            }
+            if (token.icon_type === 'image' && token.icon_url) {
+                return `<div class="token-icon">
+                    <img src="${token.icon_url}" alt="${token.symbol}"
+                         onerror="this.parentElement.innerHTML='<span class=\\'token-icon-text\\'>${(token.symbol||'').substring(0,3)}</span>'">
+                </div>`;
+            } else if (token.icon_type === 'emoji' && token.icon_url) {
+                return `<div class="token-icon" style="background:transparent;border-color:transparent;">
+                    <span style="font-size:24px;line-height:1;">${token.icon_url}</span>
+                </div>`;
+            } else if (token.icon_type === 'text' && token.icon_url) {
+                return `<div class="token-icon"><span class="token-icon-text">${token.icon_url}</span></div>`;
+            } else {
+                // Default: abbreviation badge
+                return `<div class="token-icon">
+                    <span class="token-icon-text">${(token.symbol || '??').substring(0, 3)}</span>
+                </div>`;
             }
         }
 
-        // =============================================
-        // MODIFIED: Price updates from crypto_token_control
-        // =============================================
+        // ============================================================
+        // PRICE SYSTEM — Driven by crypto_token_control
+        // If is_live_api=true and api_url is set: fetch live from API
+        // Otherwise: simulate small fluctuation around manual_price
+        // Updates every 2 seconds silently in the background
+        // ============================================================
         async function fetchLivePrices() {
-            try {
-                var { data: tokens, error } = await supabase
-                    .from('crypto_token_control')
-                    .select('symbol, is_live_api, api_url, manual_price, nosupported_js');
+            if (!availableTokens || availableTokens.length === 0) return;
 
-                if (error) throw error;
+            const apiTokens = availableTokens.filter(t => t.is_live_api && t.api_url);
+            const manualTokens = availableTokens.filter(t => !t.is_live_api);
 
-                var pricePromises = tokens
-                    .filter(function(t) {
-                        var ns = t.nosupported_js || '';
-                        return !ns.includes('p2p.html');
-                    })
-                    .map(async function(token) {
-                        if (token.is_live_api && token.api_url) {
-                            try {
-                                var price = await fetchPriceFromApi(token.api_url, token.symbol);
-                                livePrices[token.symbol] = price !== null ? price : (parseFloat(token.manual_price) || 0);
-                            } catch (e) {
-                                livePrices[token.symbol] = parseFloat(token.manual_price) || 0;
-                            }
-                        } else {
-                            livePrices[token.symbol] = parseFloat(token.manual_price) || 0;
-                        }
-                    });
-
-                await Promise.allSettled(pricePromises);
-                updatePriceDisplays();
-
-            } catch (error) {
-                console.error('Price fetch error:', error);
+            // Live API tokens
+            for (const token of apiTokens) {
+                try {
+                    const res = await fetch(token.api_url);
+                    const json = await res.json();
+                    const key = Object.keys(json)[0];
+                    if (key && json[key] && json[key].inr) {
+                        livePrices[token.symbol] = Number(json[key].inr);
+                    }
+                } catch (e) {
+                    // Silent fail — keep existing price
+                }
             }
+
+            // Manual price simulation (small fluctuation so it looks live)
+            manualTokens.forEach(token => {
+                const basePrice = Number(token.manual_price || 0);
+                if (basePrice <= 0) return;
+                const minPrice = Number(token.manual_min_price || basePrice * 0.9);
+                const maxPrice = Number(token.manual_max_price || basePrice * 1.1);
+                const current = livePrices[token.symbol] || basePrice;
+                const volatility = current * 0.002;
+                const change = (Math.random() - 0.5) * volatility;
+                let newPrice = current + change;
+                if (newPrice < minPrice) newPrice = minPrice + volatility;
+                if (newPrice > maxPrice) newPrice = maxPrice - volatility;
+                livePrices[token.symbol] = newPrice;
+            });
+
+            updatePriceDisplays();
         }
 
         function updatePriceDisplays() {
-            var priceDisplay = document.getElementById('livePrice');
-            var tokenSelect = document.getElementById('tokenSelect');
+            const priceDisplay = document.getElementById('livePrice');
+            const tokenSelect = document.getElementById('tokenSelect');
             if (priceDisplay && tokenSelect) {
-                var selectedToken = tokenSelect.value;
-                if (livePrices[selectedToken] !== undefined) {
-                    priceDisplay.textContent = '\u20B9' + livePrices[selectedToken].toLocaleString('en-IN');
+                const selectedToken = tokenSelect.value;
+                if (selectedToken && livePrices[selectedToken]) {
+                    priceDisplay.textContent = `\u20B9${livePrices[selectedToken].toLocaleString('en-IN', { maximumFractionDigits: 6 })}`;
                 }
             }
-            
-            document.querySelectorAll('.order-card').forEach(function(card) {
-                var symbol = card.dataset.symbol;
-                if (symbol && livePrices[symbol] !== undefined) {
-                    var priceEl = card.querySelector('.price-display');
+
+            document.querySelectorAll('.order-card').forEach(card => {
+                const symbol = card.dataset.symbol;
+                if (symbol && livePrices[symbol]) {
+                    const priceEl = card.querySelector('.price-display');
                     if (priceEl) {
-                        priceEl.textContent = '\u20B9' + livePrices[symbol].toLocaleString('en-IN');
+                        priceEl.textContent = `\u20B9${livePrices[symbol].toLocaleString('en-IN', { maximumFractionDigits: 6 })}`;
                     }
                 }
             });
@@ -1314,79 +1096,105 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
             priceInterval = setInterval(fetchLivePrices, 2000);
         }
 
-        // =============================================
-        // REPLACED: Holdings from crypto_token_histry
-        // =============================================
-        async function getHoldings() {
+        // ============================================================
+        // HOLDINGS SYSTEM — crypto_token_histry TABLE
+        //
+        // REMOVED: getHoldings() [used localStorage/parent window]
+        // REMOVED: updateHolding() [used localStorage/parent window]
+        //
+        // ADDED: getNetHolding(symbol, userId)
+        //   - Queries crypto_token_histry for user
+        //   - Sums all action='Buying' rows minus action='Selling' rows
+        //   - Returns net available quantity
+        //
+        // ADDED: addTokenHolding(userId, symbol, qty, price, total)
+        //   - Inserts a 'Buying' row in crypto_token_histry for buyer
+        //   - Called when releaseTokens() completes a trade
+        //
+        // ADDED: cutTokenHolding(userId, symbol, qty, price, total)
+        //   - Inserts a 'Selling' row in crypto_token_histry for seller
+        //   - Called when releaseTokens() completes a trade
+        // ============================================================
+
+        /**
+         * Get net token quantity for a user from crypto_token_histry.
+         * Net = sum(Buying qty) - sum(Selling qty) for the given symbol.
+         */
+        async function getNetHolding(symbol, userId) {
             try {
-                if (!currentUser) return {};
+                const uid = userId || (currentUser && currentUser.id);
+                if (!uid || !symbol) return 0;
 
-                var { data, error } = await supabase
+                const { data, error } = await supabase
                     .from('crypto_token_histry')
-                    .select('symbol, qty')
-                    .eq('user_id', currentUser.id)
-                    .eq('status', 'active');
+                    .select('action, qty')
+                    .eq('user_id', uid)
+                    .eq('symbol', symbol);
 
-                if (error) throw error;
+                if (error || !data) return 0;
 
-                var holdingsMap = {};
-                if (data) {
-                    data.forEach(function(row) {
-                        holdingsMap[row.symbol] = {
-                            qty: parseFloat(row.qty) || 0
-                        };
-                    });
-                }
-                return holdingsMap;
+                let net = 0;
+                data.forEach(row => {
+                    const qty = Number(row.qty || 0);
+                    if (row.action === 'Buying') net += qty;
+                    else if (row.action === 'Selling') net -= qty;
+                });
 
-            } catch (error) {
-                console.error('Holdings fetch error:', error);
-                return {};
+                return Math.max(0, net);
+            } catch (e) {
+                console.error('getNetHolding error:', e);
+                return 0;
             }
         }
 
-        // =============================================
-        // NEW: Update holding in crypto_token_histry
-        // Only updates qty in existing rows. Creates new row only if needed.
-        // =============================================
-        async function updateHoldingAfterTrade(userId, symbol, qtyChange, priceAtTransaction, totalAmount, action, blockchain) {
+        /**
+         * Add tokens to buyer's holding by inserting a 'Buying' row
+         * in crypto_token_histry. If a row for this symbol already
+         * exists, this still inserts a new row — net is calculated
+         * dynamically by summing all rows. No row merging needed.
+         */
+        async function addTokenHolding(userId, symbol, qty, pricePerToken, totalAmount) {
             try {
-                var { data: existing, error: fetchError } = await supabase
+                const { error } = await supabase
                     .from('crypto_token_histry')
-                    .select('*')
-                    .eq('user_id', userId)
-                    .eq('symbol', symbol)
-                    .eq('status', 'active');
+                    .insert([{
+                        user_id: userId,
+                        symbol: symbol,
+                        action: 'Buying',
+                        qty: qty,
+                        total_amount: totalAmount || 0,
+                        blockchain_used: 'P2P',
+                        status: 'active',
+                        created_at: new Date().toISOString()
+                    }]);
+                if (error) console.error('addTokenHolding error:', error);
+            } catch (e) {
+                console.error('addTokenHolding exception:', e);
+            }
+        }
 
-                if (fetchError) throw fetchError;
-
-                if (existing && existing.length > 0) {
-                    var currentQty = parseFloat(existing[0].qty) || 0;
-                    var newQty = currentQty + qtyChange;
-                    newQty = Math.max(0, newQty);
-
-                    await supabase
-                        .from('crypto_token_histry')
-                        .update({ qty: newQty })
-                        .eq('id', existing[0].id);
-                } else if (qtyChange > 0) {
-                    await supabase
-                        .from('crypto_token_histry')
-                        .insert([{
-                            user_id: userId,
-                            symbol: symbol,
-                            action: action,
-                            qty: Math.abs(qtyChange),
-                            price_at_transacti: priceAtTransaction,
-                            total_amount: totalAmount,
-                            blockchain_used: blockchain || 'P2P',
-                            status: 'active'
-                        }]);
-                }
-
-            } catch (error) {
-                console.error('Update holding error:', error);
-                throw error;
+        /**
+         * Cut tokens from seller's holding by inserting a 'Selling' row
+         * in crypto_token_histry. Net quantity is recalculated from
+         * all rows, so the seller's displayed balance decreases correctly.
+         */
+        async function cutTokenHolding(userId, symbol, qty, pricePerToken, totalAmount) {
+            try {
+                const { error } = await supabase
+                    .from('crypto_token_histry')
+                    .insert([{
+                        user_id: userId,
+                        symbol: symbol,
+                        action: 'Selling',
+                        qty: qty,
+                        total_amount: totalAmount || 0,
+                        blockchain_used: 'P2P',
+                        status: 'active',
+                        created_at: new Date().toISOString()
+                    }]);
+                if (error) console.error('cutTokenHolding error:', error);
+            } catch (e) {
+                console.error('cutTokenHolding exception:', e);
             }
         }
 
@@ -1413,17 +1221,20 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                     return;
                 }
 
-                container.innerHTML = data.map(order => `
+                container.innerHTML = data.map(order => {
+                    const tokenData = getTokenData(order.token_symbol);
+                    const iconHtml = renderTokenIcon(tokenData);
+                    return `
                     <div class="order-card" data-symbol="${order.token_symbol}">
                         <div class="order-header">
                             <div class="token-info">
-                                ${getTokenIcon(availableTokens[order.token_symbol])}
+                                ${iconHtml}
                                 <span class="token-symbol">${order.token_symbol}</span>
                                 <span class="order-type buy-type">BUY</span>
                             </div>
-                            <div class="price-display">\u20B9${(livePrices[order.token_symbol] || 0).toLocaleString('en-IN')}</div>
+                            <div class="price-display">\u20B9${(livePrices[order.token_symbol] || 0).toLocaleString('en-IN', { maximumFractionDigits: 6 })}</div>
                         </div>
-                        
+
                         <div class="order-details">
                             <div class="detail-item">
                                 <div class="detail-label">QUANTITY</div>
@@ -1438,22 +1249,22 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                                 <div class="detail-value">${order.username || 'Anonymous'}</div>
                             </div>
                         </div>
-                        
+
                         <div class="payment-methods">
-                            ${order.payment_methods.split(',').map(method => 
+                            ${order.payment_methods.split(',').map(method =>
                                 `<span class="payment-method">${method}</span>`
                             ).join('')}
                         </div>
-                        
+
                         ${order.user_id !== currentUser.id ? `
                             <div class="order-actions">
                                 <button class="action-btn sell-btn" onclick="requestSellToOrder('${order.id}')">
-                                    <i class="fas fa-arrow-right-arrow-left"></i> Sell to This Order
+                                    Sell to This Order
                                 </button>
                             </div>
                         ` : ''}
                     </div>
-                `).join('');
+                `}).join('');
 
             } catch (error) {
                 console.error('Load buy orders error:', error);
@@ -1462,86 +1273,89 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
         }
 
         async function loadSellOrders() {
-    try {
-        const { data, error } = await supabase
-            .from('user_p2p_order')
-            .select('*')
-            .eq('order_type', 'sell')
-            .eq('status', 'active')
-            .order('created_at', { ascending: false });
+            try {
+                const { data, error } = await supabase
+                    .from('user_p2p_order')
+                    .select('*')
+                    .eq('order_type', 'sell')
+                    .eq('status', 'active')
+                    .order('created_at', { ascending: false });
 
-        if (error) throw error;
+                if (error) throw error;
 
-        const container = document.getElementById('sell-orders');
-        if (data.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <h3>No Sell Orders</h3>
-                    <p>No one is selling tokens right now</p>
-                </div>
-            `;
-            return;
+                const container = document.getElementById('sell-orders');
+                if (data.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No Sell Orders</h3>
+                            <p>No one is selling tokens right now</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = data.map(order => {
+                    const tokenData = getTokenData(order.token_symbol);
+                    const iconHtml = renderTokenIcon(tokenData);
+                    return `
+                    <div class="order-card" data-symbol="${order.token_symbol}">
+                        <div class="order-header">
+                            <div class="token-info">
+                                ${iconHtml}
+                                <span class="token-symbol">${order.token_symbol}</span>
+                                <span class="order-type sell-type">SELL</span>
+                            </div>
+                            <div class="price-display">\u20B9${(livePrices[order.token_symbol] || 0).toLocaleString('en-IN', { maximumFractionDigits: 6 })}</div>
+                        </div>
+
+                        <div class="order-details">
+                            <div class="detail-item">
+                                <div class="detail-label">QUANTITY</div>
+                                <div class="detail-value">${order.quantity}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">AMOUNT</div>
+                                <div class="detail-value">\u20B9${order.amount.toLocaleString('en-IN')}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">USER</div>
+                                <div class="detail-value">${order.username || 'Anonymous'}</div>
+                            </div>
+                        </div>
+
+                        <div class="payment-methods">
+                            ${order.payment_methods.split(',').map(method =>
+                                `<span class="payment-method">${method}</span>`
+                            ).join('')}
+                        </div>
+
+                        ${order.user_id !== currentUser.id ? `
+                            <div class="order-actions">
+                                <button class="action-btn buy-btn" onclick="requestBuyFromOrder('${order.id}')">
+                                    Buy from This Order
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `}).join('');
+
+            } catch (error) {
+                console.error('Load sell orders error:', error);
+                showToast('Failed to load sell orders', 'error');
+            }
         }
 
-        container.innerHTML = data.map(order => `
-            <div class="order-card sell-card" data-symbol="${order.token_symbol}">
-                <div class="order-header">
-                    <div class="token-info">
-                        ${getTokenIcon(availableTokens[order.token_symbol])}
-                        <span class="token-symbol">${order.token_symbol}</span>
-                        <span class="order-type sell-type">SELL</span>
-                    </div>
-                    <div class="price-display">\u20B9${(livePrices[order.token_symbol] || 0).toLocaleString('en-IN')}</div>
-                </div>
-                
-                <div class="order-details">
-                    <div class="detail-item">
-                        <div class="detail-label">QUANTITY</div>
-                        <div class="detail-value">${order.quantity}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">AMOUNT</div>
-                        <div class="detail-value">\u20B9${order.amount.toLocaleString('en-IN')}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">USER</div>
-                        <div class="detail-value">${order.username || 'Anonymous'}</div>
-                    </div>
-                </div>
-                
-                <div class="payment-methods">
-                    ${order.payment_methods.split(',').map(method => 
-                        `<span class="payment-method">${method}</span>`
-                    ).join('')}
-                </div>
-                
-                ${order.user_id !== currentUser.id ? `
-                    <div class="order-actions">
-                        <button class="action-btn buy-btn" onclick="requestBuyFromOrder('${order.id}')">
-                            <i class="fas fa-cart-shopping"></i> Buy from This Order
-                        </button>
-                    </div>
-                ` : ''}
-            </div>
-        `).join('');
-
-    } catch (error) {
-        console.error('Load sell orders error:', error);
-        showToast('Failed to load sell orders', 'error');
-    }
-        }
-        
         async function loadOrderBox() {
             try {
                 const { data: trades, error: tradesError } = await supabase
-    .from('user_p2p_order_box')
-    .select(`*, order:user_p2p_order(*)`)
-    .or(`buyer_id.eq.${currentUser.id},seller_id.eq.${currentUser.id}`)
-    .in('status', ['pending', 'accepted', 'payment_done'])
-    .order('created_at', { ascending: false });
+                    .from('user_p2p_order_box')
+                    .select(`*, order:user_p2p_order(*)`)
+                    .or(`buyer_id.eq.${currentUser.id},seller_id.eq.${currentUser.id}`)
+                    .in('status', ['pending', 'accepted', 'payment_done'])
+                    .order('created_at', { ascending: false });
 
                 if (tradesError) throw tradesError;
-                
+
                 const engagedOrderIds = trades.map(t => t.order_id);
                 const { data: myOrders, error: myOrdersError } = await supabase
                     .from('user_p2p_order')
@@ -1549,9 +1363,9 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                     .eq('user_id', currentUser.id)
                     .eq('status', 'active')
                     .not('id', 'in', `(${engagedOrderIds.join(',')})`);
-                
+
                 if (myOrdersError) throw myOrdersError;
-                
+
                 const container = document.getElementById('order-box');
                 if (trades.length === 0 && myOrders.length === 0) {
                     container.innerHTML = `
@@ -1562,21 +1376,20 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                     `;
                     return;
                 }
-                
+
                 let combinedHtml = '';
-                
+
                 combinedHtml += await Promise.all(trades.map(async trade => {
                     const isOwner = trade.order.user_id === currentUser.id;
                     const isSeller = trade.seller_id === currentUser.id;
                     const otherUser = isSeller ? 'Buyer' : 'Seller';
                     const otherUserId = isSeller ? trade.buyer_id : trade.seller_id;
                     const isTradeFinished = (trade.status === 'completed' || trade.status === 'cancelled' || trade.status === 'rejected');
-                    
+
                     return `
-                        <div class="order-card ${isSeller ? 'sell-card' : ''}">
+                        <div class="order-card">
                             <div class="order-header">
                                 <div class="token-info">
-                                    ${getTokenIcon(availableTokens[trade.order.token_symbol])}
                                     <span class="token-symbol">${trade.order.token_symbol}</span>
                                     <span class="order-type ${isSeller ? 'sell-type' : 'buy-type'}">
                                         ${isSeller ? 'SELLING' : 'BUYING'}
@@ -1585,7 +1398,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                                 <div class="detail-value">Order ID: ${trade.order.order_id_unique}</div>
                                 <div class="detail-value">Status: ${trade.status}</div>
                             </div>
-                            
+
                             <div class="order-details">
                                 <div class="detail-item">
                                     <div class="detail-label">QUANTITY</div>
@@ -1600,48 +1413,47 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                                     <div class="detail-value">${isSeller ? trade.buyer_username : trade.seller_username}</div>
                                 </div>
                             </div>
-                            
+
                             <div class="order-actions">
                                 ${!isTradeFinished ? `
                                     <button class="action-btn chat-btn" onclick="openChat('${trade.id}')">
-                                        <i class="fas fa-comment-dots"></i> Chat
+                                        Chat
                                     </button>
                                     <button class="action-btn report-btn" onclick="goToHelpPage()">
-                                        <i class="fas fa-flag"></i> Report
+                                        Report
                                     </button>
                                 ` : ''}
 
                                 ${trade.status === 'pending' && isOwner ? `
                                     <button class="action-btn reject-btn" onclick="rejectTrade('${trade.id}')">
-                                        <i class="fas fa-ban"></i> Reject
+                                        Reject
                                     </button>
                                 ` : ''}
 
                                 ${trade.status === 'accepted' ? `
-                                    <button class="action-btn pnp-btn" onclick="openPnPModal('${otherUserId}')"><i class="fas fa-user-check"></i> P&P</button>
+                                    <button class="action-btn pnp-btn" onclick="openPnPModal('${otherUserId}')">P&amp;P</button>
                                 ` : ''}
-                                
+
                                 ${trade.status === 'payment_done' && isSeller ? `
                                     <button class="action-btn release-btn" onclick="releaseTokens('${trade.id}')">
-                                        <i class="fas fa-unlock"></i> Release Tokens
+                                        Release Tokens
                                     </button>
                                 ` : ''}
-                                
+
                                 ${trade.status !== 'pending' && !isTradeFinished ? `
                                     <button class="action-btn cancel-btn" onclick="cancelTrade('${trade.id}')">
-                                        <i class="fas fa-xmark"></i> Cancel Trade
+                                        Cancel Trade
                                     </button>
                                 ` : ''}
                             </div>
                         </div>
                     `;
                 }));
-                
-                 combinedHtml += myOrders.map(order => `
-                    <div class="order-card ${order.order_type === 'sell' ? 'sell-card' : ''}">
+
+                combinedHtml += myOrders.map(order => `
+                    <div class="order-card">
                         <div class="order-header">
                             <div class="token-info">
-                                ${getTokenIcon(availableTokens[order.token_symbol])}
                                 <span class="token-symbol">${order.token_symbol}</span>
                                 <span class="order-type ${order.order_type === 'buy' ? 'buy-type' : 'sell-type'}">
                                     MY ${order.order_type.toUpperCase()} ORDER
@@ -1665,7 +1477,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                         </div>
                         <div class="order-actions">
                             <button class="action-btn cancel-btn" onclick="cancelOrder('${order.id}')">
-                                <i class="fas fa-xmark"></i> Cancel Order
+                                Cancel Order
                             </button>
                         </div>
                     </div>
@@ -1673,13 +1485,12 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
                 container.innerHTML = combinedHtml.replace(/,/g, '');
 
-
             } catch (error) {
                 console.error('Load order box error:', error);
                 showToast('Failed to load order box', 'error');
             }
         }
-        
+
         async function loadHistory() {
             try {
                 const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -1706,10 +1517,9 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                 }
 
                 container.innerHTML = data.map(trade => `
-                    <div class="order-card ${trade.action === 'sell' ? 'sell-card' : ''}">
+                    <div class="order-card">
                         <div class="order-header">
                             <div class="token-info">
-                                ${getTokenIcon(availableTokens[trade.token_symbol])}
                                 <span class="token-symbol">${trade.token_symbol}</span>
                                 <span class="order-type ${trade.action === 'buy' ? 'buy-type' : 'sell-type'}">
                                     ${trade.action.toUpperCase()}
@@ -1717,7 +1527,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                             </div>
                             <div class="detail-value">${new Date(trade.created_at).toLocaleString()}</div>
                         </div>
-                        
+
                         <div class="order-details">
                             <div class="detail-item">
                                 <div class="detail-label">QUANTITY</div>
@@ -1733,7 +1543,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                             </div>
                         </div>
                         <div class="order-actions">
-                           <button class="action-btn pnp-btn" onclick="openPnPModal('${trade.other_user_id}', true)"><i class="fas fa-fingerprint"></i> View Other User's UID</button>
+                           <button class="action-btn pnp-btn" onclick="openPnPModal('${trade.other_user_id}', true)">View Other User's UID</button>
                         </div>
                     </div>
                 `).join('');
@@ -1760,7 +1570,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
             const orderType = document.getElementById('orderType').value;
             const availableQuantity = document.getElementById('availableQuantity');
             const paymentDetails = document.getElementById('paymentDetails');
-            
+
             if (orderType === 'sell') {
                 availableQuantity.style.display = 'block';
                 paymentDetails.style.display = 'block';
@@ -1771,15 +1581,19 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
             }
         }
 
+        // Check available quantity from crypto_token_histry table
         async function updateAvailableQuantity() {
             const tokenSelect = document.getElementById('tokenSelect');
             const availableQty = document.getElementById('availableQty');
             const selectedToken = tokenSelect.value;
-            
+
             try {
-                const holdings = await getHoldings();
-                const holding = holdings[selectedToken];
-                const qty = holding ? holding.qty : 0;
+                if (!selectedToken) {
+                    availableQty.textContent = '0';
+                    return;
+                }
+                // Query net holding from crypto_token_histry
+                const qty = await getNetHolding(selectedToken, currentUser.id);
                 availableQty.textContent = qty.toFixed(8);
             } catch (error) {
                 console.error('Error getting available quantity:', error);
@@ -1790,14 +1604,15 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
         function updateTokenPrice() {
             const tokenSelect = document.getElementById('tokenSelect');
             const livePrice = document.getElementById('livePrice');
+            if (!tokenSelect || !livePrice) return;
             const selectedToken = tokenSelect.value;
-            
-            if (livePrices[selectedToken] !== undefined) {
-                livePrice.textContent = '\u20B9' + livePrices[selectedToken].toLocaleString('en-IN');
+
+            if (selectedToken && livePrices[selectedToken]) {
+                livePrice.textContent = `\u20B9${livePrices[selectedToken].toLocaleString('en-IN', { maximumFractionDigits: 6 })}`;
             } else {
                 livePrice.textContent = 'Loading...';
             }
-            
+
             if (document.getElementById('orderType').value === 'sell') {
                 updateAvailableQuantity();
             }
@@ -1808,7 +1623,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
             const tokenSelect = document.getElementById('tokenSelect');
             const selectedToken = tokenSelect.value;
             const price = livePrices[selectedToken] || 0;
-            
+
             const amount = quantity * price;
             document.getElementById('amount').value = Math.round(amount);
         }
@@ -1818,7 +1633,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
             const tokenSelect = document.getElementById('tokenSelect');
             const selectedToken = tokenSelect.value;
             const price = livePrices[selectedToken] || 0;
-            
+
             if (price > 0) {
                 const quantity = amount / price;
                 document.getElementById('quantity').value = quantity.toFixed(8);
@@ -1828,15 +1643,15 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
         function togglePaymentMethod(method) {
             const checkbox = document.getElementById(method);
             const option = checkbox.parentElement;
-            
+
             checkbox.checked = !checkbox.checked;
-            
+
             if (checkbox.checked) {
                 option.classList.add('selected');
             } else {
                 option.classList.remove('selected');
             }
-            
+
             const orderType = document.getElementById('orderType').value;
             if (orderType === 'sell') {
                 const hasPaymentMethods = document.querySelectorAll('.payment-option input:checked').length > 0;
@@ -1850,28 +1665,28 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
             for (let i = 0; i < 8; i++) {
                 result += characters.charAt(Math.floor(Math.random() * characters.length));
             }
-            
+
             const { data, error } = await supabase
                 .from('p2p_order_id')
                 .select('id')
                 .eq('id', result)
                 .single();
-            
+
             if (data) {
                 return generateOrderId();
             }
-            
+
             return result;
         }
 
         document.getElementById('createOrderForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             const orderType = document.getElementById('orderType').value;
             const tokenSymbol = document.getElementById('tokenSelect').value;
             const quantity = parseFloat(document.getElementById('quantity').value);
             const amount = parseFloat(document.getElementById('amount').value);
-            
+
             if (!tokenSymbol) {
                 showToast('Please select a token', 'error');
                 return;
@@ -1881,49 +1696,48 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                 showToast('Please enter a valid quantity', 'error');
                 return;
             }
-            
+
             if (!amount || amount < 100 || amount > 10000) {
                 showToast('Amount must be between \u20B9100 and \u20B910,000', 'error');
                 return;
             }
-            
+
             const selectedPaymentMethods = Array.from(document.querySelectorAll('.payment-option input:checked'))
                 .map(input => input.value);
-            
+
             if (selectedPaymentMethods.length === 0) {
                 showToast('Please select at least one payment method', 'error');
                 return;
             }
-            
+
             if (orderType === 'sell') {
-                const holdings = await getHoldings();
-                const holding = holdings[tokenSymbol];
-                const availableQty = holding ? holding.qty : 0;
-                
+                // Check available quantity from crypto_token_histry
+                const availableQty = await getNetHolding(tokenSymbol, currentUser.id);
+
                 if (quantity > availableQty) {
                     showToast('Insufficient token balance', 'error');
                     return;
                 }
-                
+
                 const phoneNumber = document.getElementById('phoneNumber').value;
                 const upiId = document.getElementById('upiId').value;
-                
-                const needsPhone = selectedPaymentMethods.some(method => 
+
+                const needsPhone = selectedPaymentMethods.some(method =>
                     ['phonepe', 'googlepay', 'paytm'].includes(method)
                 );
                 const needsUpi = selectedPaymentMethods.includes('upi');
-                
+
                 if (needsPhone && !phoneNumber) {
                     showToast('Please enter phone number for selected payment methods', 'error');
                     return;
                 }
-                
+
                 if (needsUpi && !upiId) {
                     showToast('Please enter UPI ID', 'error');
                     return;
                 }
             }
-            
+
             try {
                 const orderIdUnique = await generateOrderId();
 
@@ -1937,7 +1751,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                         amount: amount,
                         status: 'active'
                     }]);
-                
+
                 if (idError) throw idError;
 
                 const { data, error } = await supabase
@@ -1974,6 +1788,9 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
         });
 
         // Trade request functions
+
+        // Called when someone clicks "Sell to This Order" on a buy order.
+        // Checks if seller has enough tokens in crypto_token_histry before proceeding.
         async function requestSellToOrder(orderId) {
             try {
                 const { data: order, error: orderError } = await supabase
@@ -1983,22 +1800,21 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                     .single();
 
                 if (orderError) throw orderError;
-                
+
                 if(order.status !== 'active') {
                     showToast('This order is no longer available.', 'error');
                     loadAllData();
                     return;
                 }
 
-                const holdings = await getHoldings();
-                const holding = holdings[order.token_symbol];
-                const availableQty = holding ? holding.qty : 0;
+                // Check seller's balance from crypto_token_histry
+                const availableQty = await getNetHolding(order.token_symbol, currentUser.id);
 
                 if (availableQty < order.quantity) {
                     showToast('Insufficient token balance', 'error');
                     return;
                 }
-                
+
                 await supabase.from('user_p2p_order').update({ status: 'pending' }).eq('id', orderId);
 
                 const { data, error } = await supabase
@@ -2017,7 +1833,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
                 if (error) throw error;
 
-                await sendAIMessage(data.id, 
+                await sendAIMessage(data.id,
                     `${data.seller_username} wants to sell ${order.token_symbol} tokens to you. Type "accept" to proceed or "reject" to decline.`, 'buyer'
                 );
 
@@ -2039,13 +1855,13 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                     .single();
 
                 if (orderError) throw orderError;
-                
+
                 if(order.status !== 'active') {
                     showToast('This order is no longer available.', 'error');
                     loadAllData();
                     return;
                 }
-                
+
                 await supabase.from('user_p2p_order').update({ status: 'pending' }).eq('id', orderId);
 
                 const { data, error } = await supabase
@@ -2064,7 +1880,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
                 if (error) throw error;
 
-                await sendAIMessage(data.id, 
+                await sendAIMessage(data.id,
                     `${data.buyer_username} wants to buy ${order.token_symbol} tokens from you. Type "accept" to proceed or "reject" to decline.`, 'seller'
                 );
 
@@ -2076,7 +1892,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                 showToast('Failed to send buy request', 'error');
             }
         }
-        
+
         function goToHelpPage() {
             window.location.href = 'help.html';
         }
@@ -2102,7 +1918,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                     .eq('id', tradeId)
                     .single();
                 if (tradeError) throw tradeError;
-                
+
                 const { data: messages, error: messagesError } = await supabase
                     .from('trade_chat')
                     .select('*')
@@ -2114,14 +1930,14 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                 const chatMessages = document.getElementById('chatMessages');
                 chatMessages.innerHTML = messages.map(message => {
                     const senderRole = message.sender_id === trade.buyer_id ? 'Buyer' : (message.sender_id === trade.seller_id ? 'Seller' : '');
-                    
+
                     return `
                         <div class="chat-message ${message.sender_type === 'ai' ? 'ai-message' : ''}">
                             <div class="message-sender ${message.sender_type === 'ai' ? 'ai-sender' : ''}">
                                 ${message.sender_type === 'ai' ? 'AvicnKnov Agent 2.0' : senderRole + ' ' + message.sender_username}
                             </div>
                             <div class="message-content">
-                                ${message.message_type === 'text' ? message.content : 
+                                ${message.message_type === 'text' ? message.content :
                                   message.message_type === 'image' ? `<img src="${message.content}" class="chat-image">` :
                                   message.content
                                 }
@@ -2140,7 +1956,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
         async function sendMessage() {
             const chatInput = document.getElementById('chatInput');
             const message = chatInput.value.trim();
-            
+
             if (!message || !currentTradeOrder) return;
 
             try {
@@ -2159,7 +1975,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                 if (error) throw error;
 
                 chatInput.value = '';
-                
+
                 await processUserMessage(currentTradeOrder, message.toLowerCase());
 
             } catch (error) {
@@ -2171,7 +1987,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
         async function sendImage() {
             const imageInput = document.getElementById('imageInput');
             const file = imageInput.files[0];
-            
+
             if (!file || !currentTradeOrder) return;
 
             try {
@@ -2245,30 +2061,30 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
                 const isOrderCreator = trade.order.user_id === currentUser.id;
                 const isBuyer = trade.buyer_id === currentUser.id;
-                
+
                 if (trade.status === 'pending') {
                     if (isOrderCreator && message.includes('accept')) {
-                         await supabase
+                        await supabase
                             .from('user_p2p_order_box')
                             .update({ status: 'accepted' })
                             .eq('id', tradeId);
-                        
+
                         await supabase.from('user_p2p_order').update({ status: 'trading' }).eq('id', trade.order_id);
-                        
+
                         if(trade.order.order_type === 'sell') {
-                           await sendAIMessage(tradeId, 
-                               `Trade accepted! Buyer, please make the payment of \u20B9${trade.order.amount.toLocaleString('en-IN')} using one of the available methods. After paying, please share the screenshot with transaction ID and UTR number.`, 'buyer'
+                            await sendAIMessage(tradeId,
+                                `Trade accepted! Buyer, please make the payment of \u20B9${trade.order.amount.toLocaleString('en-IN')} using one of the available methods. After paying, please share the screenshot with transaction ID and UTR number.`, 'buyer'
                             );
                         } else {
                             const paymentMethods = trade.order.payment_methods.split(',');
                             let promptMessage = 'Trade accepted! Please send your payment details (e.g., PhonePe, Google Pay, Paytm, UPI) and a screenshot of the account where you want to receive payment.';
-                            
+
                             if (paymentMethods.length > 0) {
                                 promptMessage = `Trade accepted! Please share your payment details for these methods: ${paymentMethods.join(', ')} and a screenshot of the account where you want to receive payment.`;
                             }
                             await sendAIMessage(tradeId, promptMessage, 'seller');
                         }
-                        
+
                     } else if (message.includes('reject')) {
                         await supabase
                             .from('user_p2p_order_box')
@@ -2279,9 +2095,9 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                         await sendAIMessage(tradeId, 'Trade rejected by the order creator. The order is now available again.', 'both');
                     }
                 }
-                
+
                 if (trade.status === 'accepted' && !isBuyer && (message.includes('image') || message.includes('phone') || message.includes('upi'))) {
-                    await sendAIMessage(tradeId, 
+                    await sendAIMessage(tradeId,
                         'Payment details received! Buyer, please make the payment of \u20B9' + trade.order.amount.toLocaleString('en-IN') + ' to the seller. Be sure to share a screenshot, transaction ID, and UTR number after you\'ve paid.', 'buyer'
                     );
                 }
@@ -2292,7 +2108,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                         .update({ status: 'payment_done' })
                         .eq('id', tradeId);
 
-                    await sendAIMessage(tradeId, 
+                    await sendAIMessage(tradeId,
                         'Payment proof received! Seller, please check your bank/wallet for the payment and click "Release Tokens" once confirmed.', 'seller'
                     );
                 }
@@ -2301,16 +2117,16 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                 console.error('Process user message error:', error);
             }
         }
-        
+
         function startTimer(tradeId, seconds, timerType) {
             const timerId = `${tradeId}_${timerType}`;
-            
+
             if (timers[timerId]) {
                 clearInterval(timers[timerId]);
             }
-            
+
             let timeLeft = seconds;
-            
+
             const updateTimer = () => {
                 if (timeLeft <= 0) {
                     clearInterval(timers[timerId]);
@@ -2318,35 +2134,41 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                     handleTimerExpiry(tradeId, timerType);
                     return;
                 }
-                
+
                 const timerDisplay = document.getElementById('timerDisplay');
                 const timerText = document.getElementById('timerText');
-                
+
                 if (timerDisplay && timerText) {
                     timerDisplay.style.display = 'block';
                     timerText.textContent = `Timer: ${Math.floor(timeLeft / 60)}:${(timeLeft % 60).toString().padStart(2, '0')}`;
                 }
-                
+
                 timeLeft--;
             };
-            
+
             updateTimer();
             timers[timerId] = setInterval(updateTimer, 1000);
         }
 
         async function handleTimerExpiry(tradeId, timerType) {
             try {
-                 const timerDisplay = document.getElementById('timerDisplay');
-                 if(timerDisplay) timerDisplay.style.display = 'none';
+                const timerDisplay = document.getElementById('timerDisplay');
+                if(timerDisplay) timerDisplay.style.display = 'none';
 
             } catch (error) {
                 console.error('Handle timer expiry error:', error);
             }
         }
 
-        // =============================================
-        // MODIFIED: Trade actions - releaseTokens with token transfer
-        // =============================================
+        // Trade actions
+
+        /**
+         * releaseTokens — Called by the seller when payment is confirmed.
+         * 1. Cuts tokens from seller via cutTokenHolding (inserts 'Selling' row in crypto_token_histry)
+         * 2. Adds tokens to buyer via addTokenHolding (inserts 'Buying' row in crypto_token_histry)
+         * 3. Marks trade and order as completed in all related tables
+         * 4. Updates PnP stats and inserts history records for both users
+         */
         async function releaseTokens(tradeId) {
             try {
                 const { data: trade, error: tradeError } = await supabase
@@ -2359,40 +2181,24 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                     .single();
 
                 if (tradeError) throw tradeError;
-                
-                console.log(`Transferring ${trade.order.quantity} ${trade.order.token_symbol} from ${trade.seller_id} to ${trade.buyer_id}`);
 
-                var tradeQty = parseFloat(trade.order.quantity);
-                var tradePrice = livePrices[trade.order.token_symbol] || 0;
-                var tradeAmount = parseFloat(trade.order.amount);
+                const symbol = trade.order.token_symbol;
+                const qty = Number(trade.order.quantity);
+                const amount = Number(trade.order.amount);
+                const pricePerToken = qty > 0 ? amount / qty : 0;
 
-                // Cut tokens from seller
-                await updateHoldingAfterTrade(
-                    trade.seller_id,
-                    trade.order.token_symbol,
-                    -tradeQty,
-                    tradePrice,
-                    tradeAmount,
-                    'selling',
-                    'P2P'
-                );
+                // Step 1: Cut tokens from seller (insert Selling row in crypto_token_histry)
+                await cutTokenHolding(trade.seller_id, symbol, qty, pricePerToken, amount);
 
-                // Add tokens to buyer
-                await updateHoldingAfterTrade(
-                    trade.buyer_id,
-                    trade.order.token_symbol,
-                    tradeQty,
-                    tradePrice,
-                    tradeAmount,
-                    'buying',
-                    'P2P'
-                );
-                
+                // Step 2: Add tokens to buyer (insert Buying row in crypto_token_histry)
+                await addTokenHolding(trade.buyer_id, symbol, qty, pricePerToken, amount);
+
+                // Step 3: Mark trade as completed
                 await supabase
                     .from('user_p2p_order_box')
                     .update({ status: 'completed' })
                     .eq('id', tradeId);
-                
+
                 await supabase
                     .from('user_p2p_order')
                     .update({ status: 'completed' })
@@ -2403,18 +2209,20 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                     .update({ status: 'completed' })
                     .eq('id', trade.order.order_id_unique);
 
+                // Step 4: Update PnP stats for both users
                 await Promise.all([
                     updatePnPStats(trade.buyer_id, 'completed'),
                     updatePnPStats(trade.seller_id, 'completed')
                 ]);
 
+                // Step 5: Insert history records for both users
                 await Promise.all([
                     supabase.from('user_p2p_history').insert([{
                         user_id: trade.buyer_id,
                         action: 'buy',
-                        token_symbol: trade.order.token_symbol,
-                        quantity: trade.order.quantity,
-                        amount: trade.order.amount,
+                        token_symbol: symbol,
+                        quantity: qty,
+                        amount: amount,
                         status: 'completed',
                         other_user_id: trade.seller_id,
                         created_at: new Date().toISOString()
@@ -2422,9 +2230,9 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                     supabase.from('user_p2p_history').insert([{
                         user_id: trade.seller_id,
                         action: 'sell',
-                        token_symbol: trade.order.token_symbol,
-                        quantity: trade.order.quantity,
-                        amount: trade.order.amount,
+                        token_symbol: symbol,
+                        quantity: qty,
+                        amount: amount,
                         status: 'completed',
                         other_user_id: trade.buyer_id,
                         created_at: new Date().toISOString()
@@ -2432,18 +2240,48 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                 ]);
 
                 await sendAIMessage(tradeId, 'Tokens released successfully! Trade completed.', 'both');
-                
+
                 showToast('Tokens released successfully!', 'success');
                 loadAllData();
                 closeChatModal();
-
 
             } catch (error) {
                 console.error('Release tokens error:', error);
                 showToast('Failed to release tokens', 'error');
             }
         }
-        
+
+        async function rejectTrade(tradeId) {
+            try {
+                const { data: trade, error: tradeError } = await supabase
+                    .from('user_p2p_order_box')
+                    .select('*, order:user_p2p_order(*)')
+                    .eq('id', tradeId)
+                    .single();
+
+                if (tradeError) throw tradeError;
+
+                await supabase
+                    .from('user_p2p_order_box')
+                    .update({ status: 'rejected' })
+                    .eq('id', tradeId);
+
+                await supabase
+                    .from('user_p2p_order')
+                    .update({ status: 'active' })
+                    .eq('id', trade.order_id);
+
+                await sendAIMessage(tradeId, 'Trade rejected by the order creator. The order is now available again.', 'both');
+
+                showToast('Trade rejected', 'success');
+                loadAllData();
+
+            } catch (error) {
+                console.error('Reject trade error:', error);
+                showToast('Failed to reject trade', 'error');
+            }
+        }
+
         async function cancelTrade(tradeId) {
             try {
                 const { data: trade, error: tradeError } = await supabase
@@ -2470,7 +2308,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                 ]);
 
                 await Promise.all([
-                     supabase.from('user_p2p_history').insert([{
+                    supabase.from('user_p2p_history').insert([{
                         user_id: trade.buyer_id, action: 'buy', token_symbol: trade.order.token_symbol,
                         quantity: trade.order.quantity, amount: trade.order.amount, status: 'cancelled', other_user_id: trade.seller_id, created_at: new Date().toISOString()
                     }]),
@@ -2490,7 +2328,6 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
             }
         }
 
-
         async function cancelOrder(orderId) {
             try {
                 const { data: order, error } = await supabase
@@ -2498,7 +2335,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                     .select('*')
                     .eq('id', orderId)
                     .single();
-                
+
                 if (error || !order) throw error || new Error('Order not found');
 
                 await supabase
@@ -2510,7 +2347,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                     .from('p2p_order_id')
                     .update({ status: 'cancelled' })
                     .eq('id', order.order_id_unique);
-                    
+
                 await updatePnPStats(currentUser.id, 'uncompleted');
 
                 await supabase.from('user_p2p_history').insert([{
@@ -2533,62 +2370,24 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
             }
         }
 
-        // =============================================
-        // NEW: Reject trade function (was referenced but missing)
-        // =============================================
-        async function rejectTrade(tradeId) {
-            try {
-                const { data: trade, error: tradeError } = await supabase
-                    .from('user_p2p_order_box')
-                    .select('*, order:user_p2p_order(*)')
-                    .eq('id', tradeId)
-                    .single();
-
-                if (tradeError) throw tradeError;
-
-                await supabase
-                    .from('user_p2p_order_box')
-                    .update({ status: 'rejected' })
-                    .eq('id', tradeId);
-
-                await supabase
-                    .from('user_p2p_order')
-                    .update({ status: 'active' })
-                    .eq('id', trade.order_id);
-
-                await sendAIMessage(tradeId, 'Trade rejected. The order is now available again.', 'both');
-
-                showToast('Trade rejected', 'success');
-                loadAllData();
-
-            } catch (error) {
-                console.error('Reject trade error:', error);
-                showToast('Failed to reject trade', 'error');
-            }
-        }
-        
         function setupRealtimeSubscriptions() {
             supabase
                 .channel('p2p_public_changes')
-                .on('postgres_changes', 
-                    { event: '*', schema: 'public', table: 'user_p2p_order' }, 
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'user_p2p_order' },
                     () => { loadAllData(); }
                 )
-                .on('postgres_changes', 
-                    { event: '*', schema: 'public', table: 'user_p2p_order_box' }, 
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'user_p2p_order_box' },
                     () => { loadAllData(); }
                 )
-                .on('postgres_changes', 
+                .on('postgres_changes',
                     { event: 'UPDATE', schema: 'public', table: 'user-p&p', filter: `user_id=eq.${currentUser?.id}`},
                     (payload) => {
                         if(document.getElementById('pnp-tab').classList.contains('active')) {
                            loadPnPData();
                         }
                     }
-                )
-                .on('postgres_changes',
-                    { event: '*', schema: 'public', table: 'crypto_token_control' },
-                    () => { loadTokensFromControl(); }
                 )
                 .subscribe();
         }
@@ -2599,8 +2398,8 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
             }
             const chatChannel = supabase
                 .channel(`trade_chat_${tradeId}`)
-                .on('postgres_changes', 
-                    { event: 'INSERT', schema: 'public', table: 'trade_chat', filter: `trade_id=eq.${tradeId}` }, 
+                .on('postgres_changes',
+                    { event: 'INSERT', schema: 'public', table: 'trade_chat', filter: `trade_id=eq.${tradeId}` },
                     (payload) => {
                         loadChatMessages(tradeId);
                     }
@@ -2614,7 +2413,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
             const toast = document.getElementById('toast');
             toast.textContent = message;
             toast.className = `toast ${type} show`;
-            
+
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 3000);
@@ -2630,13 +2429,13 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
             if (priceInterval) {
                 clearInterval(priceInterval);
             }
-            
+
             Object.values(timers).forEach(timer => {
                 clearInterval(timer);
             });
             supabase.removeAllChannels();
         });
-        
+
         async function getUID(userId) {
             try {
                 const { data, error } = await supabase
@@ -2650,7 +2449,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                 return "Unavailable";
             }
         }
-        
+
         async function initializePnPProfile() {
             const { data, error } = await supabase
                 .from('user-p&p')
@@ -2662,17 +2461,17 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                 await supabase.from('user-p&p').insert([{ user_id: currentUser.id }]);
             }
         }
-        
+
         async function loadPnPData() {
             const uid = await getUID(currentUser.id);
             document.getElementById('pnp-uid').textContent = uid;
-            
+
             const { data, error } = await supabase
                 .from('user-p&p')
                 .select('*')
                 .eq('user_id', currentUser.id)
                 .single();
-            
+
             if (data) {
                 document.getElementById('userRole').value = data.role;
                 document.getElementById('pnp-completed-orders').textContent = data.completed_orders;
@@ -2709,12 +2508,12 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                 showToast('Role updated successfully.', 'success');
             }
         }
-        
+
         async function openPnPModal(userId, uidOnly = false) {
             const modal = document.getElementById('pnpModal');
             const modalBody = document.getElementById('pnpModalBody');
             modal.style.display = 'block';
-            modalBody.innerHTML = `<div class="loading">Loading user profile</div>`;
+            modalBody.innerHTML = `<div class="loading">Loading user profile...</div>`;
 
             const uid = await getUID(userId);
 
@@ -2744,7 +2543,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
                     <label class="form-label">User's UID</label>
                     <div class="uid-display">${uid}</div>
                 </div>
-                 <div class="form-group">
+                <div class="form-group">
                     <label class="form-label">Role</label>
                     <div class="uid-display" style="text-transform: capitalize;">${data.role}</div>
                 </div>
@@ -2764,7 +2563,7 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
         function closePnPModal() {
             document.getElementById('pnpModal').style.display = 'none';
         }
-        
+
         async function updatePnPStats(userId, type) {
             const { data, error } = await supabase.rpc('update_pnp_stats', {
                 p_user_id: userId,
@@ -2773,6 +2572,5 @@ var supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
             if(error) console.error('Error updating PnP stats:', error);
         }
     </script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7f7b0fd8732c4326aae4b9d58d5c514a","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
