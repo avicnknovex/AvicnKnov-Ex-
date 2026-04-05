@@ -655,7 +655,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <button class="back-btn" onclick="goBack()">&#8592; Back to Trade</button>
+            <button class="back-btn" onclick="goBack()">&#8592; Back to Exchange</button>
             <h1 style="color: white; font-size: 24px;">P2P Trading Platform</h1>
             <button class="add-order-btn" onclick="openCreateOrderModal()">+ Create Order</button>
         </div>
@@ -2197,6 +2197,37 @@
         if (rpcError) throw rpcError;
 
         // PnP Stats aur History update karna (yeh dono apna-apna log banayenge)
+        async function releaseTokens(tradeId) {
+    try {
+        const { data: trade, error: tradeError } = await supabase
+            .from('user_p2p_order_box')
+            .select('*, order:user_p2p_order(*)')
+            .eq('id', tradeId)
+            .single();
+
+        if (tradeError) throw tradeError;
+
+        const symbol = trade.order.token_symbol || trade.order[0].token_symbol;
+        const qty = Number(trade.order.quantity || trade.order[0].quantity);
+        const amount = Number(trade.order.amount || trade.order[0].amount);
+        
+        // SAFE CHECK: Array ya Object dono cases handle karne ke liye
+        const finalOrderId = Array.isArray(trade.order) ? trade.order[0].id : trade.order.id;
+
+        // RPC (Backend Function) ko call karna
+        const { error: rpcError } = await supabase.rpc('release_p2p_tokens', {
+            p_trade_id: Number(tradeId), // Number mein convert kiya taaki error na aaye
+            p_seller_id: trade.seller_id,
+            p_buyer_id: trade.buyer_id,
+            p_symbol: symbol,
+            p_qty: qty,
+            p_amount: amount,
+            p_order_id: Number(finalOrderId) // Safe order ID
+        });
+
+        if (rpcError) throw rpcError;
+
+        // PnP Stats aur History update karna
         await Promise.all([
             updatePnPStats(trade.buyer_id, 'completed'),
             updatePnPStats(trade.seller_id, 'completed'),
