@@ -2170,85 +2170,52 @@
          * 4. Updates PnP stats and inserts history records for both users
          */
         async function releaseTokens(tradeId) {
-            try {
-                const { data: trade, error: tradeError } = await supabase
-                    .from('user_p2p_order_box')
-                    .select(`
-                        *,
-                        order:user_p2p_order(*)
-                    `)
-                    .eq('id', tradeId)
-                    .single();
+    try {
+        const { data: trade, error: tradeError } = await supabase
+            .from('user_p2p_order_box')
+            .select('*, order:user_p2p_order(*)')
+            .eq('id', tradeId)
+            .single();
 
-                if (tradeError) throw tradeError;
+        if (tradeError) throw tradeError;
 
-                const symbol = trade.order.token_symbol;
-                const qty = Number(trade.order.quantity);
-                const amount = Number(trade.order.amount);
-                const pricePerToken = qty > 0 ? amount / qty : 0;
+        const symbol = trade.order.token_symbol;
+        const qty = Number(trade.order.quantity);
+        const amount = Number(trade.order.amount);
 
-                // Step 1: Cut tokens from seller (insert Selling row in crypto_token_histry)
-                await cutTokenHolding(trade.seller_id, symbol, qty, pricePerToken, amount);
+        // NAYA SYSTEM: Direct backend RPC ko call karna
+        const { error: rpcError } = await supabase.rpc('release_p2p_tokens', {
+            p_trade_id: tradeId,
+            p_seller_id: trade.seller_id,
+            p_buyer_id: trade.buyer_id,
+            p_symbol: symbol,
+            p_qty: qty,
+            p_amount: amount,
+            p_order_id: trade.order.id
+        });
 
-                // Step 2: Add tokens to buyer (insert Buying row in crypto_token_histry)
-                await addTokenHolding(trade.buyer_id, symbol, qty, pricePerToken, amount);
+        if (rpcError) throw rpcError;
 
-                // Step 3: Mark trade as completed
-                await supabase
-                    .from('user_p2p_order_box')
-                    .update({ status: 'completed' })
-                    .eq('id', tradeId);
+        // PnP Stats aur History update karna (yeh dono apna-apna log banayenge)
+        await Promise.all([
+            updatePnPStats(trade.buyer_id, 'completed'),
+            updatePnPStats(trade.seller_id, 'completed'),
+            supabase.from('user_p2p_history').insert([
+                { user_id: trade.buyer_id, action: 'buy', token_symbol: symbol, quantity: qty, amount: amount, status: 'completed', other_user_id: trade.seller_id, created_at: new Date().toISOString() },
+                { user_id: trade.seller_id, action: 'sell', token_symbol: symbol, quantity: qty, amount: amount, status: 'completed', other_user_id: trade.buyer_id, created_at: new Date().toISOString() }
+            ])
+        ]);
 
-                await supabase
-                    .from('user_p2p_order')
-                    .update({ status: 'completed' })
-                    .eq('id', trade.order.id);
+        await sendAIMessage(tradeId, 'Tokens released successfully! Trade completed.', 'both');
 
-                await supabase
-                    .from('p2p_order_id')
-                    .update({ status: 'completed' })
-                    .eq('id', trade.order.order_id_unique);
+        showToast('Tokens released successfully!', 'success');
+        loadAllData();
+        closeChatModal();
 
-                // Step 4: Update PnP stats for both users
-                await Promise.all([
-                    updatePnPStats(trade.buyer_id, 'completed'),
-                    updatePnPStats(trade.seller_id, 'completed')
-                ]);
-
-                // Step 5: Insert history records for both users
-                await Promise.all([
-                    supabase.from('user_p2p_history').insert([{
-                        user_id: trade.buyer_id,
-                        action: 'buy',
-                        token_symbol: symbol,
-                        quantity: qty,
-                        amount: amount,
-                        status: 'completed',
-                        other_user_id: trade.seller_id,
-                        created_at: new Date().toISOString()
-                    }]),
-                    supabase.from('user_p2p_history').insert([{
-                        user_id: trade.seller_id,
-                        action: 'sell',
-                        token_symbol: symbol,
-                        quantity: qty,
-                        amount: amount,
-                        status: 'completed',
-                        other_user_id: trade.buyer_id,
-                        created_at: new Date().toISOString()
-                    }])
-                ]);
-
-                await sendAIMessage(tradeId, 'Tokens released successfully! Trade completed.', 'both');
-
-                showToast('Tokens released successfully!', 'success');
-                loadAllData();
-                closeChatModal();
-
-            } catch (error) {
-                console.error('Release tokens error:', error);
-                showToast('Failed to release tokens', 'error');
-            }
+    } catch (error) {
+        console.error('Release tokens error:', error);
+        showToast('Failed to release tokens', 'error');
+    }
         }
 
         async function rejectTrade(tradeId) {
