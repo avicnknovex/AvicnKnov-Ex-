@@ -655,7 +655,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <button class="back-btn" onclick="goBack()">&#8592; Back to Exchange</button>
+            <button class="back-btn" onclick="goBack()">&#8592; Back to Trade</button>
             <h1 style="color: white; font-size: 24px;">P2P Trading Platform</h1>
             <button class="add-order-btn" onclick="openCreateOrderModal()">+ Create Order</button>
         </div>
@@ -2163,90 +2163,140 @@
         // Trade actions
 
         /**
-         * releaseTokens — Called by the seller when payment is confirmed.
-         * 1. Cuts tokens from seller via cutTokenHolding (inserts 'Selling' row in crypto_token_histry)
-         * 2. Adds tokens to buyer via addTokenHolding (inserts 'Buying' row in crypto_token_histry)
-         * 3. Marks trade and order as completed in all related tables
-         * 4. Updates PnP stats and inserts history records for both users
+         * HELPER: normalizeTradeOrder
+         * ─────────────────────────────────────────────────────────────────
+         * Supabase JOIN ke waqt kabhi kabhi `trade.order` ek OBJECT hota
+         * hai aur kabhi kabhi ek ARRAY. Yeh function dono cases handle karta
+         * hai aur hamesha ek plain object return karta hai.
+         * Agar order null/empty hai to null return karta hai.
+         */
+        function normalizeTradeOrder(trade) {
+            if (!trade) return null;
+            const raw = trade.order;
+            if (!raw) return null;
+            // Agar array hai to pehla element lo
+            if (Array.isArray(raw)) {
+                return raw.length > 0 ? raw[0] : null;
+            }
+            // Warna seedha object return karo
+            return raw;
+        }
+
+        /**
+         * releaseTokens — Seller "Release Tokens" button click karta hai tab.
+         *
+         * ARCHITECTURE: Supabase RPC (p2p_complete_trade) use karta hai.
+         * ─────────────────────────────────────────────────────────────────
+         * WHY RPC?
+         *  1. ATOMIC  — PostgreSQL transaction mein sab ek saath hota hai.
+         *               Agar bich mein connection cut ho to koi bhi partial
+         *               update DB mein save nahi hoti. Either sab hoga ya
+         *               kuch bhi nahi.
+         *  2. NO RLS 403 — Seller apne liye Selling row insert kar sakta
+         *               tha lekin Buyer ke liye Buying row insert karne par
+         *               Supabase 403 Forbidden deta tha (RLS block). RPC
+         *               SECURITY DEFINER mode mein run hoti hai jo RLS
+         *               bypass karti hai — server-side trusted function.
+         *  3. NO 400 TYPE MISMATCH — Sab types server pe PostgreSQL khud
+         *               handle karta hai. Frontend se string bhejo ya number,
+         *               function cast kar leta hai.
+         *
+         * FALLBACK: Agar RPC kisi reason se unavailable ho (e.g., function
+         *           abhi create nahi ki) to catch block mein safe error
+         *           message deta hai aur koi partial update nahi hoti.
          */
         async function releaseTokens(tradeId) {
-    try {
-        const { data: trade, error: tradeError } = await supabase
-            .from('user_p2p_order_box')
-            .select('*, order:user_p2p_order(*)')
-            .eq('id', tradeId)
-            .single();
+            try {
+                // ── STEP 0: Disable the button to prevent double-click ──
+                const releaseBtn = document.querySelector(`button[onclick="releaseTokens('${tradeId}')"]`);
+                if (releaseBtn) {
+                    releaseBtn.disabled = true;
+                    releaseBtn.textContent = 'Processing...';
+                }
 
-        if (tradeError) throw tradeError;
+                // ── STEP 1: Fetch full trade data with safe join handling ──
+                const { data: tradeRaw, error: tradeError } = await supabase
+                    .from('user_p2p_order_box')
+                    .select(`
+                        *,
+                        order:user_p2p_order(*)
+                    `)
+                    .eq('id', tradeId)
+                    .single();
 
-        const symbol = trade.order.token_symbol;
-        const qty = Number(trade.order.quantity);
-        const amount = Number(trade.order.amount);
+                if (tradeError) throw new Error(`Trade fetch failed: ${tradeError.message}`);
+                if (!tradeRaw) throw new Error('Trade record not found.');
 
-        // NAYA SYSTEM: Direct backend RPC ko call karna
-        const { error: rpcError } = await supabase.rpc('release_p2p_tokens', {
-            p_trade_id: tradeId,
-            p_seller_id: trade.seller_id,
-            p_buyer_id: trade.buyer_id,
-            p_symbol: symbol,
-            p_qty: qty,
-            p_amount: amount,
-            p_order_id: trade.order.id
-        });
+                // ── STEP 2: Normalize order (array ya object dono handle) ──
+                const orderData = normalizeTradeOrder(tradeRaw);
+                if (!orderData) throw new Error('Order data missing inside trade. Cannot proceed.');
 
-        if (rpcError) throw rpcError;
+                // ── STEP 3: Verify trade is still in payment_done state ──
+                if (tradeRaw.status !== 'payment_done') {
+                    throw new Error(`Trade status is "${tradeRaw.status}", not "payment_done". Cannot release.`);
+                }
 
-        // PnP Stats aur History update karna (yeh dono apna-apna log banayenge)
-        async function releaseTokens(tradeId) {
-    try {
-        const { data: trade, error: tradeError } = await supabase
-            .from('user_p2p_order_box')
-            .select('*, order:user_p2p_order(*)')
-            .eq('id', tradeId)
-            .single();
+                // ── STEP 4: Extract & validate all values ──
+                const sellerId       = String(tradeRaw.seller_id || '').trim();
+                const buyerId        = String(tradeRaw.buyer_id  || '').trim();
+                const symbol         = String(orderData.token_symbol || '').trim();
+                const qty            = Number(orderData.quantity  || 0);
+                const amount         = Number(orderData.amount    || 0);
+                const orderId        = String(orderData.id        || '').trim();
+                const orderIdUnique  = String(orderData.order_id_unique || '').trim();
+                const pricePerToken  = qty > 0 ? amount / qty : 0;
 
-        if (tradeError) throw tradeError;
+                if (!sellerId || !buyerId)       throw new Error('Seller or Buyer ID is missing.');
+                if (!symbol)                     throw new Error('Token symbol is missing.');
+                if (qty <= 0)                    throw new Error('Quantity must be greater than 0.');
+                if (!orderId || !orderIdUnique)  throw new Error('Order ID data is missing.');
 
-        const symbol = trade.order.token_symbol || trade.order[0].token_symbol;
-        const qty = Number(trade.order.quantity || trade.order[0].quantity);
-        const amount = Number(trade.order.amount || trade.order[0].amount);
-        
-        // SAFE CHECK: Array ya Object dono cases handle karne ke liye
-        const finalOrderId = Array.isArray(trade.order) ? trade.order[0].id : trade.order.id;
+                // ── STEP 5: Call the atomic RPC function ──
+                // This single call does EVERYTHING inside one PostgreSQL
+                // transaction on the server — both token history inserts,
+                // all status updates, and both p2p history inserts.
+                const { data: rpcResult, error: rpcError } = await supabase.rpc(
+                    'p2p_complete_trade',
+                    {
+                        p_trade_box_id:    tradeId,
+                        p_seller_id:       sellerId,
+                        p_buyer_id:        buyerId,
+                        p_symbol:          symbol,
+                        p_qty:             qty,
+                        p_amount:          amount,
+                        p_price_per_token: pricePerToken,
+                        p_order_id:        orderId,
+                        p_order_id_unique: orderIdUnique
+                    }
+                );
 
-        // RPC (Backend Function) ko call karna
-        const { error: rpcError } = await supabase.rpc('release_p2p_tokens', {
-            p_trade_id: Number(tradeId), // Number mein convert kiya taaki error na aaye
-            p_seller_id: trade.seller_id,
-            p_buyer_id: trade.buyer_id,
-            p_symbol: symbol,
-            p_qty: qty,
-            p_amount: amount,
-            p_order_id: Number(finalOrderId) // Safe order ID
-        });
+                if (rpcError) throw new Error(`RPC Error: ${rpcError.message}`);
 
-        if (rpcError) throw rpcError;
+                // ── STEP 6: PnP stats update (non-critical, after RPC) ──
+                // Yeh RPC ke bahar hai kyunki update_pnp_stats apna
+                // existing RPC hai jo pehle se kaam kar raha hai.
+                await Promise.all([
+                    updatePnPStats(buyerId,  'completed'),
+                    updatePnPStats(sellerId, 'completed')
+                ]);
 
-        // PnP Stats aur History update karna
-        await Promise.all([
-            updatePnPStats(trade.buyer_id, 'completed'),
-            updatePnPStats(trade.seller_id, 'completed'),
-            supabase.from('user_p2p_history').insert([
-                { user_id: trade.buyer_id, action: 'buy', token_symbol: symbol, quantity: qty, amount: amount, status: 'completed', other_user_id: trade.seller_id, created_at: new Date().toISOString() },
-                { user_id: trade.seller_id, action: 'sell', token_symbol: symbol, quantity: qty, amount: amount, status: 'completed', other_user_id: trade.buyer_id, created_at: new Date().toISOString() }
-            ])
-        ]);
+                // ── STEP 7: Send completion AI message in chat ──
+                await sendAIMessage(tradeId, 'Tokens released successfully! Trade completed.', 'both');
 
-        await sendAIMessage(tradeId, 'Tokens released successfully! Trade completed.', 'both');
+                showToast('Tokens released successfully!', 'success');
+                loadAllData();
+                closeChatModal();
 
-        showToast('Tokens released successfully!', 'success');
-        loadAllData();
-        closeChatModal();
-
-    } catch (error) {
-        console.error('Release tokens error:', error);
-        showToast('Failed to release tokens', 'error');
-    }
+            } catch (error) {
+                console.error('Release tokens error:', error);
+                // Re-enable button if it exists so seller can retry
+                const releaseBtn = document.querySelector(`button[onclick="releaseTokens('${tradeId}')"]`);
+                if (releaseBtn) {
+                    releaseBtn.disabled = false;
+                    releaseBtn.textContent = 'Release Tokens';
+                }
+                showToast(`Failed: ${error.message || 'Unknown error'}`, 'error');
+            }
         }
 
         async function rejectTrade(tradeId) {
